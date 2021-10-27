@@ -4,8 +4,20 @@ namespace Mihdan\IndexNow;
 use WP_Post;
 
 class Main {
+	/**
+	 * Settings instance.
+	 *
+	 * @var Settings $settings
+	 */
+	private $settings;
+
+	public function __construct( Settings $settings ) {
+		$this->settings = $settings;
+	}
+
 	public function setup_hooks() {
 		add_action( 'transition_post_status', [ $this, 'maybe_do_pings' ], 10, 3 );
+		add_action( 'admin_init', [ $this->settings, 'setup_fields' ], 1 );
 	}
 
 	/**
@@ -34,8 +46,8 @@ class Main {
 			'body' => json_encode(
 				array(
 					'host'        => parse_url( get_home_url(), PHP_URL_HOST ),
-					'key'         => MIHDAN_INDEX_NOW_KEY,
-					'keyLocation' => '',
+					'key'         => $this->settings->wposa->get_option( 'api_key',MIHDAN_INDEX_NOW_PREFIX.'_general' ),
+					//'keyLocation' => '',
 					'urlList'     => [ get_permalink( $post->ID ) ]
 				)
 			),
