@@ -1,6 +1,7 @@
 <?php
 namespace Mihdan\IndexNow;
 
+use WP;
 use WP_Post;
 
 class Main {
@@ -11,13 +12,33 @@ class Main {
 	 */
 	private $settings;
 
+	/**
+	 * API key.
+	 *
+	 * @var string $api_key
+	 */
+	private $api_key;
+
 	public function __construct( Settings $settings ) {
 		$this->settings = $settings;
+		$this->api_key = $this->settings->wposa->get_option( 'api_key',MIHDAN_INDEX_NOW_PREFIX.'_general' );
 	}
 
 	public function setup_hooks() {
 		add_action( 'transition_post_status', [ $this, 'maybe_do_pings' ], 10, 3 );
 		add_action( 'admin_init', [ $this->settings, 'setup_fields' ], 1 );
+		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
+	}
+
+	public function set_virtual_key_file( WP $wp ) {
+		$api_key = $this->get_api_key();
+
+		if ( $wp->request !== $api_key . '.txt' ) {
+			return;
+		}
+
+		echo $api_key;
+		die;
 	}
 
 	/**
@@ -38,6 +59,10 @@ class Main {
 		$this->ping_with_yandex( $post );
 	}
 
+	private function get_api_key() {
+		return $this->api_key;
+	}
+
 	private function ping_with_yandex( WP_Post $post ) {
 
 		$url = 'https://yandex.com/indexnow';
@@ -46,7 +71,7 @@ class Main {
 			'body' => json_encode(
 				array(
 					'host'        => parse_url( get_home_url(), PHP_URL_HOST ),
-					'key'         => $this->settings->wposa->get_option( 'api_key',MIHDAN_INDEX_NOW_PREFIX.'_general' ),
+					'key'         => $this->get_api_key(),
 					//'keyLocation' => '',
 					'urlList'     => [ get_permalink( $post->ID ) ]
 				)
