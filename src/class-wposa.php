@@ -21,6 +21,55 @@ namespace Mihdan\IndexNow;
 class WPOSA {
 
 	/**
+	 * Allowed HTML tags and attributes for wp_kses().
+	 */
+	const ALLOWED_HTML = [
+		'ul'     => [],
+		'li'     => [],
+		'br'     => [],
+		'fields' => [],
+		'label'  => [
+			'for' => true,
+		],
+		'div'    => [
+			'id'    => true,
+			'style' => true,
+			'class' => true,
+		],
+		'a'      => [
+			'id'    => true,
+			'class' => true,
+			'href'  => true,
+		],
+		'img'    => [
+			'src' => true,
+		],
+		'p'      => [
+			'class' => true,
+		],
+		'h1'     => [
+			'class' => true,
+		],
+		'h2'     => [
+			'class' => true,
+		],
+		'span'   => [
+			'style' => true,
+		],
+		'input'  => [
+			'id'          => true,
+			'class'       => true,
+			'type'        => true,
+			'name'        => true,
+			'value'       => true,
+			'placeholder' => true,
+			'checked'     => true,
+			'readonly'    => true,
+			'disabled'    => true,
+		],
+	];
+
+	/**
 	 * Plugin name.
 	 *
 	 * @var string
@@ -79,7 +128,6 @@ class WPOSA {
 
 		// Menu.
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
-
 	}
 
 	/**
@@ -229,7 +277,7 @@ class WPOSA {
 
 				// Create the callback for description.
 				$callback = function() use ( $section ) {
-					echo str_replace( '"', '\"', $section['desc'] );
+					echo wp_kses( str_replace( '"', '\"', $section['desc'] ), self::ALLOWED_HTML );
 				};
 
 			} elseif ( isset( $section['callback'] ) ) {
@@ -442,8 +490,7 @@ class WPOSA {
 		};
 		$type = isset( $args['type'] ) ? $args['type'] : 'title';
 
-		$html = '';
-		echo $html;
+		echo esc_html( $value );
 	}
 
 
@@ -458,10 +505,10 @@ class WPOSA {
 		$size  = isset( $args['size'] ) && ! is_null( $args['size'] ) ? $args['size'] : 'regular';
 		$type  = isset( $args['type'] ) ? $args['type'] : 'text';
 
-		$html  = sprintf( '<input type="%1$s" class="%2$s-text" id="%3$s[%4$s]" name="%3$s[%4$s]" value="%5$s"placeholder="%6$s"/>', $type, $size, $args['section'], $args['id'], $value, $args['placeholder'] );
+		$html  = sprintf( '<input type="%1$s" class="%2$s-text" id="%3$s[%4$s]" name="%3$s[%4$s]" value="%5$s" placeholder="%6$s"/>', $type, $size, $args['section'], $args['id'], $value, $args['placeholder'] );
 		$html .= $this->get_field_description( $args );
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 
@@ -499,7 +546,7 @@ class WPOSA {
 		$html .= sprintf( '%1$s</label>', $args['desc'] );
 		$html .= '</fieldset>';
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -521,7 +568,7 @@ class WPOSA {
 		$html .= $this->get_field_description( $args );
 		$html .= '</fieldset>';
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -542,7 +589,7 @@ class WPOSA {
 		$html .= $this->get_field_description( $args );
 		$html .= '</fieldset>';
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -562,7 +609,7 @@ class WPOSA {
 		$html .= sprintf( '</select>' );
 		$html .= $this->get_field_description( $args );
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -578,7 +625,7 @@ class WPOSA {
 		$html  = sprintf( '<textarea rows="5" cols="55" class="%1$s-text" id="%2$s[%3$s]" name="%2$s[%3$s]">%4$s</textarea>', $size, $args['section'], $args['id'], $value );
 		$html .= $this->get_field_description( $args );
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -588,35 +635,7 @@ class WPOSA {
 	 * @return string
 	 */
 	function callback_html( $args ) {
-		echo $this->get_field_description( $args );
-	}
-
-	/**
-	 * Displays a rich text textarea for a settings field
-	 *
-	 * @param array $args settings field args.
-	 */
-	function callback_wysiwyg( $args ) {
-
-		$value = $this->get_option( $args['id'], $args['section'], $args['std'] );
-		$size  = isset( $args['size'] ) && ! is_null( $args['size'] ) ? $args['size'] : '500px';
-
-		echo '<div style="max-width: ' . $size . ';">';
-
-		$editor_settings = array(
-			'teeny'         => true,
-			'textarea_name' => $args['section'] . '[' . $args['id'] . ']',
-			'textarea_rows' => 10,
-		);
-		if ( isset( $args['options'] ) && is_array( $args['options'] ) ) {
-			$editor_settings = array_merge( $editor_settings, $args['options'] );
-		}
-
-		wp_editor( $value, $args['section'] . '-' . $args['id'], $editor_settings );
-
-		echo '</div>';
-
-		echo $this->get_field_description( $args );
+		echo wp_kses( $this->get_field_description( $args ), self::ALLOWED_HTML );
 	}
 
 	/**
@@ -637,7 +656,7 @@ class WPOSA {
 		$html .= '<input type="button" class="button wpsa-browse" value="' . $label . '" />';
 		$html .= $this->get_field_description( $args );
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -659,7 +678,7 @@ class WPOSA {
 		$html .= $this->get_field_description( $args );
 		$html .= '<p class="wpsa-image-preview"><img src=""/></p>';
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -675,7 +694,7 @@ class WPOSA {
 		$html  = sprintf( '<input type="password" class="%1$s-text" id="%2$s[%3$s]" name="%2$s[%3$s]" value="%4$s"/>', $size, $args['section'], $args['id'], $value );
 		$html .= $this->get_field_description( $args );
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
@@ -691,7 +710,7 @@ class WPOSA {
 		$html  = sprintf( '<input type="text" class="%1$s-text color-picker" id="%2$s[%3$s]" name="%2$s[%3$s]" value="%4$s" data-default-color="%5$s" placeholder="%6$s" />', $size, $args['section'], $args['id'], $value, $args['std'], $args['placeholder'] );
 		$html .= $this->get_field_description( $args );
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 
@@ -705,7 +724,8 @@ class WPOSA {
 
 		$html  = '';
 		$html .= '<div class="wpsa-settings-separator"></div>';
-		echo $html;
+
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 
@@ -774,7 +794,7 @@ class WPOSA {
 
 		$html .= '</h2>';
 
-		echo $html;
+		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
 	/**
