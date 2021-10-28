@@ -24,39 +24,46 @@ class WPOSA {
 	 * Allowed HTML tags and attributes for wp_kses().
 	 */
 	const ALLOWED_HTML = [
-		'ul'     => [],
-		'li'     => [],
-		'br'     => [],
-		'fields' => [],
-		'label'  => [
+		'ul'       => [],
+		'li'       => [],
+		'br'       => [],
+		'fields'   => [],
+		'label'    => [
 			'for' => true,
 		],
-		'div'    => [
+		'div'      => [
 			'id'    => true,
 			'style' => true,
 			'class' => true,
 		],
-		'a'      => [
+		'a'        => [
 			'id'    => true,
 			'class' => true,
 			'href'  => true,
 		],
-		'img'    => [
+		'img'      => [
 			'src' => true,
 		],
-		'p'      => [
+		'p'        => [
 			'class' => true,
 		],
-		'h1'     => [
+		'h1'       => [
 			'class' => true,
 		],
-		'h2'     => [
+		'h2'       => [
 			'class' => true,
 		],
-		'span'   => [
+		'span'     => [
 			'style' => true,
 		],
-		'input'  => [
+		'textarea' => [
+			'name'  => true,
+			'class' => true,
+			'id'    => true,
+			'rows'  => true,
+			'cols'  => true,
+		],
+		'input'    => [
 			'id'          => true,
 			'class'       => true,
 			'type'        => true,
