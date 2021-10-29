@@ -37,7 +37,7 @@ class Main {
 			return;
 		}
 
-		echo $api_key;
+		echo esc_html( $api_key );
 		die;
 	}
 
