@@ -18,13 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * @link https://yandex.ru/support/webmaster/indexnow/key.html
- */
-define( 'MIHDAN_INDEX_NOW_VERSION' , '1.0.0' );
-define( 'MIHDAN_INDEX_NOW_SlUG' , 'mihdan-index-now' );
-define( 'MIHDAN_INDEX_NOW_PREFIX' , 'mihdan_index_now' );
-define( 'MIHDAN_INDEX_NOW_NAME' , 'IndexNow' );
+define( 'MIHDAN_INDEX_NOW_VERSION', '1.0.0' );
+define( 'MIHDAN_INDEX_NOW_SLUG', 'mihdan-index-now' );
+define( 'MIHDAN_INDEX_NOW_PREFIX', 'mihdan_index_now' );
+define( 'MIHDAN_INDEX_NOW_NAME', 'IndexNow' );
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -33,7 +30,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 		new WPOSA(
 			MIHDAN_INDEX_NOW_NAME,
 			MIHDAN_INDEX_NOW_VERSION,
-			MIHDAN_INDEX_NOW_SlUG
+			MIHDAN_INDEX_NOW_SLUG
 		)
 	)
 ) )->setup_hooks();

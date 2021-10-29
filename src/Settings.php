@@ -1,6 +1,15 @@
 <?php
+/**
+ * Settings class.
+ *
+ * @package mihdan-index-now
+ */
+
 namespace Mihdan\IndexNow;
 
+/**
+ * Class Settings.
+ */
 class Settings {
 	/**
 	 * WP_OSA instance.
@@ -9,10 +18,20 @@ class Settings {
 	 */
 	public $wposa;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param WPOSA $wposa WPOSA instance.
+	 */
 	public function __construct( WPOSA $wposa ) {
 		$this->wposa = $wposa;
 	}
 
+	/**
+	 * Setup setting fields.
+	 *
+	 * @link https://yandex.ru/support/webmaster/indexnow/key.html
+	 */
 	public function setup_fields() {
 		$this->wposa->add_section(
 			array(
@@ -21,9 +40,6 @@ class Settings {
 			)
 		);
 
-		/**
-		 * @link https://yandex.ru/support/webmaster/indexnow/key.html
-		 */
 		$this->wposa->add_field(
 			MIHDAN_INDEX_NOW_PREFIX . '_general',
 			array(
@@ -50,18 +66,17 @@ class Settings {
 	/**
 	 * Generate random key.
 	 *
-	 * @param int $length Key Length.
+	 * @param int    $length Key Length.
 	 * @param string $list List of symbols.
 	 *
 	 * @return string
 	 */
-	private function generate_key( $length = 32 , $list = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' ) {
-		mt_srand( (double) microtime() * 1000000 );
+	private function generate_key( $length = 32, $list = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' ) {
 		$result = '';
 
 		if ( $length > 0 ) {
-			while ( strlen( $result ) < $length ) {
-				$result .= $list[ mt_rand( 0, strlen( $list ) - 1 ) ];
+			for ( $i = 0; $i < $length; $i++ ) {
+				$result .= $list[ wp_rand( 0, strlen( $list ) - 1 ) ];
 			}
 		}
 

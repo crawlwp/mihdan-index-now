@@ -1,19 +1,40 @@
 {
-    "name": "mihdan/index-now",
-    "description": "Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.",
-    "type": "wordpress-plugin",
-    "license": "GPL2",
-    "autoload": {
-        "psr-4": {
-            "Mihdan\\IndexNow\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "Mikhail Kobzarev",
-            "email": "mikhail@kobzarev.com"
-        }
-    ],
-    "minimum-stability": "dev",
-    "require": {}
+  "name": "mihdan/index-now",
+  "description": "Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.",
+  "type": "wordpress-plugin",
+  "license": "GPL2",
+  "autoload": {
+    "psr-4": {
+      "Mihdan\\IndexNow\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Mikhail Kobzarev",
+      "email": "mikhail@kobzarev.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "platform": {
+      "php": "5.6"
+    }
+  },
+  "require": {},
+  "require-dev": {
+    "roave/security-advisories": "dev-master",
+    "10up/wp_mock": "0.2 - 0.4",
+    "lucatume/function-mocker": "dev-master",
+    "phpunit/phpunit": "5.7 - 9.5",
+    "squizlabs/php_codesniffer": "^3.6",
+    "phpcompatibility/php-compatibility": "^9.3",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "wp-coding-standards/wpcs": "^2.3",
+    "php-coveralls/php-coveralls": "^v2.4"
+  },
+  "scripts": {
+    "phpcs": "phpcs --standard=./phpcs.xml",
+    "phpcbf": "phpcbf --standard=./phpcs.xml"
+  }
 }
