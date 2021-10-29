@@ -26,9 +26,7 @@ define( 'MIHDAN_INDEX_NOW_SlUG' , 'mihdan-index-now' );
 define( 'MIHDAN_INDEX_NOW_PREFIX' , 'mihdan_index_now' );
 define( 'MIHDAN_INDEX_NOW_NAME' , 'IndexNow' );
 
-require_once __DIR__ . '/src/class-wposa.php';
-require_once __DIR__ . '/src/class-settings.php';
-require_once __DIR__ . '/src/class-main.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 ( new Main(
 	new Settings(
