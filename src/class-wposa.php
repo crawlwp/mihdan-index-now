@@ -781,7 +781,7 @@ class WPOSA {
 
 	public function plugin_page() {
 		echo '<div class="wrap">';
-		echo '<h1>' . $this->plugin_name . ' <span style="font-size:50%;">v' . $this->plugin_version . '</span></h1>';
+		echo '<h1>' . esc_html( $this->plugin_name ) . ' <span style="font-size:50%;">v' . esc_html( $this->plugin_version ) . '</span></h1>';
 		$this->show_navigation();
 		$this->show_forms();
 		echo '</div>';
@@ -823,7 +823,7 @@ class WPOSA {
 				$form = wp_parse_args( $form, $default );
 				?>
 				<!-- style="display: none;" -->
-				<div id="<?php echo $form['id']; ?>" class="group" >
+				<div id="<?php echo esc_attr( $form['id'] ); ?>" class="group" >
 					<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>">
 						<?php
 						do_action( 'wsa_form_top_' . $form['id'], $form );
