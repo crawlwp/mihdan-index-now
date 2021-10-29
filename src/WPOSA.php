@@ -37,9 +37,12 @@ class WPOSA {
 			'class' => true,
 		],
 		'a'        => [
-			'id'    => true,
-			'class' => true,
-			'href'  => true,
+			'id'      => true,
+			'class'   => true,
+			'href'    => true,
+			'style'   => true,
+			'title'   => true,
+			'onclick' => true,
 		],
 		'img'      => [
 			'src' => true,
