@@ -26,7 +26,9 @@ class WPOSA {
 	const ALLOWED_HTML = [
 		'ul'       => [],
 		'li'       => [],
-		'br'       => [],
+		'br'       => [
+			'class' => true,
+		],
 		'fields'   => [],
 		'label'    => [
 			'for' => true,
@@ -57,7 +59,23 @@ class WPOSA {
 			'class' => true,
 		],
 		'span'     => [
+			'class' => true,
 			'style' => true,
+		],
+		'table'    => [
+			'class' => true,
+		],
+		'tbody'    => [
+			'class' => true,
+		],
+		'tr'       => [
+			'class' => true,
+		],
+		'th'       => [
+			'class' => true,
+		],
+		'td'       => [
+			'class' => true,
 		],
 		'textarea' => [
 			'name'  => true,

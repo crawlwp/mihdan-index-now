@@ -7,6 +7,8 @@
 
 namespace Mihdan\IndexNow;
 
+use WP_Plugin_Install_List_Table;
+
 /**
  * Class Settings.
  */
@@ -59,6 +61,39 @@ class Settings {
 				'type' => 'html',
 				'name' => __( 'Требования к ключу', 'mihdan-index-now' ),
 				'desc' => '<ul><li>Поддерживается только кодировка UTF-8</li><li>Минимальное количество символов в ключе — 8, максимальное — 128.</li><li>Ключ может содержать символы <code>a-z</code>, <code>A-Z</code> , <code>0-9</code>, <code>-</code>.</li></ul>',
+			)
+		);
+
+		$this->wposa->add_field(
+			MIHDAN_INDEX_NOW_PREFIX . '_general',
+			array(
+				'id'      => 'search_engines',
+				'type'    => 'multicheck',
+				'name'    => __( 'Search Engines', 'mihdan-index-now' ),
+				'default' => [ 'yandex' => 'yandex' ],
+				'options' => [
+					'yandex'     => __( 'Yandex', 'mihdan-index-now' ),
+					'bing'       => __( 'Bing', 'mihdan-index-now' ),
+					'cloudflare' => __( 'Cloudflare', 'mihdan-index-now' ),
+					'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
+				],
+			)
+		);
+
+		$this->wposa->add_section(
+			array(
+				'id'    => MIHDAN_INDEX_NOW_PREFIX . '_contacts',
+				'title' => __( 'Contacts', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			MIHDAN_INDEX_NOW_PREFIX . '_contacts',
+			array(
+				'id'   => 'description',
+				'type' => 'html',
+				'name' => __( 'Telegram', 'mihdan-index-now' ),
+				'desc' => __( 'Связаться со мной можно в телеграм <a href="https://t.me/mihdan" target="_blank">@mihdan</a>', 'mihdan-index-now' ),
 			)
 		);
 	}
