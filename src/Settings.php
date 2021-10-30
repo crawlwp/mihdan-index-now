@@ -66,20 +66,9 @@ class Settings {
 	/**
 	 * Generate random key.
 	 *
-	 * @param int    $length Key Length.
-	 * @param string $list List of symbols.
-	 *
 	 * @return string
 	 */
-	private function generate_key( $length = 32, $list = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' ) {
-		$result = '';
-
-		if ( $length > 0 ) {
-			for ( $i = 0; $i < $length; $i++ ) {
-				$result .= $list[ wp_rand( 0, strlen( $list ) - 1 ) ];
-			}
-		}
-
-		return $result;
+	private function generate_key() {
+		return str_replace( '-', '', wp_generate_uuid4() );
 	}
 }
