@@ -787,16 +787,14 @@ class WPOSA {
 	 * @author Ahmad Awais
 	 * @since  [version]
 	 */
-
-	// public function admin_menu( $page_title = 'Page Title', $menu_title = 'Menu Title', $capability = 'manage_options', $menu_slug = 'settings_page', $callable = 'plugin_page' ) {
 	public function admin_menu() {
-		// add_options_page( $page_title, $menu_title, $capability, $menu_slug, array( $this, $callable ) );
-		add_options_page(
+		add_menu_page(
 			$this->plugin_name,
 			$this->plugin_name,
 			'manage_options',
 			$this->plugin_slug,
-			array( $this, 'plugin_page' )
+			array( $this, 'plugin_page' ),
+			'dashicons-rest-api'
 		);
 	}
 
