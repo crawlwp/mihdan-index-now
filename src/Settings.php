@@ -7,8 +7,6 @@
 
 namespace Mihdan\IndexNow;
 
-use WP_Plugin_Install_List_Table;
-
 /**
  * Class Settings.
  */

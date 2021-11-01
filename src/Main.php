@@ -7,8 +7,10 @@
 
 namespace Mihdan\IndexNow;
 
+use Mihdan\IndexNow\Views\Log;
 use WP;
 use WP_Post;
+use WP_List_Table;
 
 /**
  * Class Main.
@@ -62,6 +64,69 @@ class Main {
 		add_action( 'admin_init', [ $this->settings, 'setup_fields' ], 1 );
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
+		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
+
+		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+	}
+
+	/**
+	 * Fired on plugin activate.
+	 */
+	public function activate_plugin() {
+		global $wpdb;
+
+		if ( ! function_exists( 'dbDelta' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		}
+
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$wpdb->base_prefix}index_now_log (
+    			log_id bigint(20) UNSIGNED NOT NULL,
+    			post_id bigint(20) UNSIGNED NOT NULL,
+    			created_at datetime NOT NULL,
+    			status_code varchar(255) NOT NULL,
+    			PRIMARY KEY  (log_id)
+				) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	public function add_log_menu_page() {
+		$hook = add_submenu_page(
+			MIHDAN_INDEX_NOW_SLUG,
+			'Log',
+			'Log',
+			'manage_options',
+			MIHDAN_INDEX_NOW_SLUG . '-log',
+			[ $this, 'render_log_page' ]
+		);
+
+		add_action(
+			"load-$hook",
+			function () {
+				$GLOBALS[ MIHDAN_INDEX_NOW_PREFIX . '_log' ] = new Log();
+			}
+		);
+	}
+
+	public function render_log_page() {
+		?>
+		<div class="wrap">
+			<h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
+			<form action="" method="post">
+				<?php
+				/**
+				 * WP_List_table.
+				 *
+				 * @var WP_List_Table $table
+				 */
+				$table = $GLOBALS[ MIHDAN_INDEX_NOW_PREFIX . '_log' ];
+				$table->display();
+				?>
+			</form>
+		</div>
+		<?php
 	}
 
 	/**
@@ -76,7 +141,7 @@ class Main {
 		if ( MIHDAN_INDEX_NOW_BASENAME === $plugin_file ) {
 			$actions[] = sprintf(
 				'<a href="%s">%s</a>',
-				admin_url( 'options-general.php?page=' . MIHDAN_INDEX_NOW_SLUG ),
+				admin_url( 'admin.php?page=' . MIHDAN_INDEX_NOW_SLUG ),
 				esc_html__( 'Settings', 'mihdan-index-now' )
 			);
 		}
