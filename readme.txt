@@ -115,6 +115,7 @@ See the documentation available from each search engine for more details about I
 
 = 1.1.1 (02.11.2021) =
 * Added FAQ
+* Fixed bug with duplicate log entries
 
 = 1.1.0 (01.11.2021) =
 * Added logger for search engines response

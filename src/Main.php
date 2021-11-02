@@ -54,6 +54,7 @@ class Main {
 	/**
 	 * Constructor.
 	 *
+	 * @param Logger   $logger Logger instnace.
 	 * @param Settings $settings Settings instnace.
 	 */
 	public function __construct( Logger $logger, Settings $settings ) {
@@ -68,7 +69,7 @@ class Main {
 	 * Setup hooks.
 	 */
 	public function setup_hooks() {
-		add_action( 'transition_post_status', [ $this, 'maybe_do_pings' ], 10, 3 );
+		add_action( 'publish_post', [ $this, 'maybe_do_pings' ], 10, 2 );
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
@@ -101,6 +102,9 @@ class Main {
 		$result = dbDelta( $sql );
 	}
 
+	/**
+	 * Add log menu page for dashboard.
+	 */
 	public function add_log_menu_page() {
 		$hook = add_submenu_page(
 			MIHDAN_INDEX_NOW_SLUG,
@@ -119,6 +123,9 @@ class Main {
 		);
 	}
 
+	/**
+	 * Render log menu page for dashboard.
+	 */
 	public function render_log_page() {
 		?>
 		<div class="wrap">
@@ -179,15 +186,13 @@ class Main {
 	/**
 	 * Fires actions related to the transitioning of a post's status.
 	 *
-	 * @param string  $new_status Transition to this post status.
-	 * @param string  $old_status Previous post status.
-	 * @param WP_Post $post       Post data.
+	 * @param int     $post_id Post ID.
+	 * @param WP_Post $post    Post data.
 	 *
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function maybe_do_pings( $new_status, $old_status, WP_Post $post ) {
-		// Срабатывает только на статус publish.
-		if ( 'publish' !== $new_status || ! in_array( $post->post_type, [ 'post', 'page' ], true ) ) {
+	public function maybe_do_pings( $post_id, WP_Post $post ) {
+		if ( ! in_array( $post->post_type, [ 'post', 'page' ], true ) ) {
 			return;
 		}
 
@@ -253,7 +258,7 @@ class Main {
 			],
 		);
 
-		$response = wp_remote_post( $url, $args );
+		$response    = wp_remote_post( $url, $args );
 		$status_code = wp_remote_retrieve_response_code( $response );
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
@@ -261,19 +266,15 @@ class Main {
 		$translate = Logger::ERRORS;
 
 		$data = [
-			'post_id' => $post->ID,
+			'post_id'     => $post->ID,
 			'status_code' => $status_code,
 		];
 
-		$message = isset( $translate[ $body['message'] ] )
-			? $translate[ $body['message'] ]
-			: $body['message'];
+		$message = $translate[ $body['message'] ] ?? $body['message'];
 
 		if ( $status_code === 200 ) {
-			//do_action( 'mihdan_index_now/debug', $data );
 			$this->logger->debug( $message, $data );
 		} else {
-			//do_action( 'mihdan_index_now/error', $data );
 			$this->logger->error( $message, $data );
 		}
 	}
@@ -303,27 +304,5 @@ class Main {
 		);
 
 		$response = wp_remote_post( $url, $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		$translate = Logger::ERRORS;
-
-		$data = [
-			'post_id' => $post->ID,
-			'status_code' => $status_code,
-		];
-
-		$message = isset( $translate[ $body['message'] ] )
-			? $translate[ $body['message'] ]
-			: $body['message'];
-
-		if ( $status_code === 200 ) {
-			//do_action( 'mihdan_index_now/debug', $data );
-			$this->logger->debug( $message, $data );
-		} else {
-			//do_action( 'mihdan_index_now/error', $data );
-			$this->logger->error( $message, $data );
-		}
 	}
 }
