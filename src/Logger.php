@@ -57,7 +57,7 @@ class Logger {
 	 *
 	 * @var string $table_name
 	 */
-	private $table_name;
+	private static $table_name;
 
 	/**
 	 * Instance of wpdb.
@@ -73,7 +73,11 @@ class Logger {
 		global $wpdb;
 
 		$this->wpdb       = $wpdb;
-		$this->table_name = $wpdb->prefix . 'index_now_log';
+		self::$table_name = $wpdb->prefix . 'index_now_log';
+	}
+
+	public static function get_table_name() {
+		return self::$table_name;
 	}
 
 	public function setup_hooks() {
@@ -191,19 +195,27 @@ class Logger {
 	/**
 	 * Logs with an arbitrary level.
 	 *
-	 * @param string $level
-	 * @param string $message
-	 * @param array $context
+	 * @param string $level Error level.
+	 * @param string $message Error message.
+	 * @param array  $context Error context.
 	 *
-	 * @return bool
+	 * @return mixed
 	 */
 	public function log( $level, $message, array $context = array() ) {
-		$context['created_at'] = current_time( 'mysql' );
-		$context['level']      = $level;
-		$context['message']    = $message;
+
+		$defaults = [
+			'created_at' => current_time( 'mysql' ),
+			'level'      => $level,
+			'message'    => $message,
+			'direction'  => 'incoming',
+		];
+
+		$context = wp_parse_args( $context, $defaults );
 
 		$data = wp_kses_post_deep( $context );
 
-		$response = $this->wpdb->insert( $this->table_name, $data );
+		$response = $this->wpdb->insert( self::get_table_name(), $data );
+
+		return $response;
 	}
 }

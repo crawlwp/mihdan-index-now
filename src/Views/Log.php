@@ -7,6 +7,7 @@
 
 namespace Mihdan\IndexNow\Views;
 
+use Mihdan\IndexNow\Logger;
 use WP_List_Table;
 
 class Log extends WP_List_Table {
@@ -35,9 +36,11 @@ class Log extends WP_List_Table {
 	private function get_items( $per_page, $cur_page, $orderby, $order ) {
 		global $wpdb;
 
+		$table_name = Logger::get_table_name();
+
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}index_now_log ORDER BY {$orderby} {$order} LIMIT %d, %d",
+				"SELECT * FROM {$table_name} ORDER BY {$orderby} {$order} LIMIT %d, %d",
 				$cur_page,
 				$per_page
 			)
@@ -65,30 +68,36 @@ class Log extends WP_List_Table {
 		$this->items = $this->get_items( $per_page, $cur_page, $orderby, $order );
 	}
 
-	// колонки таблицы
-	function get_columns(){
-		return array(
-			'cb'          => '<input type="checkbox" />',
-			'log_id'      => 'ID',
-			'post_id'     => 'Link',
-			'created_at'  => 'Date',
-			'level'       => 'Level',
-			'status_code' => 'Status',
-			'message'     => 'Message',
-		);
+	/**
+	 * Get table columns.
+	 *
+	 * @return string[]
+	 */
+	public function get_columns() {
+		return [
+			'cb'            => '<input type="checkbox" />',
+			'log_id'        => 'ID',
+			'post_id'       => 'Link',
+			'created_at'    => 'Date',
+			'search_engine' => 'SE',
+			'direction'     => 'Dir',
+			'level'         => 'Level',
+			'status_code'   => 'Status',
+			'message'       => 'Message',
+		];
 	}
 
 	// сортируемые колонки
 	function get_sortable_columns(){
-		return array(
-			'status_code' => array( 'status_code', 'desc' ),
-		);
+		return [
+			'status_code' => [ 'status_code', 'asc' ],
+		];
 	}
 
 	protected function get_bulk_actions() {
-		return array(
+		return [
 			'delete' => 'Delete',
-		);
+		];
 	}
 
 	// Элементы управления таблицей. Расположены между групповыми действиями и панагией.
@@ -103,10 +112,12 @@ class Log extends WP_List_Table {
 		<style>
 			table.logs .column-log_id{ width:2em; }
 			table.logs .column-level{ width:4em; }
+			table.logs .column-direction{ width:4em; }
+			table.logs .column-search_engine{ width:4em; }
 			table.logs .column-status_code{ width:6em; }
 			table.logs .column-created_at{ width:10em; }
 			table.logs .level {
-				font-size: 20px;
+				font-size: 30px;
 			}
 			table.logs .level--error {
 				color: #f00;
@@ -127,14 +138,16 @@ class Log extends WP_List_Table {
 			$actions['edit'] = sprintf( '<a href="%s">%s</a>', '#', __('edit','hb-users') );
 
 			return esc_html( $item->name ) . $this->row_actions( $actions );
-		} else if ( $colname === 'post_id' ) {
+		} elseif ( $colname === 'post_id' ) {
 			return sprintf(
 				'%d: <a href="%s" target="_blank">%s</a>',
 				$item->$colname,
 				get_permalink( $item->$colname ),
 				get_the_title( $item->$colname ) );
-		} else if ( $colname === 'level' ) {
+		} elseif ( $colname === 'level' ) {
 			return sprintf( '<span class="level level--%s" title="%s">•</span>', $item->$colname, $item->$colname );
+		} elseif ( $colname === 'direction' ) {
+			return $item->$colname === 'incoming' ? '<span class="dashicons dashicons-arrow-up-alt"></span>' : '<span class="dashicons dashicons-arrow-down-alt"></span>';
 		} else {
 			return isset($item->$colname) ? $item->$colname : print_r($item, 1);
 		}
@@ -143,25 +156,31 @@ class Log extends WP_List_Table {
 
 	// заполнение колонки cb
 	function column_cb( $item ){
-		echo '<input type="checkbox" name="licids[]" id="cb-select-'. $item->log_id .'" value="'. $item->log_id .'" />';
+		echo '<input type="checkbox" name="log_rows[]" id="cb-select-'. $item->log_id .'" value="'. $item->log_id .'" />';
 	}
 
-	// остальные методы, в частности вывод каждой ячейки таблицы...
+	/**
+	 * Bulk action handler for custom table.
+	 */
+	private function bulk_action_handler() {
+		global $wpdb;
 
-	// helpers -------------
+		if ( ! empty( $_POST['_wpnonce'] ) && ! wp_verify_nonce( wp_unslash( $_POST['_wpnonce'] ), 'bulk-' . $this->_args['plural'] ) ) {
+			return;
+		}
 
-	private function bulk_action_handler(){
-		if( empty($_POST['licids']) || empty($_POST['_wpnonce']) ) return;
+		if ( 'delete' === $this->current_action() ) {
+			if ( is_array( $_POST['log_rows'] ) ) {
+				$log_rows   = implode( ',', array_map( 'absint', $_POST['log_rows'] ) );
+				$table_name = Logger::get_table_name();
 
-		if ( ! $action = $this->current_action() ) return;
-
-		if( ! wp_verify_nonce( $_POST['_wpnonce'], 'bulk-' . $this->_args['plural'] ) )
-			wp_die('nonce error');
-
-		// делает что-то...
-		die( $action ); // delete
-		die( print_r($_POST['licids']) );
-
+				$wpdb->query(
+					$wpdb->prepare(
+						"DELETE FROM {$table_name} WHERE log_id IN ({$log_rows})"
+					)
+				);
+			}
+		}
 	}
 
 	/*

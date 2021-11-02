@@ -115,6 +115,7 @@ See the documentation available from each search engine for more details about I
 
 = 1.1.3 (02.11.2021) =
 * Changed database structure
+* Added bulk actions handler for log table
 
 = 1.1.2 (02.11.2021) =
 * Added support for Page post type
