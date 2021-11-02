@@ -4,7 +4,7 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, yandex, google, bing, seo, cloudflare
 Requires at least: 5.0
 Tested up to: 5.8
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -112,6 +112,9 @@ Yes, when sitemaps are an easy way for webmasters to inform search engines about
 See the documentation available from each search engine for more details about IndexNow.
 
 == Changelog ==
+
+= 1.1.2 (02.11.2021) =
+* Added support for Page post type
 
 = 1.1.1 (02.11.2021) =
 * Added FAQ

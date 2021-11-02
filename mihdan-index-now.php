@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mihdan: Index Now
  * Description: Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Mikhail Kobzarev
  * Author URI: https://www.kobzarev.com/
  * Plugin URI: https://wordpress.org/plugins/mihdan-index-now/
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MIHDAN_INDEX_NOW_VERSION', '1.1.1' );
+define( 'MIHDAN_INDEX_NOW_VERSION', '1.1.2' );
 define( 'MIHDAN_INDEX_NOW_SLUG', 'mihdan-index-now' );
 define( 'MIHDAN_INDEX_NOW_PREFIX', 'mihdan_index_now' );
 define( 'MIHDAN_INDEX_NOW_NAME', 'IndexNow' );
