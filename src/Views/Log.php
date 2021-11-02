@@ -32,6 +32,18 @@ class Log extends WP_List_Table {
 		add_action( 'wp_print_scripts', [ __CLASS__, '_list_table_css' ] );
 	}
 
+	private function get_items( $per_page, $cur_page, $orderby, $order ) {
+		global $wpdb;
+
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}index_now_log ORDER BY {$orderby} {$order} LIMIT %d, %d",
+				$cur_page,
+				$per_page
+			)
+		);
+	}
+
 	// создает элементы таблицы
 	function prepare_items(){
 		global $wpdb;
@@ -45,45 +57,31 @@ class Log extends WP_List_Table {
 		) );
 		$cur_page = (int) $this->get_pagenum(); // желательно после set_pagination_args()
 
+		$orderby = 'created_at';
+		$order   = 'DESC';
+
 		// элементы таблицы
 		// обычно элементы получаются из БД запросом
-		// $this->items = get_posts();
-
-		// чтобы понимать как должны выглядеть добавляемые элементы
-		$this->items = array(
-			(object) array(
-				'id'   => 2,
-				'key'  => 'aaaaaaaaaa777777',
-				'name' => 'Коля',
-			),
-			(object) array(
-				'id'   => 3,
-				'key'  => 'ddddddd555555555',
-				'name' => 'Витя',
-			),
-			(object) array(
-				'id'   => 4,
-				'key'  => 'hhhhhhhhhhh999999',
-				'name' => 'Петя',
-			),
-		);
-
+		$this->items = $this->get_items( $per_page, $cur_page, $orderby, $order );
 	}
 
 	// колонки таблицы
 	function get_columns(){
 		return array(
-			'cb'            => '<input type="checkbox" />',
-			'id'            => 'ID',
-			'customer_name' => 'Имя',
-			'license_key'   => 'License Key',
+			'cb'          => '<input type="checkbox" />',
+			'log_id'      => 'ID',
+			'post_id'     => 'Link',
+			'created_at'  => 'Date',
+			'level'       => 'Level',
+			'status_code' => 'Status',
+			'message'     => 'Message',
 		);
 	}
 
 	// сортируемые колонки
 	function get_sortable_columns(){
 		return array(
-			'customer_name' => array( 'name', 'desc' ),
+			'status_code' => array( 'status_code', 'desc' ),
 		);
 	}
 
@@ -95,7 +93,7 @@ class Log extends WP_List_Table {
 
 	// Элементы управления таблицей. Расположены между групповыми действиями и панагией.
 	function extra_tablenav( $which ){
-		echo '<div class="alignleft actions">HTML код полей формы (select). Внутри тега form...</div>';
+		//echo '<div class="alignleft actions">HTML код полей формы (select). Внутри тега form...</div>';
 	}
 
 	// вывод каждой ячейки таблицы -------------
@@ -103,9 +101,19 @@ class Log extends WP_List_Table {
 	static function _list_table_css(){
 		?>
 		<style>
-			table.logs .column-id{ width:2em; }
-			table.logs .column-license_key{ width:8em; }
-			table.logs .column-customer_name{ width:15%; }
+			table.logs .column-log_id{ width:2em; }
+			table.logs .column-level{ width:4em; }
+			table.logs .column-status_code{ width:6em; }
+			table.logs .column-created_at{ width:10em; }
+			table.logs .level {
+				font-size: 20px;
+			}
+			table.logs .level--error {
+				color: #f00;
+			}
+			table.logs .level--debug {
+				color: #0f0;
+			}
 		</style>
 		<?php
 	}
@@ -113,14 +121,21 @@ class Log extends WP_List_Table {
 	// вывод каждой ячейки таблицы...
 	function column_default( $item, $colname ){
 
-		if( $colname === 'customer_name' ){
+		if ( $colname === 'customer_name' ) {
 			// ссылки действия над элементом
 			$actions = array();
 			$actions['edit'] = sprintf( '<a href="%s">%s</a>', '#', __('edit','hb-users') );
 
 			return esc_html( $item->name ) . $this->row_actions( $actions );
-		}
-		else {
+		} else if ( $colname === 'post_id' ) {
+			return sprintf(
+				'%d: <a href="%s" target="_blank">%s</a>',
+				$item->$colname,
+				get_permalink( $item->$colname ),
+				get_the_title( $item->$colname ) );
+		} else if ( $colname === 'level' ) {
+			return sprintf( '<span class="level level--%s" title="%s">•</span>', $item->$colname, $item->$colname );
+		} else {
 			return isset($item->$colname) ? $item->$colname : print_r($item, 1);
 		}
 
@@ -128,7 +143,7 @@ class Log extends WP_List_Table {
 
 	// заполнение колонки cb
 	function column_cb( $item ){
-		echo '<input type="checkbox" name="licids[]" id="cb-select-'. $item->id .'" value="'. $item->id .'" />';
+		echo '<input type="checkbox" name="licids[]" id="cb-select-'. $item->log_id .'" value="'. $item->log_id .'" />';
 	}
 
 	// остальные методы, в частности вывод каждой ячейки таблицы...

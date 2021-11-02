@@ -33,6 +33,25 @@ class Logger {
 
 	const DEBUG = 'debug';
 
+	const ERRORS = [
+		'Invalid params'                            => 'Переданы некорректные параметры в теле запроса.',
+		'Invalid key'                               => 'Ключ не удалось загрузить или он не подходит к указанным в запросе адресам.',
+		'Method not allowed'                        => 'Поддерживаются методы GET и POST.',
+		'Invalid key location'                      => 'Параметр keyLocation указан неверно.',
+		'Invalid url'                               => 'В запросе указан неверный URL-адрес или переданный ключ не подходит для его обработки.',
+		'Key must be at least 8 characters'         => 'Ключ включает в себя меньше 8 символов.',
+		'Key must be no longer than 128 characters' => 'Ключ включает в себя больше 128 символов.',
+		'Key must consist of a-Z0-9 or \'-\''       => 'Ключ содержит неподходящие символы.',
+		'No host provided'                          => 'Отсутствует параметр host в запросе.',
+		'No key provided'                           => 'Отсутствует параметр key в запросе.',
+		'No more than 10000 urls allowed'           => 'Параметр urlList содержит больше 10 000 URL-адресов.',
+		'No url provided'                           => 'Отсутствует параметр url в запросе.',
+		'Url list has to be an array'               => 'Отсутствует параметр urlList или он не является массивом.',
+		'Url list cannot be empty'                  => 'Передан пустой параметр urlList.',
+		'Url has to be an array of string'          => 'Параметр urlList должен содержать данные типа String.',
+		'Too Many Requests'                         => 'Превышено количество запросов для одного IP-адреса.',
+	];
+
 	/**
 	 * Table name for logger.
 	 *
@@ -54,11 +73,12 @@ class Logger {
 		global $wpdb;
 
 		$this->wpdb       = $wpdb;
-		$this->table_name = $wpdb->prefix . '_index_now_log';
+		$this->table_name = $wpdb->prefix . 'index_now_log';
 	}
 
 	public function setup_hooks() {
-
+		add_action( 'mihdan_index_now/debug', [ $this, 'debug' ] );
+		add_action( 'mihdan_index_now/error', [ $this, 'error' ] );
 	}
 
 	/**
@@ -164,25 +184,26 @@ class Logger {
 	 *
 	 * @return bool
 	 */
-	public function debug( $message, array $context = array() ) {
+	public function debug( $message, $context = array() ) {
 		return $this->log( self::DEBUG, $message, $context );
 	}
 
 	/**
 	 * Logs with an arbitrary level.
 	 *
-	 * @param mixed $level
+	 * @param string $level
 	 * @param string $message
 	 * @param array $context
 	 *
 	 * @return bool
 	 */
 	public function log( $level, $message, array $context = array() ) {
-		$this->wpdb->insert(
-			$this->table_name,
-			[
-				''
-			]
-		);
+		$context['created_at'] = current_time( 'mysql' );
+		$context['level']      = $level;
+		$context['message']    = $message;
+
+		$data = wp_kses_post_deep( $context );
+
+		$response = $this->wpdb->insert( $this->table_name, $data );
 	}
 }

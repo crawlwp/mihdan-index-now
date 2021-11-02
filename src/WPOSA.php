@@ -147,7 +147,9 @@ class WPOSA {
 		$this->plugin_name    = $plugin_name;
 		$this->plugin_version = $plugin_version;
 		$this->plugin_slug    = $plugin_slug;
+	}
 
+	public function setup_hooks() {
 		// Enqueue the admin scripts.
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_scripts' ) );
 

@@ -17,6 +17,13 @@ use WP_List_Table;
  */
 class Main {
 	/**
+	 * Logger instance.
+	 *
+	 * @var Logger $logger
+	 */
+	private $logger;
+
+	/**
 	 * Settings instance.
 	 *
 	 * @var Settings $settings
@@ -49,7 +56,8 @@ class Main {
 	 *
 	 * @param Settings $settings Settings instnace.
 	 */
-	public function __construct( Settings $settings ) {
+	public function __construct( Logger $logger, Settings $settings ) {
+		$this->logger         = $logger;
 		$this->host           = wp_parse_url( get_home_url(), PHP_URL_HOST );
 		$this->settings       = $settings;
 		$this->api_key        = $this->settings->wposa->get_option( 'api_key', MIHDAN_INDEX_NOW_PREFIX . '_general' );
@@ -61,7 +69,6 @@ class Main {
 	 */
 	public function setup_hooks() {
 		add_action( 'transition_post_status', [ $this, 'maybe_do_pings' ], 10, 3 );
-		add_action( 'admin_init', [ $this->settings, 'setup_fields' ], 1 );
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
@@ -82,14 +89,16 @@ class Main {
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE {$wpdb->base_prefix}index_now_log (
-    			log_id bigint(20) UNSIGNED NOT NULL,
+    			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     			post_id bigint(20) UNSIGNED NOT NULL,
-    			created_at datetime NOT NULL,
-    			status_code varchar(255) NOT NULL,
-    			PRIMARY KEY  (log_id)
+    			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+    			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
+    			status_code INT(11) unsigned NOT NULL,
+    			message text NOT NULL,
+    			PRIMARY KEY (log_id)
 				) {$charset_collate};";
 
-		dbDelta( $sql );
+		$result = dbDelta( $sql );
 	}
 
 	public function add_log_menu_page() {
@@ -245,6 +254,28 @@ class Main {
 		);
 
 		$response = wp_remote_post( $url, $args );
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		$translate = Logger::ERRORS;
+
+		$data = [
+			'post_id' => $post->ID,
+			'status_code' => $status_code,
+		];
+
+		$message = isset( $translate[ $body['message'] ] )
+			? $translate[ $body['message'] ]
+			: $body['message'];
+
+		if ( $status_code === 200 ) {
+			//do_action( 'mihdan_index_now/debug', $data );
+			$this->logger->debug( $message, $data );
+		} else {
+			//do_action( 'mihdan_index_now/error', $data );
+			$this->logger->error( $message, $data );
+		}
 	}
 
 	/**
@@ -272,5 +303,27 @@ class Main {
 		);
 
 		$response = wp_remote_post( $url, $args );
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		$translate = Logger::ERRORS;
+
+		$data = [
+			'post_id' => $post->ID,
+			'status_code' => $status_code,
+		];
+
+		$message = isset( $translate[ $body['message'] ] )
+			? $translate[ $body['message'] ]
+			: $body['message'];
+
+		if ( $status_code === 200 ) {
+			//do_action( 'mihdan_index_now/debug', $data );
+			$this->logger->debug( $message, $data );
+		} else {
+			//do_action( 'mihdan_index_now/error', $data );
+			$this->logger->error( $message, $data );
+		}
 	}
 }

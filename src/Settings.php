@@ -27,6 +27,10 @@ class Settings {
 		$this->wposa = $wposa;
 	}
 
+	public function setup_hooks() {
+		add_action( 'admin_init', [ $this, 'setup_fields' ], 1 );
+	}
+
 	/**
 	 * Setup setting fields.
 	 *
