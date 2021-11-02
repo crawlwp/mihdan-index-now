@@ -47,25 +47,23 @@ class Log extends WP_List_Table {
 		);
 	}
 
-	// создает элементы таблицы
-	function prepare_items(){
+	public function prepare_items(){
 		global $wpdb;
 
-		// пагинация
 		$per_page = get_user_meta( get_current_user_id(), get_current_screen()->get_option( 'per_page', 'option' ), true ) ?: 20;
-
-		$this->set_pagination_args( array(
-			'total_items' => 3,
-			'per_page'    => $per_page,
-		) );
-		$cur_page = (int) $this->get_pagenum(); // желательно после set_pagination_args()
+		$cur_page = (int) $this->get_pagenum();
 
 		$orderby = 'created_at';
 		$order   = 'DESC';
 
-		// элементы таблицы
-		// обычно элементы получаются из БД запросом
 		$this->items = $this->get_items( $per_page, $cur_page, $orderby, $order );
+
+		$this->set_pagination_args(
+			[
+				'total_items' => count( $this->items ),
+				'per_page'    => $per_page,
+			]
+		);
 	}
 
 	/**
@@ -147,7 +145,7 @@ class Log extends WP_List_Table {
 		} elseif ( $colname === 'level' ) {
 			return sprintf( '<span class="level level--%s" title="%s">•</span>', $item->$colname, $item->$colname );
 		} elseif ( $colname === 'direction' ) {
-			return $item->$colname === 'incoming' ? '<span class="dashicons dashicons-arrow-up-alt"></span>' : '<span class="dashicons dashicons-arrow-down-alt"></span>';
+			return $item->$colname === 'incoming' ? '<span class="dashicons dashicons-arrow-up-alt" title="Исходящий запрос"></span>' : '<span class="dashicons dashicons-arrow-down-alt" title="Входящий запрос"></span>';
 		} else {
 			return isset($item->$colname) ? $item->$colname : print_r($item, 1);
 		}
