@@ -70,6 +70,8 @@ class Main {
 	 */
 	public function setup_hooks() {
 		add_action( 'publish_post', [ $this, 'maybe_do_pings' ], 10, 2 );
+		add_action( 'publish_page', [ $this, 'maybe_do_pings' ], 10, 2 );
+
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
@@ -192,9 +194,6 @@ class Main {
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
 	public function maybe_do_pings( $post_id, WP_Post $post ) {
-		if ( ! in_array( $post->post_type, [ 'post', 'page' ], true ) ) {
-			return;
-		}
 
 		$search_engines = $this->get_search_engines();
 
