@@ -96,6 +96,8 @@ class Main {
     			post_id bigint(20) UNSIGNED NOT NULL,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
     			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
+    			search_engine enum('yandex','bing','duckduck','cloudflare') NOT NULL DEFAULT 'yandex',
+    			direction enum('incoming','outgoing') NOT NULL DEFAULT 'incoming',
     			status_code INT(11) unsigned NOT NULL,
     			message text NOT NULL,
     			PRIMARY KEY (log_id)
@@ -265,15 +267,16 @@ class Main {
 		$translate = Logger::ERRORS;
 
 		$data = [
-			'post_id'     => $post->ID,
-			'status_code' => $status_code,
+			'post_id'       => $post->ID,
+			'status_code'   => $status_code,
+			'search_engine' => 'yandex',
 		];
 
-		$message = $translate[ $body['message'] ] ?? $body['message'];
-
 		if ( $status_code === 200 ) {
+			$message = 'OK';
 			$this->logger->debug( $message, $data );
 		} else {
+			$message = $translate[ $body['message'] ] ?? $body['message'];
 			$this->logger->error( $message, $data );
 		}
 	}
@@ -302,6 +305,25 @@ class Main {
 			],
 		);
 
-		$response = wp_remote_post( $url, $args );
+		$response    = wp_remote_post( $url, $args );
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		$translate = Logger::ERRORS;
+
+		$data = [
+			'post_id'       => $post->ID,
+			'status_code'   => $status_code,
+			'search_engine' => 'bing',
+		];
+
+		if ( $status_code === 200 ) {
+			$message = 'OK';
+			$this->logger->debug( $message, $data );
+		} else {
+			$message = $translate[ $body['message'] ] ?? $body['message'];
+			$this->logger->error( $message, $data );
+		}
 	}
 }
