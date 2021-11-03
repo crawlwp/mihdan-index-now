@@ -178,6 +178,8 @@ class Log extends WP_List_Table {
 			return sprintf( '<span class="level level--%s" title="%s">•</span>', $item->$colname, $item->$colname );
 		} elseif ( $colname === 'direction' ) {
 			return $item->$colname === 'incoming' ? '<span class="dashicons dashicons-arrow-up-alt" title="Исходящий запрос"></span>' : '<span class="dashicons dashicons-arrow-down-alt" title="Входящий запрос"></span>';
+		} elseif ( $colname === 'created_at' ) {
+			return get_date_from_gmt( $item->$colname, 'd.m.Y H:i:s' );
 		} else {
 			return isset($item->$colname) ? $item->$colname : print_r($item, 1);
 		}

@@ -210,7 +210,16 @@ class Main {
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
 	public function maybe_do_pings( $new_status, $old_status, WP_Post $post ) {
+
 		if ( $new_status !== 'publish' ) {
+			return;
+		}
+
+		if ( ! empty( $_REQUEST['meta-box-loader'] ) ) { // phpcs:ignore
+			return;
+		}
+
+		if ( wp_is_post_revision( $post ) || wp_is_post_autosave( $post ) ) {
 			return;
 		}
 
@@ -229,6 +238,8 @@ class Main {
 		if ( in_array( 'bing', $search_engines, true ) ) {
 			$this->ping_with_bing( $post );
 		}
+
+		remove_action( 'transition_post_status', [ $this, 'maybe_do_pings' ] );
 	}
 
 	/**
