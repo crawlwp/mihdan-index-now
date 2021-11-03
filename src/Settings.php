@@ -19,6 +19,13 @@ class Settings {
 	public $wposa;
 
 	/**
+	 * Array of post types.
+	 *
+	 * @var array $post_types
+	 */
+	private $post_types;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param WPOSA $wposa WPOSA instance.
@@ -27,8 +34,32 @@ class Settings {
 		$this->wposa = $wposa;
 	}
 
+	/**
+	 * Setup vars.
+	 */
+	public function setup_vars() {
+		$args = array(
+			'public' => true,
+		);
+
+		$this->post_types = wp_list_pluck( get_post_types( $args, 'objects' ), 'label', 'name' );
+	}
+
+	/**
+	 * Get post types.
+	 *
+	 * @return array
+	 */
+	private function get_post_types() {
+		return $this->post_types;
+	}
+
+	/**
+	 * Setup hooks.
+	 */
 	public function setup_hooks() {
-		add_action( 'admin_init', [ $this, 'setup_fields' ], 1 );
+		add_action( 'init', [ $this, 'setup_vars' ], 100 );
+		add_action( 'init', [ $this, 'setup_fields' ], 101 );
 	}
 
 	/**
@@ -79,6 +110,17 @@ class Settings {
 					'cloudflare' => __( 'Cloudflare', 'mihdan-index-now' ),
 					'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
 				],
+			)
+		);
+
+		$this->wposa->add_field(
+			MIHDAN_INDEX_NOW_PREFIX . '_general',
+			array(
+				'id'      => 'post_types',
+				'type'    => 'multicheck',
+				'name'    => __( 'Post Types', 'mihdan-mailru-pulse-feed' ),
+				'options' => $this->get_post_types(),
+				'default' => array( 'post' => 'post' ),
 			)
 		);
 

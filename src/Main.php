@@ -69,10 +69,7 @@ class Main {
 	 * Setup hooks.
 	 */
 	public function setup_hooks() {
-		add_action( 'publish_post', [ $this, 'maybe_do_pings' ], 10, 2 );
-		add_action( 'publish_page', [ $this, 'maybe_do_pings' ], 10, 2 );
-		add_action( 'publish_product', [ $this, 'maybe_do_pings' ], 10, 2 );
-
+		add_action( 'transition_post_status', [ $this, 'maybe_do_pings' ], 10, 3 );
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
@@ -206,12 +203,22 @@ class Main {
 	/**
 	 * Fires actions related to the transitioning of a post's status.
 	 *
-	 * @param int     $post_id Post ID.
+	 * @param string  $new_status New post status.
+	 * @param string  $old_status Old post status.
 	 * @param WP_Post $post    Post data.
 	 *
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function maybe_do_pings( $post_id, WP_Post $post ) {
+	public function maybe_do_pings( $new_status, $old_status, WP_Post $post ) {
+		if ( $new_status !== 'publish' ) {
+			return;
+		}
+
+		$post_types = (array) $this->settings->wposa->get_option( 'post_types', MIHDAN_INDEX_NOW_PREFIX . '_general' );
+
+		if ( ! in_array( $post->post_type, $post_types, true ) ) {
+			return;
+		}
 
 		$search_engines = $this->get_search_engines();
 

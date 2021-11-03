@@ -114,7 +114,8 @@ See the documentation available from each search engine for more details about I
 == Changelog ==
 
 = 1.1.4 (03.11.2021) =
-* Added support for WooCommerce products
+* Added support for WooCommerce products and other CPT
+* Fixed pagination bug for Log table
 
 = 1.1.3 (02.11.2021) =
 * Changed database structure
