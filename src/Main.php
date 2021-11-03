@@ -71,6 +71,7 @@ class Main {
 	public function setup_hooks() {
 		add_action( 'publish_post', [ $this, 'maybe_do_pings' ], 10, 2 );
 		add_action( 'publish_page', [ $this, 'maybe_do_pings' ], 10, 2 );
+		add_action( 'publish_product', [ $this, 'maybe_do_pings' ], 10, 2 );
 
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
