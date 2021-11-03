@@ -80,7 +80,8 @@ class Log extends WP_List_Table {
 	public function prepare_items() {
 		global $wpdb;
 
-		$per_page = (int) get_user_meta( get_current_user_id(), get_current_screen()->get_option( 'per_page', 'option' ), true ) ?: 20;
+		$per_page_option = get_current_screen()->get_option( 'per_page' );
+		$per_page        = (int) get_user_meta( get_current_user_id(), $per_page_option['option'], true ) ?: $per_page_option['default'];
 
 		$this->set_pagination_args(
 			[
