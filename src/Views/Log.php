@@ -12,7 +12,7 @@ use WP_List_Table;
 
 class Log extends WP_List_Table {
 
-	function __construct(){
+	function __construct() {
 		parent::__construct(array(
 			'singular' => 'log',
 			'plural'   => 'logs',
@@ -33,37 +33,68 @@ class Log extends WP_List_Table {
 		add_action( 'wp_print_scripts', [ __CLASS__, '_list_table_css' ] );
 	}
 
-	private function get_items( $per_page, $cur_page, $orderby, $order ) {
+	/**
+	 * Get total items.
+	 *
+	 * @return int
+	 */
+	private function get_total_items() {
 		global $wpdb;
 
 		$table_name = Logger::get_table_name();
 
-		return $wpdb->get_results(
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ); // phpcs:ignore
+	}
+
+	/**
+	 * Get items.
+	 *
+	 * @param $per_page
+	 * @param $cur_page
+	 * @param $order_by
+	 * @param $order
+	 *
+	 * @return array|object|null
+	 */
+	private function get_items( $per_page, $cur_page, $order_by, $order ) {
+		global $wpdb;
+
+		$table_name = Logger::get_table_name();
+
+		$order_by = sanitize_sql_orderby( " {$order_by} {$order} " );
+
+		$from = ( $cur_page - 1 ) * $per_page;
+
+		return $wpdb->get_results( // phpcs:ignore
 			$wpdb->prepare(
-				"SELECT * FROM {$table_name} ORDER BY {$orderby} {$order} LIMIT %d, %d",
-				$cur_page,
+				"SELECT * FROM {$table_name} ORDER BY {$order_by} LIMIT %d, %d",
+				$from,
 				$per_page
 			)
 		);
 	}
 
-	public function prepare_items(){
+	/**
+	 * Prepare items for display.
+	 */
+	public function prepare_items() {
 		global $wpdb;
 
-		$per_page = get_user_meta( get_current_user_id(), get_current_screen()->get_option( 'per_page', 'option' ), true ) ?: 20;
+		$per_page = (int) get_user_meta( get_current_user_id(), get_current_screen()->get_option( 'per_page', 'option' ), true ) ?: 20;
+
+		$this->set_pagination_args(
+			[
+				'total_items' => $this->get_total_items(),
+				'per_page'    => $per_page,
+			]
+		);
+
 		$cur_page = (int) $this->get_pagenum();
 
 		$orderby = 'created_at';
 		$order   = 'DESC';
 
 		$this->items = $this->get_items( $per_page, $cur_page, $orderby, $order );
-
-		$this->set_pagination_args(
-			[
-				'total_items' => count( $this->items ),
-				'per_page'    => $per_page,
-			]
-		);
 	}
 
 	/**

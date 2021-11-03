@@ -77,7 +77,22 @@ class Main {
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
 
+		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
+
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+	}
+
+	/**
+	 * Set screen option.
+	 *
+	 * @param string $status Status.
+	 * @param string $option Option name.
+	 * @param string $value  Option value.
+	 *
+	 * @return int
+	 */
+	public function set_screen_option( $status, $option, $value ) {
+		return (int) $value;
 	}
 
 	/**
