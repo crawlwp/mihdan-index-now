@@ -204,7 +204,7 @@ class Logger {
 	public function log( $level, $message, array $context = array() ) {
 
 		$defaults = [
-			'created_at' => current_time( 'mysql' ),
+			'created_at' => current_time( 'mysql', 1 ),
 			'level'      => $level,
 			'message'    => $message,
 			'direction'  => 'incoming',
