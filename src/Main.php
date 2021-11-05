@@ -49,7 +49,17 @@ class Main {
 	 *
 	 * @var array $search_engines
 	 */
-	private $search_engines;
+	private $search_engines = [
+		'yandex'     => [
+			'url' => 'https://yandex.com/indexnow',
+		],
+		'bing'       => [
+			'url' => 'https://www.bing.com/indexnow',
+		],
+		'duckduckgo' => [
+			'url' => 'https://www.bing.com/indexnow',
+		],
+	];
 
 	/**
 	 * Constructor.
@@ -59,10 +69,10 @@ class Main {
 	 */
 	public function __construct( Logger $logger, Settings $settings ) {
 		$this->logger         = $logger;
-		$this->host           = wp_parse_url( get_home_url(), PHP_URL_HOST );
+		$this->host           = apply_filters( 'mihdan_index_now/host', wp_parse_url( get_home_url(), PHP_URL_HOST ) );
 		$this->settings       = $settings;
 		$this->api_key        = $this->settings->wposa->get_option( 'api_key', MIHDAN_INDEX_NOW_PREFIX . '_general' );
-		$this->search_engines = apply_filters( 'mihdan_index_now/search_engines', $this->settings->wposa->get_option( 'search_engines', MIHDAN_INDEX_NOW_PREFIX . '_general', [] ) );
+		$this->search_engines = apply_filters( 'mihdan_index_now/search_engines', $this->search_engines );
 	}
 
 	/**
@@ -109,7 +119,7 @@ class Main {
     			post_id bigint(20) UNSIGNED NOT NULL,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
     			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
-    			search_engine enum('yandex','bing','duckduck','cloudflare') NOT NULL DEFAULT 'yandex',
+    			search_engine enum('yandex','bing','duckduck','duckduckgo','cloudflare') NOT NULL DEFAULT 'yandex',
     			direction enum('incoming','outgoing') NOT NULL DEFAULT 'incoming',
     			status_code INT(11) unsigned NOT NULL,
     			message text NOT NULL,
@@ -230,16 +240,13 @@ class Main {
 		}
 
 		$search_engines = $this->get_search_engines();
+		$search_engine  = $this->settings->wposa->get_option( 'search_engine', MIHDAN_INDEX_NOW_PREFIX . '_general', [] );
 
-		if ( in_array( 'yandex', $search_engines, true ) ) {
-			$this->ping_with_yandex( $post );
+		if ( ! isset( $search_engines[ $search_engine ] ) ) {
+			return;
 		}
 
-		if ( in_array( 'bing', $search_engines, true ) ) {
-			$this->ping_with_bing( $post );
-		}
-
-		remove_action( 'transition_post_status', [ $this, 'maybe_do_pings' ] );
+		$this->do_ping( $search_engine, $search_engines[ $search_engine ]['url'], $post );
 	}
 
 	/**
@@ -272,57 +279,14 @@ class Main {
 	/**
 	 * Ping Yandex.
 	 *
-	 * @param WP_Post $post WP_Post instance.
-	 */
-	private function ping_with_yandex( WP_Post $post ) {
-
-		$url  = 'https://yandex.com/indexnow';
-		$args = array(
-			'timeout' => 30,
-			'body'    => wp_json_encode(
-				array(
-					'host'    => $this->get_host(),
-					'key'     => $this->get_api_key(),
-					'urlList' => [
-						get_permalink( $post->ID ),
-					],
-				)
-			),
-			'headers' => [
-				'Content-Type' => 'application/json',
-			],
-		);
-
-		$response    = wp_remote_post( $url, $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		$translate = Logger::ERRORS;
-
-		$data = [
-			'post_id'       => $post->ID,
-			'status_code'   => $status_code,
-			'search_engine' => 'yandex',
-		];
-
-		if ( $status_code === 200 ) {
-			$message = 'OK';
-			$this->logger->debug( $message, $data );
-		} else {
-			$message = $translate[ $body['message'] ] ?? $body['message'];
-			$this->logger->error( $message, $data );
-		}
-	}
-
-	/**
-	 * Ping Bing.
+	 * @param string  $search_engine  Search engine.
+	 * @param string  $url            Base URL for ping.
+	 * @param WP_Post $post           WP_Post instance.
 	 *
-	 * @param WP_Post $post WP_Post instance.
+	 * @return bool
 	 */
-	private function ping_with_bing( WP_Post $post ) {
+	private function do_ping( string $search_engine, string $url, WP_Post $post ): bool {
 
-		$url  = 'https://www.bing.com/indexnow';
 		$args = array(
 			'timeout' => 30,
 			'body'    => wp_json_encode(
@@ -349,7 +313,7 @@ class Main {
 		$data = [
 			'post_id'       => $post->ID,
 			'status_code'   => $status_code,
-			'search_engine' => 'bing',
+			'search_engine' => $search_engine,
 		];
 
 		if ( $status_code === 200 ) {
@@ -359,5 +323,7 @@ class Main {
 			$message = $translate[ $body['message'] ] ?? $body['message'];
 			$this->logger->error( $message, $data );
 		}
+
+		return true;
 	}
 }

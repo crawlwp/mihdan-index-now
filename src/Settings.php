@@ -72,6 +72,7 @@ class Settings {
 			array(
 				'id'    => MIHDAN_INDEX_NOW_PREFIX . '_general',
 				'title' => __( 'General', 'mihdan-index-now' ),
+				'desc'  => __( 'Your key should have a minimum of 8 and a maximum of 128 hexadecimal characters.<br />The key can contain only the following characters:<br />lowercase characters (a-z), uppercase characters (A-Z), numbers (0-9), and dashes (-).', 'mihdan-index-now' ),
 			)
 		);
 
@@ -90,24 +91,14 @@ class Settings {
 		$this->wposa->add_field(
 			MIHDAN_INDEX_NOW_PREFIX . '_general',
 			array(
-				'id'   => 'api_key_help',
-				'type' => 'html',
-				'name' => __( 'Требования к ключу', 'mihdan-index-now' ),
-				'desc' => '<ul><li>Поддерживается только кодировка UTF-8</li><li>Минимальное количество символов в ключе — 8, максимальное — 128.</li><li>Ключ может содержать символы <code>a-z</code>, <code>A-Z</code> , <code>0-9</code>, <code>-</code>.</li></ul>',
-			)
-		);
-
-		$this->wposa->add_field(
-			MIHDAN_INDEX_NOW_PREFIX . '_general',
-			array(
-				'id'      => 'search_engines',
-				'type'    => 'multicheck',
-				'name'    => __( 'Search Engines', 'mihdan-index-now' ),
-				'default' => [ 'yandex' => 'yandex' ],
+				'id'      => 'search_engine',
+				'type'    => 'radio',
+				'name'    => __( 'Search Engine', 'mihdan-index-now' ),
+				'default' => 'yandex',
 				'options' => [
 					'yandex'     => __( 'Yandex', 'mihdan-index-now' ),
 					'bing'       => __( 'Bing', 'mihdan-index-now' ),
-					'cloudflare' => __( 'Cloudflare', 'mihdan-index-now' ),
+					//'cloudflare' => __( 'Cloudflare', 'mihdan-index-now' ),
 					'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
 				],
 			)
@@ -118,7 +109,7 @@ class Settings {
 			array(
 				'id'      => 'post_types',
 				'type'    => 'multicheck',
-				'name'    => __( 'Post Types', 'mihdan-mailru-pulse-feed' ),
+				'name'    => __( 'Post Types', 'mihdan-index-now' ),
 				'options' => $this->get_post_types(),
 				'default' => array( 'post' => 'post' ),
 			)
