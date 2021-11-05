@@ -1,7 +1,7 @@
 === Mihdan: Index Now ===
 Contributors: mihdan
 Donate link: https://www.kobzarev.com/donate/
-Tags: indexnow, yandex, google, bing, seo, cloudflare
+Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.8
 Stable tag: 1.1.4
@@ -112,6 +112,11 @@ Yes, when sitemaps are an easy way for webmasters to inform search engines about
 See the documentation available from each search engine for more details about IndexNow.
 
 == Changelog ==
+
+= 1.1.5 (05.11.2021) =
+* Fixed bug with current time for Log table
+* Remove Log table on plugin uninstall
+* Set minimum requirement PHP version to 7.1
 
 = 1.1.4 (03.11.2021) =
 * Added support for WooCommerce products and other CPT
