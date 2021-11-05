@@ -143,17 +143,22 @@ class Log extends WP_List_Table {
 			table.logs .column-log_id{ width:2em; }
 			table.logs .column-level{ width:4em; }
 			table.logs .column-direction{ width:4em; }
-			table.logs .column-search_engine{ width:4em; }
+			table.logs .column-search_engine{ width:6em; }
 			table.logs .column-status_code{ width:6em; }
 			table.logs .column-created_at{ width:10em; }
-			table.logs .level {
-				font-size: 30px;
+			table.logs span.level {
+				border-radius: 50%;
+				width: 6px;
+				height: 6px;
+				color: transparent;
+				display: inline-block;
+				vertical-align: middle;
 			}
-			table.logs .level--error {
-				color: #f00;
+			table.logs span.level--error {
+				background-color: #f00;
 			}
-			table.logs .level--debug {
-				color: #0f0;
+			table.logs span.level--debug {
+				background-color: #0f0;
 			}
 		</style>
 		<?php
@@ -175,7 +180,7 @@ class Log extends WP_List_Table {
 				get_permalink( $item->$colname ),
 				get_the_title( $item->$colname ) );
 		} elseif ( $colname === 'level' ) {
-			return sprintf( '<span class="level level--%s" title="%s">•</span>', $item->$colname, $item->$colname );
+			return sprintf( '<span class="level level--%s" title="%s">.</span>', $item->$colname, $item->$colname );
 		} elseif ( $colname === 'direction' ) {
 			return $item->$colname === 'incoming' ? '<span class="dashicons dashicons-arrow-up-alt" title="Исходящий запрос"></span>' : '<span class="dashicons dashicons-arrow-down-alt" title="Входящий запрос"></span>';
 		} elseif ( $colname === 'created_at' ) {
