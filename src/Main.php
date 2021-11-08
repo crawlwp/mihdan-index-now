@@ -320,7 +320,8 @@ class Main {
 			$message = 'OK';
 			$this->logger->debug( $message, $data );
 		} else {
-			$message = $translate[ $body['message'] ] ?? $body['message'];
+			$message = $body['message'] ?? '';
+			$message = $translate[ $message ] ?? $message;
 			$this->logger->error( $message, $data );
 		}
 
