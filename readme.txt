@@ -4,7 +4,7 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.8
-Stable tag: 1.1.5
+Stable tag: 1.2.0
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,6 +114,9 @@ See the documentation available from each search engine for more details about I
 == Changelog ==
 
 = 1.2.0 (08.11.2021) =
+* Added Help tab
+* Added sidebar help links
+* Added Log for incoming request
 * Push search engine on insert comment
 
 = 1.1.5 (05.11.2021) =
