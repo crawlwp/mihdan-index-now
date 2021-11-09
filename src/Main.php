@@ -63,6 +63,21 @@ class Main {
 	];
 
 	/**
+	 * White list of bots.
+	 *
+	 * @var string[]
+	 */
+	private $bots = [
+		'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
+		'Mozilla/5.0 (compatible; YandexAccessibilityBot/3.0; +http://yandex.com/bots)',
+		'Mozilla/5.0 (compatible; YandexMetrika/2.0; +http://yandex.com/bots yabs01)',
+		'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/Img/2.0; +http://go.mail.ru/help/robots)',
+		'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots)',
+		'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
+		'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Logger   $logger Logger instnace.
@@ -222,20 +237,40 @@ class Main {
 			return;
 		}
 
-		$data = [
-			'post_id'       => 0,
-			'status_code'   => 200,
-			'search_engine' => $this->get_search_engine(),
-			'direction'     => 'incoming',
-		];
+		if ( in_array( $this->get_user_agent(), $this->get_bots(), true ) ) {
+			$data = [
+				'post_id'       => 0,
+				'status_code'   => 200,
+				'search_engine' => $this->get_search_engine(),
+				'direction'     => 'incoming',
+			];
 
-		$this->logger->debug( 'Бот проверил ключ<br />' . $_SERVER['HTTP_USER_AGENT'], $data );
+			$this->logger->debug( __( 'Бот проверил файл ключа', 'mihdan-index-now' ), $data );
+		}
 
 		header( 'Content-Type: text/plain' );
 		header( 'X-Robots-Tag: noindex' );
 		status_header( 200 );
 		echo esc_html( $api_key );
 		die;
+	}
+
+	/**
+	 * Get white list of bots.
+	 *
+	 * @return string[]
+	 */
+	private function get_bots(): array {
+		return $this->bots;
+	}
+
+	/**
+	 * Get user agent of browser/bot.
+	 *
+	 * @return mixed|string
+	 */
+	private function get_user_agent(): string {
+		return $_SERVER['HTTP_USER_AGENT'] ?? '';
 	}
 
 	/**
@@ -381,19 +416,6 @@ class Main {
 	}
 
 	public function parse_incoming_request() {
-
-		$bots = [
-			'Python-urllib/2.6',
-			'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
-			'Mozilla/5.0 (compatible; YandexAccessibilityBot/3.0; +http://yandex.com/bots)',
-			'Mozilla/5.0 (compatible; YandexMetrika/2.0; +http://yandex.com/bots yabs01)',
-			'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/Img/2.0; +http://go.mail.ru/help/robots)',
-			'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots)',
-			'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
-			'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-			'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-			'Mozilla/5.0 (compatible; coccocbot-web/1.0; +http://help.coccoc.com/searchengine)',
-		];
 
 		$actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
 		$post_id     = url_to_postid( $actual_link );
