@@ -113,6 +113,9 @@ See the documentation available from each search engine for more details about I
 
 == Changelog ==
 
+= 1.2.0 (08.11.2021) =
+* Push search engine on insert comment
+
 = 1.1.5 (05.11.2021) =
 * Fixed bug with current time for Log table
 * Remove Log table on plugin uninstall

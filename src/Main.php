@@ -9,6 +9,7 @@ namespace Mihdan\IndexNow;
 
 use Mihdan\IndexNow\Views\Log;
 use WP;
+use WP_Comment;
 use WP_Post;
 use WP_List_Table;
 
@@ -79,7 +80,8 @@ class Main {
 	 * Setup hooks.
 	 */
 	public function setup_hooks() {
-		add_action( 'transition_post_status', [ $this, 'maybe_do_pings' ], 10, 3 );
+		add_action( 'transition_post_status', [ $this, 'ping_on_post_update' ], 10, 3 );
+		add_action( 'wp_insert_comment', [ $this, 'ping_on_insert_comment' ], 10, 2 );
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
@@ -87,6 +89,10 @@ class Main {
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+	}
+
+	public function ping_on_insert_comment( int $id, WP_Comment $comment ) {
+		$this->maybe_do_ping( $comment->comment_post_ID );
 	}
 
 	/**
@@ -219,7 +225,7 @@ class Main {
 	 *
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function maybe_do_pings( $new_status, $old_status, WP_Post $post ) {
+	public function ping_on_post_update( $new_status, $old_status, WP_Post $post ) {
 
 		if ( $new_status !== 'publish' ) {
 			return;
@@ -232,6 +238,12 @@ class Main {
 		if ( wp_is_post_revision( $post ) || wp_is_post_autosave( $post ) ) {
 			return;
 		}
+
+		$this->maybe_do_ping( $post->ID );
+	}
+
+	private function maybe_do_ping( int $post_id ) {
+		$post = get_post( $post_id );
 
 		$post_types = (array) $this->settings->wposa->get_option( 'post_types', MIHDAN_INDEX_NOW_PREFIX . '_general' );
 
