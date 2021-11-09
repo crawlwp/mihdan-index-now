@@ -207,7 +207,7 @@ class Logger {
 			'created_at' => current_time( 'mysql', 1 ),
 			'level'      => $level,
 			'message'    => $message,
-			'direction'  => 'incoming',
+			'direction'  => 'outgoing',
 		];
 
 		$context = wp_parse_args( $context, $defaults );

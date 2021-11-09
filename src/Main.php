@@ -85,7 +85,7 @@ class Main {
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
-
+		add_action( 'template_redirect', [ $this, 'parse_incoming_request' ] );
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
@@ -209,6 +209,16 @@ class Main {
 		if ( $wp->request !== $api_key . '.txt' ) {
 			return;
 		}
+
+		$data = [
+			'post_id'       => 0,
+			'status_code'   => 200,
+			'search_engine' => $this->get_search_engine(),
+			'direction'     => 'incoming',
+		];
+
+		$this->logger->debug( 'Бот проверил ключ<br />' . $_SERVER['HTTP_USER_AGENT'], $data );
+
 		header( 'Content-Type: text/plain' );
 		header( 'X-Robots-Tag: noindex' );
 		status_header( 200 );
@@ -252,13 +262,19 @@ class Main {
 		}
 
 		$search_engines = $this->get_search_engines();
-		$search_engine  = $this->settings->wposa->get_option( 'search_engine', MIHDAN_INDEX_NOW_PREFIX . '_general', [] );
+		$search_engine  = $this->get_search_engine();
 
 		if ( ! isset( $search_engines[ $search_engine ] ) ) {
 			return;
 		}
 
-		$this->do_ping( $search_engine, $search_engines[ $search_engine ]['url'], $post );
+		if ( $this->is_index_now_enabled() ) {
+			$this->do_ping( $search_engine, $search_engines[ $search_engine ]['url'], $post );
+		}
+
+		if ( $this->is_yandex_webmaster_enabled() ) {
+			$this->yandex_webmaster_ping( $post );
+		}
 	}
 
 	/**
@@ -286,6 +302,18 @@ class Main {
 	 */
 	private function get_search_engines() {
 		return $this->search_engines;
+	}
+
+	private function get_search_engine() {
+		return $this->settings->wposa->get_option( 'search_engine', MIHDAN_INDEX_NOW_PREFIX . '_general', 'yandex' );
+	}
+
+	private function is_index_now_enabled() {
+		return $this->settings->wposa->get_option( 'enable', MIHDAN_INDEX_NOW_PREFIX . '_general', 'on' );
+	}
+
+	private function is_yandex_webmaster_enabled() {
+		return $this->settings->wposa->get_option( 'enable', MIHDAN_INDEX_NOW_PREFIX . '_yandex_webmaster', 'on' );
 	}
 
 	/**
@@ -338,5 +366,65 @@ class Main {
 		}
 
 		return true;
+	}
+
+	public function parse_incoming_request() {
+
+		$bots = [
+			'Python-urllib/2.6',
+			'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
+			'Mozilla/5.0 (compatible; YandexAccessibilityBot/3.0; +http://yandex.com/bots)',
+			'Mozilla/5.0 (compatible; YandexMetrika/2.0; +http://yandex.com/bots yabs01)',
+			'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/Img/2.0; +http://go.mail.ru/help/robots)',
+			'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots)',
+			'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
+			'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+			'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+			'Mozilla/5.0 (compatible; coccocbot-web/1.0; +http://help.coccoc.com/searchengine)',
+		];
+
+		$actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
+		$post_id     = url_to_postid( $actual_link );
+
+		if ( $post_id === 0 ) {
+			return;
+		}
+
+		$data = [
+			'post_id'       => $post_id,
+			'status_code'   => 200,
+			'search_engine' => 'yandex',
+			'direction'     => 'incoming',
+		];
+
+		$this->logger->debug( $actual_link . '<br>' . $_SERVER['HTTP_USER_AGENT'], $data );
+	}
+
+	/**
+	 * @param WP_Post $post
+	 *
+	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
+	 */
+	public function yandex_webmaster_ping( WP_Post $post ) {
+		$user_id = $this->settings->wposa->get_option( 'user_id', 'yandex_webmaster' );
+		$host_id = $this->settings->wposa->get_option( 'host_id', 'yandex_webmaster' );
+		$token   = $this->settings->wposa->get_option( 'token', 'yandex_webmaster' );
+
+		$url = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
+		$url = sprintf( $url, $user_id, $host_id );
+		$args = array(
+			'timeout' => 30,
+			'headers' => array(
+				'Authorization' => 'OAuth ' . $token,
+				'Content-Type'  => 'application/json',
+			),
+			'body' => json_encode(
+				array(
+					'url' => get_permalink( $post->ID )
+				)
+			),
+		);
+
+		$response = wp_remote_post( $url, $args );
 	}
 }
