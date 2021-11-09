@@ -87,8 +87,20 @@ class Main {
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
 		add_action( 'template_redirect', [ $this, 'parse_incoming_request' ] );
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
-
+		add_action( 'after_delete_post', [ $this, 'maybe_delete_log_entries' ], 10, 2 );
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+	}
+
+	/**
+	 * Delete log entries fired when on post delete.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param WP_Post $post    Instance of WP_Post.
+	 */
+	public function maybe_delete_log_entries( int $post_id, WP_Post $post ) {
+		global $wpdb;
+
+		$wpdb->delete( Logger::get_table_name(), [ 'post_id' => $post_id ] );
 	}
 
 	public function ping_on_insert_comment( int $id, WP_Comment $comment ) {
