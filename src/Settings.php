@@ -35,7 +35,8 @@ class Settings {
 	/**
 	 * Constructor.
 	 *
-	 * @param WPOSA $wposa WPOSA instance.
+	 * @param WPOSA   $wposa WPOSA instance.
+	 * @param HelpTab $help_tab HelpTab instance.
 	 */
 	public function __construct( WPOSA $wposa, HelpTab $help_tab ) {
 		$this->wposa    = $wposa;
@@ -77,21 +78,21 @@ class Settings {
 	 */
 	public function setup_fields() {
 
-		$this->wposa->add_sidebar_card(
-			[
-				'id'    => 'donate',
-				'title' => __( 'Enjoyed IndexNow?', 'mihdan-index-now' ),
-				'desc'  => __( '<p>Please leave us a <a href="https://wordpress.org/support/plugin/mihdan-index-now/reviews/#new-post" target="_blank" title="Rate &amp; review it">★★★★★</a> rating. We really appreciate your support</p>', 'mihdan-index-now' ),
-			]
-		);
-
-		$this->wposa->add_sidebar_card(
-			[
-				'id'    => 'rtfm',
-				'title' => __( 'Do you need help?', 'mihdan-index-now' ),
-				'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/issues/new" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
-			]
-		);
+		$this->wposa
+			->add_sidebar_card(
+				[
+					'id'    => 'donate',
+					'title' => __( 'Enjoyed IndexNow?', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Please leave us a <a href="https://wordpress.org/support/plugin/mihdan-index-now/reviews/#new-post" target="_blank" title="Rate &amp; review it">★★★★★</a> rating. We really appreciate your support</p>', 'mihdan-index-now' ),
+				]
+			)
+			->add_sidebar_card(
+				[
+					'id'    => 'rtfm',
+					'title' => __( 'Do you need help?', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/issues/new" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
+				]
+			);
 
 		$this->wposa->add_section(
 			array(
@@ -108,7 +109,7 @@ class Settings {
 				'type'    => 'checkbox',
 				'name'    => __( 'Enable', 'mihdan-index-now' ),
 				'desc'    => __( 'Enable this module', 'mihdan-index-now' ),
-				'default' => 'on'
+				'default' => 'on',
 			)
 		);
 
@@ -134,7 +135,6 @@ class Settings {
 				'options' => [
 					'yandex'     => __( 'Yandex', 'mihdan-index-now' ),
 					'bing'       => __( 'Bing', 'mihdan-index-now' ),
-					//'cloudflare' => __( 'Cloudflare', 'mihdan-index-now' ),
 					'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
 				],
 			)
@@ -162,10 +162,10 @@ class Settings {
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
-				'id'      => 'enable',
-				'type'    => 'checkbox',
-				'name'    => __( 'Enable', 'mihdan-index-now' ),
-				'desc'    => __( 'Enable this module', 'mihdan-index-now' ),
+				'id'   => 'enable',
+				'type' => 'checkbox',
+				'name' => __( 'Enable', 'mihdan-index-now' ),
+				'desc' => __( 'Enable this module', 'mihdan-index-now' ),
 			)
 		);
 
@@ -200,6 +200,42 @@ class Settings {
 				'name'        => __( 'Token', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now' ),
 				'desc'        => __( 'User identifier', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_section(
+			array(
+				'id'    => 'logs',
+				'title' => __( 'Logs', 'mihdan-index-now' ),
+				'desc'  => __( 'Module for logging incoming request from search engine and outgoing request from site.', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'logs',
+			array(
+				'id'      => 'enable',
+				'type'    => 'checkbox',
+				'name'    => __( 'Enable', 'mihdan-index-now' ),
+				'desc'    => __( 'Enable this module', 'mihdan-index-now' ),
+				'default' => 'on',
+			)
+		);
+
+		$this->wposa->add_field(
+			'logs',
+			array(
+				'id'      => 'types',
+				'type'    => 'multicheck',
+				'name'    => __( 'Types', 'mihdan-index-now' ),
+				'options' => [
+					'ping' => __( 'Outgoing: ping', 'mihdan-index-now' ),
+					'url'  => __( 'Incoming: url', 'mihdan-index-now' ),
+					'key'  => __( 'Incoming: key', 'mihdan-index-now' ),
+				],
+				'default' => [
+					'ping' => 'ping',
+				],
 			)
 		);
 
