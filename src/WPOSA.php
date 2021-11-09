@@ -24,7 +24,9 @@ class WPOSA {
 	 * Allowed HTML tags and attributes for wp_kses().
 	 */
 	const ALLOWED_HTML = [
+		'code'     => [],
 		'ul'       => [],
+		'ol'       => [],
 		'li'       => [],
 		'br'       => [
 			'class' => true,
@@ -119,6 +121,13 @@ class WPOSA {
 	private $plugin_slug;
 
 	/**
+	 * Plugin prefix.
+	 *
+	 * @var string
+	 */
+	private $plugin_prefix;
+
+	/**
 	 * Sections array.
 	 *
 	 * @var   array
@@ -135,6 +144,13 @@ class WPOSA {
 	private $fields_array = array();
 
 	/**
+	 * Sidebar card array.
+	 *
+	 * @var array $sidebar_cards
+	 */
+	private $sidebar_cards = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $plugin_name Plugin name.
@@ -143,10 +159,15 @@ class WPOSA {
 	 *
 	 * @since  1.0.0
 	 */
-	public function __construct( $plugin_name = 'WPOSA', $plugin_version = '0.1', $plugin_slug = 'WPOSA' ) {
+	public function __construct( $plugin_name = 'WPOSA', $plugin_version = '0.1', $plugin_slug = 'WPOSA', $plugin_prefix = 'WPOSA' ) {
 		$this->plugin_name    = $plugin_name;
 		$this->plugin_version = $plugin_version;
 		$this->plugin_slug    = $plugin_slug;
+		$this->plugin_prefix  = $plugin_prefix;
+	}
+
+	public function get_prefix() {
+		return $this->plugin_prefix;
 	}
 
 	public function setup_hooks() {
@@ -214,6 +235,8 @@ class WPOSA {
 			return false;
 		}
 
+		$section['id'] = $this->get_prefix() . '_' . $section['id'];
+
 		// Assign the section to sections array.
 		$this->sections_array[] = $section;
 
@@ -254,16 +277,35 @@ class WPOSA {
 			'type' => 'text',
 		);
 
-		// Combine the defaults with user's arguements.
+		// Combine the defaults with user's arguments.
 		$arg = wp_parse_args( $field_array, $defaults );
 
 		// Each field is an array named against its section.
-		$this->fields_array[ $section ][] = $arg;
+		$this->fields_array[ $this->get_prefix() . '_' . $section ][] = $arg;
 
 		return $this;
 	}
 
+	/**
+	 * Add sidebar cards.
+	 *
+	 * @param array $card
+	 *
+	 * @return $this
+	 */
+	public function add_sidebar_card( array $card ): WPOSA {
+		$this->sidebar_cards[] = $card;
 
+		return $this;
+	}
+
+	public function get_sidebar_cards() {
+		return $this->sidebar_cards;
+	}
+
+	public function get_sidebar_cards_total() {
+		return count( $this->get_sidebar_cards() );
+	}
 
 	/**
 	 * Initialize API.
@@ -382,6 +424,8 @@ class WPOSA {
 				// Sanitize Callback.
 				$sanitize_callback = isset( $field['sanitize_callback'] ) ? $field['sanitize_callback'] : '';
 
+				$help_tab = $field['help_tab'] ?? '';
+
 				$args = array(
 					'id'                => $id,
 					'type'              => $type,
@@ -395,6 +439,10 @@ class WPOSA {
 					'placeholder'       => $placeholder,
 					'sanitize_callback' => $sanitize_callback,
 				);
+
+				if ( $help_tab ) {
+					$name .= $this->show_help_tab_toggle( $help_tab );
+				}
 
 				/**
 				 * Add a new field to a section of a settings page.
@@ -769,7 +817,7 @@ class WPOSA {
 	 */
 	function get_option( $option, $section, $default = '' ) {
 
-		$options = get_option( $section );
+		$options = get_option( $this->get_prefix() . '_' . $section );
 
 		if ( isset( $options[ $option ] ) ) {
 			return $options[ $option ];
@@ -801,11 +849,27 @@ class WPOSA {
 	}
 
 	public function plugin_page() {
-		echo '<div class="wrap">';
-		echo '<h1>' . esc_html( $this->plugin_name ) . ' <span style="font-size:50%;">v' . esc_html( $this->plugin_version ) . '</span></h1>';
-		$this->show_navigation();
-		$this->show_forms();
-		echo '</div>';
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( $this->plugin_name ); ?> <span style="font-size:50%;">v<?php echo esc_html( $this->plugin_version )?></span></h1>
+			<?php $this->show_navigation(); ?>
+			<div class="wrap--wposa">
+				<div class="wrap-column wrap-column--form">
+					<?php $this->show_forms(); ?>
+				</div>
+				<?php if ( $this->get_sidebar_cards_total() ) : ?>
+					<div class="wrap-column wrap-column--sidebar">
+						<?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
+							<div class="card wpsa-card wpsa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
+								<h2 class="title"><?php echo esc_html( $card['title'] )?></h2>
+								<?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -864,6 +928,20 @@ class WPOSA {
 	}
 
 	/**
+	 * Show help tab toggle.
+	 *
+	 * @param string $tab_id   Tab identified.
+	 * @param string $tab_icon Tab icon.
+	 */
+	private function show_help_tab_toggle( $tab_id, $tab_icon = '?' ) {
+		ob_start();
+		?>
+		<a title="<?php echo esc_attr__( 'Show help tab', 'mihdan-index-now' ); ?>" class="wpsa-help-tab-toggle" data-tab="<?php echo esc_attr( $tab_id ); ?>"><?php echo esc_html( $tab_icon ); ?></a>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
 	 * Tabbable JavaScript codes & Initiate Color Picker
 	 *
 	 * This code uses localstorage for displaying active tabs
@@ -871,132 +949,178 @@ class WPOSA {
 	function script() {
 		?>
 		<script>
-            jQuery( document ).ready( function( $ ) {
+			jQuery( document ).ready( function( $ ) {
 
-                //Initiate Color Picker.
-                $('.color-picker').iris();
+				const $show_settings_toggler = $('.show-settings');
+				const $help = $('.wpsa-help-tab-toggle');
 
-                // Switches option sections
-                $( '.group' ).hide();
-                var activetab = '';
-                if ( 'undefined' != typeof localStorage ) {
-                    activetab = localStorage.getItem( 'activetab' );
-                }
-                if ( '' != activetab && $( activetab ).length ) {
-                    $( activetab ).fadeIn();
-                } else {
-                    $( '.group:first' ).fadeIn();
-                }
-                $( '.group .collapsed' ).each( function() {
-                    $( this )
-                        .find( 'input:checked' )
-                        .parent()
-                        .parent()
-                        .parent()
-                        .nextAll()
-                        .each( function() {
-                            if ( $( this ).hasClass( 'last' ) ) {
-                                $( this ).removeClass( 'hidden' );
-                                return false;
-                            }
-                            $( this )
-                                .filter( '.hidden' )
-                                .removeClass( 'hidden' );
-                        });
-                });
+				$help.on(
+					'click',
+					function () {
+						const $this = $(this);
+						const tab = '#tab-link-<?php echo esc_js( MIHDAN_INDEX_NOW_PREFIX ); ?>_' + $this.data('tab');
 
-                if ( '' != activetab && $( activetab + '-tab' ).length ) {
-                    $( activetab + '-tab' ).addClass( 'nav-tab-active' );
-                } else {
-                    $( '.nav-tab-wrapper a:first' ).addClass( 'nav-tab-active' );
-                }
-                $( '.nav-tab-wrapper a' ).click( function( evt ) {
-                    $( '.nav-tab-wrapper a' ).removeClass( 'nav-tab-active' );
-                    $( this )
-                        .addClass( 'nav-tab-active' )
-                        .blur();
-                    var clicked_group = $( this ).attr( 'href' );
-                    if ( 'undefined' != typeof localStorage ) {
-                        localStorage.setItem( 'activetab', $( this ).attr( 'href' ) );
-                    }
-                    $( '.group' ).hide();
-                    $( clicked_group ).fadeIn();
-                    evt.preventDefault();
-                });
+						$show_settings_toggler.trigger('click');
+						$(tab).find('a').trigger('click');
+					}
+				);
 
-                $( '.wpsa-browse' ).on( 'click', function( event ) {
-                    event.preventDefault();
+				//Initiate Color Picker.
+				$('.color-picker').iris();
 
-                    var self = $( this );
+				// Switches option sections
+				$( '.group' ).hide();
+				var activetab = '';
+				if ( 'undefined' != typeof localStorage ) {
+					activetab = localStorage.getItem( 'activetab' );
+				}
+				if ( '' != activetab && $( activetab ).length ) {
+					$( activetab ).fadeIn();
+				} else {
+					$( '.group:first' ).fadeIn();
+				}
+				$( '.group .collapsed' ).each( function() {
+					$( this )
+						.find( 'input:checked' )
+						.parent()
+						.parent()
+						.parent()
+						.nextAll()
+						.each( function() {
+							if ( $( this ).hasClass( 'last' ) ) {
+								$( this ).removeClass( 'hidden' );
+								return false;
+							}
+							$( this )
+								.filter( '.hidden' )
+								.removeClass( 'hidden' );
+						});
+				});
 
-                    // Create the media frame.
-                    var file_frame = ( wp.media.frames.file_frame = wp.media({
-                        title: self.data( 'uploader_title' ),
-                        button: {
-                            text: self.data( 'uploader_button_text' )
-                        },
-                        multiple: false
-                    }) );
+				if ( '' != activetab && $( activetab + '-tab' ).length ) {
+					$( activetab + '-tab' ).addClass( 'nav-tab-active' );
+				} else {
+					$( '.nav-tab-wrapper a:first' ).addClass( 'nav-tab-active' );
+				}
+				$( '.nav-tab-wrapper a' ).click( function( evt ) {
+					$( '.nav-tab-wrapper a' ).removeClass( 'nav-tab-active' );
+					$( this )
+						.addClass( 'nav-tab-active' )
+						.blur();
+					var clicked_group = $( this ).attr( 'href' );
+					if ( 'undefined' != typeof localStorage ) {
+						localStorage.setItem( 'activetab', $( this ).attr( 'href' ) );
+					}
+					$( '.group' ).hide();
+					$( clicked_group ).fadeIn();
+					evt.preventDefault();
+				});
 
-                    file_frame.on( 'select', function() {
-                        attachment = file_frame
-                            .state()
-                            .get( 'selection' )
-                            .first()
-                            .toJSON();
+				$( '.wpsa-browse' ).on( 'click', function( event ) {
+					event.preventDefault();
 
-                        self
-                            .prev( '.wpsa-url' )
-                            .val( attachment.url )
-                            .change();
-                    });
+					var self = $( this );
 
-                    // Finally, open the modal
-                    file_frame.open();
-                });
+					// Create the media frame.
+					var file_frame = ( wp.media.frames.file_frame = wp.media({
+						title: self.data( 'uploader_title' ),
+						button: {
+							text: self.data( 'uploader_button_text' )
+						},
+						multiple: false
+					}) );
 
-                $( 'input.wpsa-url' )
-                    .on( 'change keyup paste input', function() {
-                        var self = $( this );
-                        self
-                            .next()
-                            .parent()
-                            .children( '.wpsa-image-preview' )
-                            .children( 'img' )
-                            .attr( 'src', self.val() );
-                    })
-                    .change();
-            });
+					file_frame.on( 'select', function() {
+						attachment = file_frame
+							.state()
+							.get( 'selection' )
+							.first()
+							.toJSON();
+
+						self
+							.prev( '.wpsa-url' )
+							.val( attachment.url )
+							.change();
+					});
+
+					// Finally, open the modal
+					file_frame.open();
+				});
+
+				$( 'input.wpsa-url' )
+					.on( 'change keyup paste input', function() {
+						var self = $( this );
+						self
+							.next()
+							.parent()
+							.children( '.wpsa-image-preview' )
+							.children( 'img' )
+							.attr( 'src', self.val() );
+					})
+					.change();
+			});
 
 		</script>
 
 		<style type="text/css">
-            /** WordPress 3.8 Fix **/
-            .form-table th {
-                padding: 20px 10px;
-            }
+			/** WordPress 3.8 Fix **/
+			.form-table th {
+				padding: 20px 10px;
+			}
 
-            #wpbody-content .metabox-holder {
-                padding-top: 5px;
-            }
+			#wpbody-content .metabox-holder {
+				padding-top: 5px;
+			}
 
-            .wpsa-image-preview img {
-                height: auto;
-                max-width: 70px;
-            }
+			.wpsa-image-preview img {
+				height: auto;
+				max-width: 70px;
+			}
 
-            .wpsa-settings-separator {
-                background: #ccc;
-                border: 0;
-                color: #ccc;
-                height: 1px;
-                position: absolute;
-                left: 0;
-                width: 99%;
-            }
-            .group .form-table input.color-picker {
-                max-width: 100px;
-            }
+			.wpsa-settings-separator {
+				background: #ccc;
+				border: 0;
+				color: #ccc;
+				height: 1px;
+				position: absolute;
+				left: 0;
+				width: 99%;
+			}
+			.group .form-table input.color-picker {
+				max-width: 100px;
+			}
+
+			.wpsa-help-tab-toggle {
+				display: inline-block;
+				width: 14px;
+				height: 14px;
+				line-height: 14px;
+				text-align: center;
+				border-radius: 50%;
+				border: 2px solid #2271b1;
+				cursor: help;
+				font-size: 12px;
+				vertical-align: text-bottom;
+			}
+			.wrap--wposa {
+				display: flex;
+			}
+
+			.wrap-column--form {
+				flex-basis: 100%;
+			}
+			.wrap-column--sidebar {
+				flex-basis: 300px;
+			}
+
+			@media (max-width: 544px) {
+				.wrap--wposa {
+					flex-direction: column;
+				}
+				.wrap-column {
+					flex-basis: 100%;
+				}
+			}
 		</style>
 		<?php
 	}

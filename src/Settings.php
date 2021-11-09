@@ -19,6 +19,13 @@ class Settings {
 	public $wposa;
 
 	/**
+	 * HelpTab instance.
+	 *
+	 * @var HelpTab $help_tab
+	 */
+	public $help_tab;
+
+	/**
 	 * Array of post types.
 	 *
 	 * @var array $post_types
@@ -30,8 +37,9 @@ class Settings {
 	 *
 	 * @param WPOSA $wposa WPOSA instance.
 	 */
-	public function __construct( WPOSA $wposa ) {
-		$this->wposa = $wposa;
+	public function __construct( WPOSA $wposa, HelpTab $help_tab ) {
+		$this->wposa    = $wposa;
+		$this->help_tab = $help_tab;
 	}
 
 	/**
@@ -68,16 +76,44 @@ class Settings {
 	 * @link https://yandex.ru/support/webmaster/indexnow/key.html
 	 */
 	public function setup_fields() {
+
+		$this->wposa->add_sidebar_card(
+			[
+				'id'    => 'donate',
+				'title' => __( 'Enjoyed IndexNow?', 'mihdan-index-now' ),
+				'desc'  => __( '<p>Please leave us a <a href="https://wordpress.org/support/plugin/mihdan-index-now/reviews/#new-post" target="_blank" title="Rate &amp; review it">★★★★★</a> rating. We really appreciate your support</p>', 'mihdan-index-now' ),
+			]
+		);
+
+		$this->wposa->add_sidebar_card(
+			[
+				'id'    => 'rtfm',
+				'title' => __( 'Do you need help?', 'mihdan-index-now' ),
+				'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/issues/new" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
+			]
+		);
+
 		$this->wposa->add_section(
 			array(
-				'id'    => MIHDAN_INDEX_NOW_PREFIX . '_general',
+				'id'    => 'general',
 				'title' => __( 'General', 'mihdan-index-now' ),
 				'desc'  => __( 'Your key should have a minimum of 8 and a maximum of 128 hexadecimal characters.<br />The key can contain only the following characters:<br />lowercase characters (a-z), uppercase characters (A-Z), numbers (0-9), and dashes (-).', 'mihdan-index-now' ),
 			)
 		);
 
 		$this->wposa->add_field(
-			MIHDAN_INDEX_NOW_PREFIX . '_general',
+			'general',
+			array(
+				'id'      => 'enable',
+				'type'    => 'checkbox',
+				'name'    => __( 'Enable', 'mihdan-index-now' ),
+				'desc'    => __( 'Enable this module', 'mihdan-index-now' ),
+				'default' => 'on'
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
 			array(
 				'id'          => 'api_key',
 				'type'        => 'text',
@@ -89,7 +125,7 @@ class Settings {
 		);
 
 		$this->wposa->add_field(
-			MIHDAN_INDEX_NOW_PREFIX . '_general',
+			'general',
 			array(
 				'id'      => 'search_engine',
 				'type'    => 'radio',
@@ -105,7 +141,7 @@ class Settings {
 		);
 
 		$this->wposa->add_field(
-			MIHDAN_INDEX_NOW_PREFIX . '_general',
+			'general',
 			array(
 				'id'      => 'post_types',
 				'type'    => 'multicheck',
@@ -117,13 +153,65 @@ class Settings {
 
 		$this->wposa->add_section(
 			array(
-				'id'    => MIHDAN_INDEX_NOW_PREFIX . '_contacts',
+				'id'    => 'yandex_webmaster',
+				'title' => __( 'Yandex Recrawl', 'mihdan-index-now' ),
+				'desc'  => __( 'Sending a page for reindexing', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'      => 'enable',
+				'type'    => 'checkbox',
+				'name'    => __( 'Enable', 'mihdan-index-now' ),
+				'desc'    => __( 'Enable this module', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'user_id',
+				'type'        => 'text',
+				//'help_tab'    => 'yandex_webmaster',
+				'name'        => __( 'User ID', 'mihdan-index-now' ),
+				'placeholder' => __( 'Example 5781893', 'mihdan-index-now' ),
+				'desc'        => __( 'To get it, use the <code>GET /v4/user</code> method.', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'host_id',
+				'type'        => 'text',
+				'name'        => __( 'Host ID', 'mihdan-index-now' ),
+				'placeholder' => __( 'Example https:kobzarev.com:443', 'mihdan-index-now' ),
+				'desc'        => __( 'To get it, use the <code>GET /v4/user/{user-id}/hosts</code> method.', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'token',
+				'type'        => 'text',
+				'name'        => __( 'Token', 'mihdan-index-now' ),
+				'placeholder' => __( 'Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now' ),
+				'desc'        => __( 'User identifier', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_section(
+			array(
+				'id'    => 'contacts',
 				'title' => __( 'Contacts', 'mihdan-index-now' ),
 			)
 		);
 
 		$this->wposa->add_field(
-			MIHDAN_INDEX_NOW_PREFIX . '_contacts',
+			'contacts',
 			array(
 				'id'   => 'description',
 				'type' => 'html',
