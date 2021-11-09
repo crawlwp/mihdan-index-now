@@ -166,6 +166,11 @@ class Main {
 	 * Add log menu page for dashboard.
 	 */
 	public function add_log_menu_page() {
+
+		if ( ! $this->is_logging_enabled() ) {
+			return;
+		}
+
 		$hook = add_submenu_page(
 			MIHDAN_INDEX_NOW_SLUG,
 			'Log',
@@ -237,7 +242,9 @@ class Main {
 			return;
 		}
 
-		if ( in_array( $this->get_user_agent(), $this->get_bots(), true ) ) {
+		$log_types = $this->get_log_types();
+
+		if ( ! empty( $log_types['key'] ) && in_array( $this->get_user_agent(), $this->get_bots(), true ) ) {
 			$data = [
 				'post_id'       => 0,
 				'status_code'   => 200,
@@ -352,15 +359,23 @@ class Main {
 	}
 
 	private function get_search_engine() {
-		return $this->settings->wposa->get_option( 'search_engine', MIHDAN_INDEX_NOW_PREFIX . '_general', 'yandex' );
+		return $this->settings->wposa->get_option( 'search_engine', 'general', 'yandex' );
 	}
 
-	private function is_index_now_enabled() {
-		return $this->settings->wposa->get_option( 'enable', MIHDAN_INDEX_NOW_PREFIX . '_general', 'on' );
+	private function is_index_now_enabled(): bool {
+		return $this->settings->wposa->get_option( 'enable', 'general', 'on' ) === 'on';
 	}
 
-	private function is_yandex_webmaster_enabled() {
-		return $this->settings->wposa->get_option( 'enable', MIHDAN_INDEX_NOW_PREFIX . '_yandex_webmaster', 'on' );
+	private function is_yandex_webmaster_enabled(): bool {
+		return $this->settings->wposa->get_option( 'enable', 'yandex_webmaster', 'off' ) === 'on';
+	}
+
+	private function is_logging_enabled(): bool {
+		return $this->settings->wposa->get_option( 'enable', 'logs', 'on' ) === 'on';
+	}
+
+	private function get_log_types(): array {
+		return $this->settings->wposa->get_option( 'types', 'logs', ['ping'] );
 	}
 
 	/**
@@ -415,9 +430,18 @@ class Main {
 		return true;
 	}
 
+	/**
+	 * Parse incoming request.
+	 */
 	public function parse_incoming_request() {
 
-		$actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
+		$log_types = $this->get_log_types();
+
+		if ( ! isset( $log_types['url'] ) || ! in_array( $this->get_user_agent(), $this->get_bots(), true ) ) {
+			return;
+		}
+
+		$actual_link = ( is_ssl() ? "https" : "http" ) . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
 		$post_id     = url_to_postid( $actual_link );
 
 		if ( $post_id === 0 ) {
@@ -431,11 +455,13 @@ class Main {
 			'direction'     => 'incoming',
 		];
 
-		$this->logger->debug( $actual_link . '<br>' . $_SERVER['HTTP_USER_AGENT'], $data );
+		$this->logger->debug( 'Бот запросил страницу<br>' . $this->get_user_agent(), $data );
 	}
 
 	/**
-	 * @param WP_Post $post
+	 * Yandex Eebmaster ping.
+	 *
+	 * @param WP_Post $post WP_Post unstance.
 	 *
 	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
@@ -446,15 +472,16 @@ class Main {
 
 		$url = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
 		$url = sprintf( $url, $user_id, $host_id );
+
 		$args = array(
 			'timeout' => 30,
 			'headers' => array(
 				'Authorization' => 'OAuth ' . $token,
 				'Content-Type'  => 'application/json',
 			),
-			'body' => json_encode(
+			'body'    => wp_json_encode(
 				array(
-					'url' => get_permalink( $post->ID )
+					'url' => get_permalink( $post->ID ),
 				)
 			),
 		);

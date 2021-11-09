@@ -23,7 +23,7 @@ class WPOSA {
 	/**
 	 * Allowed HTML tags and attributes for wp_kses().
 	 */
-	const ALLOWED_HTML = [
+	private const ALLOWED_HTML = [
 		'code'     => [],
 		'ul'       => [],
 		'ol'       => [],
@@ -159,14 +159,14 @@ class WPOSA {
 	 *
 	 * @since  1.0.0
 	 */
-	public function __construct( $plugin_name = 'WPOSA', $plugin_version = '0.1', $plugin_slug = 'WPOSA', $plugin_prefix = 'WPOSA' ) {
+	public function __construct( string $plugin_name = 'WPOSA', string $plugin_version = '0.1', string $plugin_slug = 'WPOSA', string $plugin_prefix = 'WPOSA' ) {
 		$this->plugin_name    = $plugin_name;
 		$this->plugin_version = $plugin_version;
 		$this->plugin_slug    = $plugin_slug;
 		$this->plugin_prefix  = $plugin_prefix;
 	}
 
-	public function get_prefix() {
+	public function get_prefix(): string {
 		return $this->plugin_prefix;
 	}
 
@@ -337,15 +337,15 @@ class WPOSA {
 		 * @since 1.0.0
 		 */
 		foreach ( $this->sections_array as $section ) {
-			if ( false == get_option( $section['id'] ) ) {
+			if ( get_option( $section['id'] ) === false ) {
 				// Add a new field as section ID.
-				add_option( $section['id'] );
+				add_option( $section['id'], '', '', false );
 			}
 
 			// Deals with sections description.
 			if ( isset( $section['desc'] ) && ! empty( $section['desc'] ) ) {
 				// Build HTML.
-				$section['desc'] = '<div class="inside">' . $section['desc'] . '</div>';
+				$section['desc'] = '<div class="inside">' . wp_kses( $section['desc'], self::ALLOWED_HTML ) . '</div>';
 
 				// Create the callback for description.
 				$callback = function() use ( $section ) {
@@ -455,7 +455,6 @@ class WPOSA {
 				 * @param array    $args = array()
 				 * @since 1.0.0
 				 */
-
 				// @param string 	$id
 				$field_id = $section . '[' . $field['id'] . ']';
 
@@ -579,7 +578,7 @@ class WPOSA {
 	 */
 	function callback_text( $args ) {
 
-		$value = esc_attr( $this->get_option( $args['id'], $args['section'], $args['std'], $args['placeholder'] ) );
+		$value = esc_attr( $this->get_option( $args['id'], $args['section'], $args['std'] ) );
 		$size  = isset( $args['size'] ) && ! is_null( $args['size'] ) ? $args['size'] : 'regular';
 		$type  = isset( $args['type'] ) ? $args['type'] : 'text';
 
@@ -616,7 +615,6 @@ class WPOSA {
 	function callback_checkbox( $args ) {
 
 		$value = esc_attr( $this->get_option( $args['id'], $args['section'], $args['std'] ) );
-
 		$html  = '<fieldset>';
 		$html .= sprintf( '<label for="wposa-%1$s[%2$s]">', $args['section'], $args['id'] );
 		$html .= sprintf( '<input type="hidden" name="%1$s[%2$s]" value="off" />', $args['section'], $args['id'] );
@@ -813,10 +811,10 @@ class WPOSA {
 	 * @param string $option  settings field name.
 	 * @param string $section the section name this field belongs to.
 	 * @param string $default default text if it's not found.
-	 * @return string
+	 * @return mixed
 	 */
 	function get_option( $option, $section, $default = '' ) {
-
+		$section = str_replace( $this->get_prefix() . '_', '', $section );
 		$options = get_option( $this->get_prefix() . '_' . $section );
 
 		if ( isset( $options[ $option ] ) ) {
