@@ -9,6 +9,7 @@ namespace Mihdan\IndexNow\Views;
 
 use Mihdan\IndexNow\Logger;
 use WP_List_Table;
+use WP_Post;
 
 class Log extends WP_List_Table {
 
