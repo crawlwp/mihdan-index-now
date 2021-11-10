@@ -626,6 +626,24 @@ class WPOSA {
 	}
 
 	/**
+	 * Displays a iOS switch checkbox for a settings field
+	 *
+	 * @param array $args settings field args
+	 */
+	function callback_switch( $args ) {
+
+		$value = esc_attr( $this->get_option( $args['id'], $args['section'], $args['std'] ) );
+		$html  = '<fieldset>';
+		$html .= sprintf( '<label for="wposa-%1$s[%2$s]">', $args['section'], $args['id'] );
+		$html .= sprintf( '<input type="hidden" name="%1$s[%2$s]" value="off" />', $args['section'], $args['id'] );
+		$html .= sprintf( '<input type="checkbox" class="wposa-field wposa-field--switch" id="wposa-%1$s[%2$s]" name="%1$s[%2$s]" value="on" %3$s />', $args['section'], $args['id'], checked( $value, 'on', false ) );
+		$html .= sprintf( '%1$s</label>', $args['desc'] );
+		$html .= '</fieldset>';
+
+		echo wp_kses( $html, self::ALLOWED_HTML );
+	}
+
+	/**
 	 * Displays a multicheckbox a settings field
 	 *
 	 * @param array $args settings field args
@@ -1060,7 +1078,7 @@ class WPOSA {
 
 		</script>
 
-		<style type="text/css">
+		<style>
 			/** WordPress 3.8 Fix **/
 			.form-table th {
 				padding: 20px 10px;
@@ -1109,6 +1127,48 @@ class WPOSA {
 			}
 			.wrap-column--sidebar {
 				flex-basis: 300px;
+			}
+
+			input.wposa-field--switch {
+				position: relative;
+				-webkit-appearance: none;
+				appearance: none;
+				outline: none;
+				width: 50px;
+				height: 30px;
+				background-color: #ffffff;
+				border: 1px solid #D9DADC;
+				border-radius: 50px;
+				box-shadow: inset -20px 0 0 0 #ffffff;
+			}
+
+			input.wposa-field--switch:before {
+				display: none !important;
+			}
+			input.wposa-field--switch:after {
+				content: "";
+				position: absolute;
+				top: 1px;
+				left: 1px;
+				width: 26px;
+				height: 26px;
+				background-color: transparent;
+				border-radius: 50%;
+				box-shadow: 2px 4px 6px rgba(0,0,0,0.2);
+			}
+
+			input.wposa-field--switch:checked {
+				border-color: #135e96;
+				box-shadow: inset 20px 0 0 0 #135e96;
+			}
+
+			input.wposa-field--switch:checked:after {
+				left: 20px;
+				box-shadow: -2px 4px 3px rgba(0,0,0,0.05);
+			}
+
+			input.wposa-field--switch:hover:after {
+				/*box-shadow: 0 0 3px rgba(0,0,0,0.3);*/
 			}
 
 			@media (max-width: 544px) {
