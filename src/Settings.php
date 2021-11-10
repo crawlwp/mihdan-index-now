@@ -90,7 +90,7 @@ class Settings {
 				[
 					'id'    => 'rtfm',
 					'title' => __( 'Do you need help?', 'mihdan-index-now' ),
-					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/issues/new" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
 				]
 			);
 
