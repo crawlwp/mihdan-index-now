@@ -47,6 +47,7 @@ class WPOSA {
 			'style'   => true,
 			'title'   => true,
 			'onclick' => true,
+			'target'  => true,
 		],
 		'img'      => [
 			'src' => true,
