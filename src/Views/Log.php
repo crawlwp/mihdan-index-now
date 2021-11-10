@@ -9,7 +9,6 @@ namespace Mihdan\IndexNow\Views;
 
 use Mihdan\IndexNow\Logger;
 use WP_List_Table;
-use WP_Post;
 
 class Log extends WP_List_Table {
 
@@ -141,7 +140,7 @@ class Log extends WP_List_Table {
 	static function _list_table_css(){
 		?>
 		<style>
-			table.logs .column-log_id{ width:2em; }
+			table.logs .column-log_id{ width:3em; }
 			table.logs .column-level{ width:4em; }
 			table.logs .column-direction{ width:4em; }
 			table.logs .column-search_engine{ width:6em; }
@@ -183,7 +182,7 @@ class Log extends WP_List_Table {
 		} elseif ( $colname === 'level' ) {
 			return sprintf( '<span class="level level--%s" title="%s">.</span>', $item->$colname, $item->$colname );
 		} elseif ( $colname === 'direction' ) {
-			return $item->$colname === 'incoming' ? '<span class="dashicons dashicons-arrow-up-alt" title="Исходящий запрос"></span>' : '<span class="dashicons dashicons-arrow-down-alt" title="Входящий запрос"></span>';
+			return $item->$colname === 'outgoing' ? '<span class="dashicons dashicons-arrow-up-alt" title="Исходящий запрос"></span>' : '<span class="dashicons dashicons-arrow-down-alt" title="Входящий запрос"></span>';
 		} elseif ( $colname === 'created_at' ) {
 			return get_date_from_gmt( $item->$colname, 'd.m.Y H:i:s' );
 		} else {
