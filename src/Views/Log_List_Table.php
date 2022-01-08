@@ -7,12 +7,25 @@
 
 namespace Mihdan\IndexNow\Views;
 
-use Mihdan\IndexNow\Logger;
+use Mihdan\IndexNow\Logger\Logger;
 use WP_List_Table;
 
-class Log extends WP_List_Table {
+class Log_List_Table extends WP_List_Table {
+	/**
+	 * Logger instance.
+	 *
+	 * @var Logger $logger
+	 */
+	private $logger;
 
-	function __construct() {
+	/**
+	 * Log constructor.
+	 *
+	 * @param Logger $logger Logger instance.
+	 */
+	public function __construct( Logger $logger ) {
+		$this->logger = $logger;
+
 		parent::__construct(array(
 			'singular' => 'log',
 			'plural'   => 'logs',
@@ -41,7 +54,7 @@ class Log extends WP_List_Table {
 	private function get_total_items() {
 		global $wpdb;
 
-		$table_name = Logger::get_table_name();
+		$table_name = $this->logger->get_logger_table_name();
 
 		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ); // phpcs:ignore
 	}
@@ -59,7 +72,7 @@ class Log extends WP_List_Table {
 	private function get_items( $per_page, $cur_page, $order_by, $order ) {
 		global $wpdb;
 
-		$table_name = Logger::get_table_name();
+		$table_name = $this->logger->get_logger_table_name();
 
 		$order_by = sanitize_sql_orderby( " {$order_by} {$order} " );
 
@@ -107,13 +120,12 @@ class Log extends WP_List_Table {
 		return [
 			'cb'            => '<input type="checkbox" />',
 			'log_id'        => 'ID',
-			'post_id'       => 'Link',
-			'created_at'    => 'Date',
 			'search_engine' => 'SE',
 			'direction'     => 'Dir',
 			'level'         => 'Level',
 			'status_code'   => 'Status',
 			'message'       => 'Message',
+			'created_at'    => 'Date',
 		];
 	}
 
@@ -130,20 +142,13 @@ class Log extends WP_List_Table {
 		];
 	}
 
-	// Элементы управления таблицей. Расположены между групповыми действиями и панагией.
-	function extra_tablenav( $which ){
-		//echo '<div class="alignleft actions">HTML код полей формы (select). Внутри тега form...</div>';
-	}
-
-	// вывод каждой ячейки таблицы -------------
-
 	static function _list_table_css(){
 		?>
 		<style>
 			table.logs .column-log_id{ width:3em; }
 			table.logs .column-level{ width:4em; }
 			table.logs .column-direction{ width:4em; }
-			table.logs .column-search_engine{ width:6em; }
+			table.logs .column-search_engine{ width:8em; }
 			table.logs .column-status_code{ width:6em; }
 			table.logs .column-created_at{ width:10em; }
 			table.logs span.level {
@@ -157,6 +162,7 @@ class Log extends WP_List_Table {
 			table.logs span.level--error {
 				background-color: #f00;
 			}
+			table.logs span.level--info,
 			table.logs span.level--debug {
 				background-color: #0f0;
 			}
@@ -167,13 +173,10 @@ class Log extends WP_List_Table {
 	// вывод каждой ячейки таблицы...
 	function column_default( $item, $colname ){
 
-		if ( $colname === 'customer_name' ) {
-			// ссылки действия над элементом
-			$actions = array();
-			$actions['edit'] = sprintf( '<a href="%s">%s</a>', '#', __('edit','hb-users') );
-
-			return esc_html( $item->name ) . $this->row_actions( $actions );
-		} elseif ( $colname === 'post_id' ) {
+		if ( $colname === 'post_id' ) {
+			if ( $item->$colname === '0' ) {
+				return '-';
+			}
 			return sprintf(
 				'%d: <a href="%s" target="_blank">%s</a>',
 				$item->$colname,
@@ -182,7 +185,17 @@ class Log extends WP_List_Table {
 		} elseif ( $colname === 'level' ) {
 			return sprintf( '<span class="level level--%s" title="%s">.</span>', $item->$colname, $item->$colname );
 		} elseif ( $colname === 'direction' ) {
-			return $item->$colname === 'outgoing' ? '<span class="dashicons dashicons-arrow-up-alt" title="Исходящий запрос"></span>' : '<span class="dashicons dashicons-arrow-down-alt" title="Входящий запрос"></span>';
+			switch ( $item->$colname ) {
+				case 'outgoing' : $data = '<span class="dashicons dashicons-arrow-up-alt" title="Outgoing request"></span>';
+				break;
+
+				case 'incoming' : $data = '<span class="dashicons dashicons-arrow-down-alt" title="Incoming request"></span>';
+				break;
+
+				default : $data = '<span class="dashicons dashicons-marker" title="Internal request"></span>';
+			}
+
+			return $data;
 		} elseif ( $colname === 'created_at' ) {
 			return get_date_from_gmt( $item->$colname, 'd.m.Y H:i:s' );
 		} else {
@@ -209,36 +222,20 @@ class Log extends WP_List_Table {
 		if ( 'delete' === $this->current_action() ) {
 			if ( is_array( $_POST['log_rows'] ) ) {
 				$log_rows   = implode( ',', array_map( 'absint', $_POST['log_rows'] ) );
-				$table_name = Logger::get_table_name();
+				$table_name = $this->logger->get_logger_table_name();
 
 				$wpdb->query(
 					$wpdb->prepare(
 						"DELETE FROM {$table_name} WHERE log_id IN ({$log_rows})"
 					)
 				);
+
+				$data = [
+					'direction' => 'internal',
+				];
+
+				$this->logger->info( sprintf( 'The log entries with IDs %s were deleted successfully.', $log_rows ), $data );
 			}
 		}
 	}
-
-	/*
-	// Пример создания действий - ссылок в основной ячейки таблицы при наведении на ряд.
-	// Однако гораздо удобнее указать их напрямую при выводе ячейки - см ячейку customer_name...
-
-	// основная колонка в которой будут показываться действия с элементом
-	protected function get_default_primary_column_name() {
-		return 'disp_name';
-	}
-
-	// действия над элементом для основной колонки (ссылки)
-	protected function handle_row_actions( $post, $column_name, $primary ) {
-		if ( $primary !== $column_name ) return ''; // только для одной ячейки
-
-		$actions = array();
-
-		$actions['edit'] = sprintf( '<a href="%s">%s</a>', '#', __('edit','hb-users') );
-
-		return $this->row_actions( $actions );
-	}
-	*/
-
 }

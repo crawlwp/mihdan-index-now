@@ -8,7 +8,7 @@
  * @package WPOSA
  */
 
-namespace Mihdan\IndexNow;
+namespace Mihdan\IndexNow\Views;
 
 /**
  * WP_OSA.
@@ -34,6 +34,14 @@ class WPOSA {
 		'fields'   => [],
 		'label'    => [
 			'for' => true,
+		],
+		'select'   => [
+			'class' => true,
+			'name'  => true,
+			'id'    => true,
+		],
+		'option'   => [
+			'value' => true,
 		],
 		'div'      => [
 			'id'    => true,
@@ -346,7 +354,7 @@ class WPOSA {
 			// Deals with sections description.
 			if ( isset( $section['desc'] ) && ! empty( $section['desc'] ) ) {
 				// Build HTML.
-				$section['desc'] = '<div class="inside">' . wp_kses( $section['desc'], self::ALLOWED_HTML ) . '</div>';
+				$section['desc'] = '<div class="inside wposa-section-description">' . wp_kses( $section['desc'], self::ALLOWED_HTML ) . '</div>';
 
 				// Create the callback for description.
 				$callback = function() use ( $section ) {
@@ -898,7 +906,15 @@ class WPOSA {
 		$html = '<h2 class="nav-tab-wrapper">';
 
 		foreach ( $this->sections_array as $tab ) {
-			$html .= sprintf( '<a href="#%1$s" class="nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title'] );
+			if ( isset( $tab['disabled'] ) && $tab['disabled'] === true ) {
+				if ( isset( $tab['badge'] ) ) {
+					$html .= sprintf( '<span class="nav-tab wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s <span class="wposa-badge">%3$s</span></span>', $tab['id'], $tab['title'], $tab['badge'] );
+				} else {
+					$html .= sprintf( '<span class="nav-tab wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s</span>', $tab['id'], $tab['title'] );
+				}
+			} else {
+				$html .= sprintf( '<a href="#%1$s" class="nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title'] );
+			}
 		}
 
 		$html .= '</h2>';
@@ -953,7 +969,7 @@ class WPOSA {
 	private function show_help_tab_toggle( $tab_id, $tab_icon = '?' ) {
 		ob_start();
 		?>
-		<a title="<?php echo esc_attr__( 'Show help tab', 'mihdan-index-now' ); ?>" class="wpsa-help-tab-toggle" data-tab="<?php echo esc_attr( $tab_id ); ?>"><?php echo esc_html( $tab_icon ); ?></a>
+		<a title="<?php echo esc_attr__( 'Click to show Help tab', 'mihdan-index-now' ); ?>" class="wpsa-help-tab-toggle" data-tab="<?php echo esc_attr( $tab_id ); ?>"><?php echo esc_html( $tab_icon ); ?></a>
 		<?php
 		return ob_get_clean();
 	}
@@ -977,7 +993,10 @@ class WPOSA {
 						const $this = $(this);
 						const tab = '#tab-link-<?php echo esc_js( MIHDAN_INDEX_NOW_PREFIX ); ?>_' + $this.data('tab');
 
-						$show_settings_toggler.trigger('click');
+						if ( $show_settings_toggler.attr('aria-expanded') === 'false' ) {
+							$show_settings_toggler.trigger('click');
+						}
+
 						$(tab).find('a').trigger('click');
 					}
 				);
@@ -1118,9 +1137,11 @@ class WPOSA {
 				cursor: help;
 				font-size: 12px;
 				vertical-align: text-bottom;
+				user-select: none;
 			}
 			.wrap--wposa {
 				display: flex;
+				gap: 20px;
 			}
 
 			.wrap-column--form {
@@ -1135,8 +1156,8 @@ class WPOSA {
 				-webkit-appearance: none;
 				appearance: none;
 				outline: none;
-				width: 50px;
-				height: 30px;
+				width: 40px;
+				height: 20px;
 				background-color: #ffffff;
 				border: 1px solid #D9DADC;
 				border-radius: 50px;
@@ -1149,13 +1170,15 @@ class WPOSA {
 			input.wposa-field--switch:after {
 				content: "";
 				position: absolute;
-				top: 1px;
+				top: 0;
 				left: 1px;
-				width: 26px;
-				height: 26px;
+				width: 18px;
+				height: 18px;
 				background-color: transparent;
 				border-radius: 50%;
-				box-shadow: 2px 4px 6px rgba(0,0,0,0.2);
+				box-shadow: 2px 0 6px rgba(0,0,0,0.2);
+				transition-property: left;
+				transition-duration: 3s;
 			}
 
 			input.wposa-field--switch:checked {
@@ -1164,14 +1187,31 @@ class WPOSA {
 			}
 
 			input.wposa-field--switch:checked:after {
-				left: 20px;
-				box-shadow: -2px 4px 3px rgba(0,0,0,0.05);
+				left: auto;
+				right: 1px;
+				box-shadow: -2px 0px 3px rgba(0,0,0,0.05);
 			}
 
 			input.wposa-field--switch:hover:after {
 				/*box-shadow: 0 0 3px rgba(0,0,0,0.3);*/
 			}
 
+			.wposa-nav-tab {}
+			.wposa-nav-tab--disabled {
+				cursor: not-allowed;
+			}
+			.wposa-badge {
+				font-size: 0.8em;
+				background-color: #d63638;
+				color: #fff;
+				border-radius: 2px;
+				padding: 0 5px;
+				display: inline-block;
+				font-weight: normal;
+			}
+			.wposa-section-description {
+				max-width: 600px;
+			}
 			@media (max-width: 544px) {
 				.wrap--wposa {
 					flex-direction: column;
