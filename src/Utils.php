@@ -77,4 +77,23 @@ class Utils {
 	public static function get_user_agent(): string {
 		return wp_unslash( $_SERVER['HTTP_USER_AGENT'] ?? '' );
 	}
+
+	/**
+	 * Get plugin DB version.
+	 *
+	 * @return string
+	 */
+	public static function get_db_version(): string {
+		return get_option( self::get_plugin_prefix() . '_version', '1.0.0' );
+	}
+
+	/**
+	 * Set plugin DB version.
+	 *
+	 * @param string $version Given version.
+	 * @return bool
+	 */
+	public static function set_db_version( string $version ): bool {
+		return update_option( self::get_plugin_prefix() . '_version', $version, false );
+	}
 }

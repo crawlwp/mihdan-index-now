@@ -19,7 +19,11 @@ class YandexIndexNow extends IndexNowAbstract {
 		return __( 'Yandex IndexNow', 'mihdan-index-now' );
 	}
 
-	public function get_api_url(): string {
+	protected function get_api_url(): string {
 		return 'https://yandex.com/indexnow';
+	}
+
+	protected function get_bot_useragent(): string {
+		return 'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)';
 	}
 }

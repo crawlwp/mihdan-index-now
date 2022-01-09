@@ -117,7 +117,6 @@ See the documentation available from each search engine for more details about I
 * Added Bing Webmaster ping
 * Remove Contacts tab
 * Requests with a status code more than 200 and less than 300 are no longer considered an error
-* Attantion: after plugin update disable and enable plugin
 
 = 1.2.0 (08.11.2021) =
 * Added Help tab

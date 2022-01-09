@@ -73,7 +73,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		add_action( 'wp_insert_comment', [ $this, 'ping_on_insert_comment' ], 10, 2 );
 	}
 
-	abstract function get_api_url(): string;
+	abstract protected function get_api_url(): string;
+	abstract protected function get_bot_useragent(): string;
 
 	public function ping_on_insert_comment( int $id, WP_Comment $comment ) {
 

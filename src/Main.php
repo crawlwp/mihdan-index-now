@@ -15,12 +15,12 @@ use Mihdan\IndexNow\Views\HelpTab;
 use Mihdan\IndexNow\Views\Log_List_Table;
 use Mihdan\IndexNow\Views\Settings;
 use Mihdan\IndexNow\Views\WPOSA;
-use WP_Comment;
 use WP_Post;
 use WP_List_Table;
 use Auryn\Injector;
 use Auryn\InjectionException;
 use Auryn\ConfigException;
+use WP_Upgrader;
 
 /**
  * Class Main.
@@ -40,65 +40,13 @@ class Main {
 	 */
 	private $wposa;
 
-
-
-
-
-	/**
-	 * Array to store the instances of available indexnow complaint search engines.
-	 *
-	 * @var array $search_engines
-	 */
-	private $search_engines = [
-		'yandex'     => [
-			'url'         => 'https://yandex.com/indexnow',
-			'user_agents' => [
-				'Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)',
-				'Mozilla/5.0 (compatible; YandexAccessibilityBot/3.0; +http://yandex.com/bots)',
-				'Mozilla/5.0 (compatible; YandexMetrika/2.0; +http://yandex.com/bots yabs01)',
-			],
-		],
-		'bing'       => [
-			'url'         => 'https://www.bing.com/indexnow',
-			'user_agents' => [
-				'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
-			],
-		],
-		'duckduckgo' => [
-			'url'         => 'https://www.bing.com/indexnow',
-			'user_agents' => [],
-		],
-		'mailru'     => [
-			'url'         => 'https://mail.ru/indexnow',
-			'user_agents' => [
-				'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/Img/2.0; +http://go.mail.ru/help/robots)',
-				'Mozilla/5.0 (compatible; Linux x86_64; Mail.RU_Bot/2.0; +http://go.mail.ru/help/robots)',
-			],
-		],
-		'google'     => [
-			'url'         => 'https://google.com/indexnow',
-			'user_agents' => [
-				'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-			],
-		],
-	];
-
-	/**
-	 * White list of bots.
-	 *
-	 * @var string[]
-	 */
-	private $bots = [];
-
 	/**
 	 * Constructor.
 	 *
 	 * @param Injector $injector Injector instnace.
 	 */
 	public function __construct( Injector $injector ) {
-		$this->injector       = $injector;
-
-		$this->search_engines = apply_filters( 'mihdan_index_now/search_engines', $this->search_engines );
+		$this->injector = $injector;
 	}
 
 	public function init() {
@@ -128,6 +76,11 @@ class Main {
 	}
 
 	private function load_requirements() {
+
+		if ( ! function_exists( 'dbDelta' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		}
+
 		( $this->make( Logger::class ) )->setup_hooks();
 
 		$wposa = $this->make(
@@ -156,13 +109,11 @@ class Main {
 	 * Setup hooks.
 	 */
 	public function setup_hooks() {
-
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
 		add_action( 'template_redirect', [ $this, 'parse_incoming_request' ] );
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
-
-
+		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
 	}
 
@@ -183,11 +134,18 @@ class Main {
 	 * Fired on plugin activate.
 	 */
 	public function activate_plugin() {
+		$this->create_tables();
+	}
+
+	private function drop_tables() {
 		global $wpdb;
 
-		if ( ! function_exists( 'dbDelta' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		}
+		$sql = "DROP TABLE IF EXISTS {$wpdb->base_prefix}index_now_log";
+		$wpdb->query( $sql );
+	}
+
+	private function create_tables() {
+		global $wpdb;
 
 		$charset_collate = $wpdb->get_charset_collate();
 
@@ -202,7 +160,22 @@ class Main {
     			PRIMARY KEY (log_id)
 				) {$charset_collate};";
 
-		$result = dbDelta( $sql );
+		dbDelta( $sql );
+	}
+
+	public function maybe_upgrade() {
+		$db_version     = Utils::get_db_version();
+		$plugin_version = Utils::get_plugin_version();
+
+		if ( version_compare( $db_version, '2.0.0', '<' ) ) {
+			$this->migrate_to_2_0_0();
+		}
+	}
+
+	private function migrate_to_2_0_0() {
+		$this->drop_tables();
+		$this->create_tables();
+		Utils::set_db_version( '2.0.0' );
 	}
 
 	/**
@@ -273,17 +246,6 @@ class Main {
 		return $actions;
 	}
 
-
-
-	/**
-	 * Get white list of bots.
-	 *
-	 * @return string[]
-	 */
-	private function get_bots(): array {
-		return $this->bots;
-	}
-
 	private function is_logging_enabled(): bool {
 		return $this->wposa->get_option( 'enable', 'logs', 'on' ) === 'on';
 	}
@@ -293,9 +255,7 @@ class Main {
 	 */
 	public function parse_incoming_request() { return;
 
-		$log_types = $this->get_log_types();
-
-		if ( ! isset( $log_types['url'] ) || ! in_array( Utils::get_user_agent(), $this->get_bots(), true ) ) {
+		if ( ! in_array( Utils::get_user_agent(), $this->get_bots(), true ) ) {
 			return;
 		}
 
