@@ -19,7 +19,11 @@ class BingIndexNow extends IndexNowAbstract {
 		return __( 'Bing IndexNow', 'mihdan-index-now' );
 	}
 
-	public function get_api_url(): string {
+	protected function get_api_url(): string {
 		return 'https://www.bing.com/indexnow';
+	}
+
+	protected function get_bot_useragent(): string {
+		return 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)';
 	}
 }
