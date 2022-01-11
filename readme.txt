@@ -4,7 +4,7 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.8
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,7 +113,10 @@ See the documentation available from each search engine for more details about I
 
 == Changelog ==
 
-= 2.0.0 (10.01.2022) =
+= 2.0.1 (11.01.2022) =
+* Added Yandex Webmaster ping
+
+= 2.0.0 (09.01.2022) =
 * Added Bing Webmaster ping
 * Remove Contacts tab
 * Requests with a status code more than 200 and less than 300 are no longer considered an error

@@ -213,8 +213,6 @@ class Settings {
 				'id'       => 'yandex_webmaster',
 				'title'    => __( 'Yandex API', 'mihdan-index-now' ),
 				'desc'     => __( 'Sending a page for reindexing', 'mihdan-index-now' ),
-				'disabled' => true,
-				'badge'    => __( 'Soon', 'mihdan-index-now' ),
 			)
 		);
 
@@ -227,7 +225,7 @@ class Settings {
 			)
 		);
 
-		$this->wposa->add_field(
+		/*$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
 				'id'          => 'client_id',
@@ -236,9 +234,9 @@ class Settings {
 				'name'        => __( 'App ID', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example 12c41fd597854d47b2911716d7f71e2f', 'mihdan-index-now' ),
 			)
-		);
+		);*/
 
-		$this->wposa->add_field(
+		/*$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
 				'id'          => 'client_secret',
@@ -247,7 +245,7 @@ class Settings {
 				'name'        => __( 'App Password', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example 1a4c5831b44e469f8a86c36fd88101f5', 'mihdan-index-now' ),
 			)
-		);
+		);*/
 
 		$this->wposa->add_field(
 			'yandex_webmaster',
@@ -260,7 +258,7 @@ class Settings {
 			)
 		);
 
-		$this->wposa->add_field(
+		/*$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
 				'id'          => 'refresh_token',
@@ -269,7 +267,7 @@ class Settings {
 				'name'        => __( 'Refresh Token', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now' ),
 			)
-		);
+		);*/
 
 		//if ( $this->wposa->get_option( 'token', 'yandex_webmaster' ) ) {
 			$this->wposa->add_field(
@@ -283,18 +281,28 @@ class Settings {
 				)
 			);
 
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'          => 'host_id',
-					'type'        => 'select',
-					'name'        => __( 'Host ID', 'mihdan-index-now' ),
-					'options'     => [
-						1=>1,
-						2=>2,
-					],
-				)
-			);
+		/*$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'host_id',
+				'type'        => 'select',
+				'name'        => __( 'Host ID', 'mihdan-index-now' ),
+				'options'     => [
+					1=>1,
+					2=>2,
+				],
+			)
+		);*/
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'host_id',
+				'type'        => 'text',
+				'name'        => __( 'Host ID', 'mihdan-index-now' ),
+				'placeholder' => __( 'Example https:alik.city:443', 'mihdan-index-now' ),
+			)
+		);
 	//	}
 
 		$this->wposa->add_section(

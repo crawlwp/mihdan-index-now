@@ -27,7 +27,7 @@ abstract class WebmasterAbstract implements SearchEngineInterface {
 	protected $wposa;
 
 	abstract public function get_token(): string;
-	abstract public function get_ping_url(): string;
+	abstract public function get_ping_endpoint(): string;
 	abstract public function ping( WP_Post $post );
 
 	/**
