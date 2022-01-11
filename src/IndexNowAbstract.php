@@ -222,7 +222,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 				'direction'     => 'incoming',
 			];
 
-			$this->logger->info( __( 'IndexNow: Bot checked the key file', 'mihdan-index-now' ), $data );
+			$this->logger->info( __( 'Bot checked the key file', 'mihdan-index-now' ), $data );
 		}
 
 		header( 'Content-Type: text/plain' );

@@ -11,6 +11,7 @@ use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\Providers\Bing\BingIndexNow;
 use Mihdan\IndexNow\Providers\Bing\BingWebmaster;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
+use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
 use Mihdan\IndexNow\Views\HelpTab;
 use Mihdan\IndexNow\Views\Log_List_Table;
 use Mihdan\IndexNow\Views\Settings;
@@ -102,6 +103,7 @@ class Main {
 		( $this->make( YandexIndexNow::class ) )->setup_hooks();
 		( $this->make( BingIndexNow::class ) )->setup_hooks();
 
+		( $this->make( YandexWebmaster::class ) )->setup_hooks();
 		( $this->make( BingWebmaster::class ) )->setup_hooks();
 	}
 
@@ -274,53 +276,6 @@ class Main {
 		];
 
 		$this->logger->debug( 'Бот запросил страницу<br>' . Utils::get_user_agent(), $data );
-	}
-
-	/**
-	 * Yandex Webmaster ping.
-	 *
-	 * @param WP_Post $post WP_Post unstance.
-	 *
-	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
-	 */
-	public function yandex_webmaster_ping( WP_Post $post ) {
-		$user_id = $this->wposa->get_option( 'user_id', 'yandex_webmaster' );
-		$host_id = $this->wposa->get_option( 'host_id', 'yandex_webmaster' );
-		$token   = $this->wposa->get_option( 'token', 'yandex_webmaster' );
-
-		$url = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
-		$url = sprintf( $url, $user_id, $host_id );
-
-		$args = array(
-			'timeout' => 30,
-			'headers' => array(
-				'Authorization' => 'OAuth ' . $token,
-				'Content-Type'  => 'application/json',
-			),
-			'body'    => wp_json_encode(
-				array(
-					'url' => get_permalink( $post->ID ),
-				)
-			),
-		);
-
-		$response    = wp_remote_post( $url, $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-
-		$data = [
-			'post_id'       => $post->ID,
-			'status_code'   => $status_code,
-			'search_engine' => 'yandex',
-		];
-
-		if ( $this->is_response_code_success( $status_code ) ) {
-			$message = 'Запись отправлена через Yandex API';
-			$this->logger->debug( $message, $data );
-		} else {
-			$message = $body['message'] ?? '';
-			$message = $translate[ $message ] ?? $message;
-			$this->logger->error( $message, $data );
-		}
 	}
 
 	/**

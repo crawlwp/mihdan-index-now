@@ -12,8 +12,10 @@ use WP_Post;
 use Mihdan\IndexNow\Utils;
 
 class BingWebmaster extends WebmasterAbstract {
-	public function get_ping_url(): string {
-		return 'https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlbatch?apikey=%s';
+	private const RECRAWL_ENDPOINT = 'https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlbatch?apikey=%s';
+
+	public function get_ping_endpoint(): string {
+		return self::RECRAWL_ENDPOINT;
 	}
 
 	public function get_slug(): string {
@@ -74,7 +76,7 @@ class BingWebmaster extends WebmasterAbstract {
 	 * @link https://www.bing.com/webmasters/url-submission-api#APIs
 	 */
 	public function ping( WP_Post $post ) {
-		$url  = sprintf( $this->get_ping_url(), $this->get_token() );
+		$url  = sprintf( $this->get_ping_endpoint(), $this->get_token() );
 		$args = array(
 			'timeout' => 30,
 			'headers' => array(

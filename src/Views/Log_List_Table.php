@@ -148,7 +148,7 @@ class Log_List_Table extends WP_List_Table {
 			table.logs .column-log_id{ width:3em; }
 			table.logs .column-level{ width:4em; }
 			table.logs .column-direction{ width:4em; }
-			table.logs .column-search_engine{ width:8em; }
+			table.logs .column-search_engine{ width:8.5em; }
 			table.logs .column-status_code{ width:6em; }
 			table.logs .column-created_at{ width:10em; }
 			table.logs span.level {
