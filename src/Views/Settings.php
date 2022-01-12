@@ -90,7 +90,7 @@ class Settings {
 				[
 					'id'    => 'rtfm',
 					'title' => __( 'Do you need help?', 'mihdan-index-now' ),
-					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li><li><a href="https://t.me/mihdan" target="_blank">Help via Telegram</a></li></ol>', 'mihdan-index-now' ),
 				]
 			);
 
@@ -225,7 +225,7 @@ class Settings {
 			)
 		);
 
-		/*$this->wposa->add_field(
+		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
 				'id'          => 'client_id',
@@ -234,9 +234,9 @@ class Settings {
 				'name'        => __( 'App ID', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example 12c41fd597854d47b2911716d7f71e2f', 'mihdan-index-now' ),
 			)
-		);*/
+		);
 
-		/*$this->wposa->add_field(
+		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
 				'id'          => 'client_secret',
@@ -245,65 +245,98 @@ class Settings {
 				'name'        => __( 'App Password', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example 1a4c5831b44e469f8a86c36fd88101f5', 'mihdan-index-now' ),
 			)
-		);*/
+		);
+
+		if ( $this->wposa->get_option( 'access_token', 'yandex_webmaster' ) ) {
+
+			$this->wposa->add_field(
+				'yandex_webmaster',
+				array(
+					'id'      => 'host_id',
+					'type'    => 'select',
+					'name'    => __( 'Host ID', 'mihdan-index-now' ),
+					'options' => $this->get_yandex_webmaster_host_ids()
+				)
+			);
+
+			$this->wposa->add_field(
+				'yandex_webmaster',
+				array(
+					'id'       => 'access_token_view',
+					'type'     => 'html',
+					'readonly' => true,
+					'name'     => __( 'Access Token', 'mihdan-index-now' ),
+					'desc'     => function() {
+						return sprintf(
+							'Key: %s<br> Expires In: %s',
+							$this->wposa->get_option( 'access_token', 'yandex_webmaster' ),
+							date( 'd.m.Y', $this->wposa->get_option( 'expires_in', 'yandex_webmaster' ) )
+						);
+					},
+				)
+			);
+		}
+
+		// Показать кнопку только если заполнены доступы к API.
+		if ( $this->wposa->get_option( 'client_id', 'yandex_webmaster' ) && $this->wposa->get_option( 'client_secret', 'yandex_webmaster' ) ) {
+			$this->wposa->add_field(
+				'yandex_webmaster',
+				array(
+					'id'          => 'button_get_token',
+					'type'        => 'button',
+					'class'       => 'button-secondary',
+					'name'        => __( '', 'mihdan-index-now' ),
+					'placeholder' => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
+						? __( 'Update Token', 'mihdan-index-now' )
+						: __( 'Get Token', 'mihdan-index-now' ),
+				)
+			);
+		}
 
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
 				'id'          => 'access_token',
-				'type'        => 'text',
-				'help_tab'    => 'yandex_webmaster_authorization',
-				'name'        => __( 'Access Token', 'mihdan-index-now' ),
-				'placeholder' => __( 'Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now' ),
+				'type'        => 'hidden',
+				'name'        => '',
 			)
 		);
-
-		/*$this->wposa->add_field(
-			'yandex_webmaster',
-			array(
-				'id'          => 'refresh_token',
-				'type'        => 'text',
-				'help_tab'    => 'yandex_webmaster_authorization',
-				'name'        => __( 'Refresh Token', 'mihdan-index-now' ),
-				'placeholder' => __( 'Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now' ),
-			)
-		);*/
-
-		//if ( $this->wposa->get_option( 'token', 'yandex_webmaster' ) ) {
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'          => 'user_id',
-					'type'        => 'text',
-					'help_tab'    => 'yandex_webmaster',
-					'name'        => __( 'User ID', 'mihdan-index-now' ),
-					'placeholder' => __( 'Example 5781893', 'mihdan-index-now' ),
-				)
-			);
-
-		/*$this->wposa->add_field(
-			'yandex_webmaster',
-			array(
-				'id'          => 'host_id',
-				'type'        => 'select',
-				'name'        => __( 'Host ID', 'mihdan-index-now' ),
-				'options'     => [
-					1=>1,
-					2=>2,
-				],
-			)
-		);*/
 
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
-				'id'          => 'host_id',
-				'type'        => 'text',
-				'name'        => __( 'Host ID', 'mihdan-index-now' ),
-				'placeholder' => __( 'Example https:alik.city:443', 'mihdan-index-now' ),
+				'id'          => 'expires_in',
+				'type'        => 'hidden',
+				'name'        => '',
 			)
 		);
-	//	}
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'refresh_token',
+				'type'        => 'hidden',
+				'name'        => '',
+			)
+		);
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'          => 'user_id',
+				'type'        => 'hidden',
+				'name'        => '',
+			)
+		);
+
+		$this->wposa->add_field(
+			'yandex_webmaster',
+			array(
+				'id'   => 'host_ids',
+				'type' => 'hidden',
+				'name' => '',
+			)
+		);
 
 		$this->wposa->add_section(
 			array(
@@ -398,5 +431,19 @@ class Settings {
 	 */
 	private function generate_key() {
 		return str_replace( '-', '', wp_generate_uuid4() );
+	}
+
+	public function get_yandex_webmaster_host_ids() {
+		$result = [];
+
+		$ids = maybe_unserialize( $this->wposa->get_option( 'host_ids', 'yandex_webmaster' ) );
+
+		if ( is_array( $ids ) ) {
+			foreach ( $ids as $id ) {
+				$result[ $id ] = $id;
+			}
+		}
+
+		return $result;
 	}
 }

@@ -39,6 +39,14 @@ class YandexWebmaster extends WebmasterAbstract {
 		return $this->wposa->get_option( 'host_id', 'yandex_webmaster' );
 	}
 
+	public function get_client_id(): string {
+		return $this->wposa->get_option( 'client_id', 'yandex_webmaster' );
+	}
+
+	public function get_client_secret(): string {
+		return $this->wposa->get_option( 'client_secret', 'yandex_webmaster' );
+	}
+
 	public function get_ping_endpoint(): string {
 		return self::RECRAWL_ENDPOINT;
 	}
@@ -49,61 +57,13 @@ class YandexWebmaster extends WebmasterAbstract {
 
 	public function setup_hooks() {
 
+		add_action( 'admin_init', [ $this, 'get_api_token' ] );
+
 		if ( ! $this->is_enabled() ) {
 			return;
 		}
 
 		add_action( 'transition_post_status', [ $this, 'ping_on_post_update' ], 10, 3 );
-
-		//add_action( 'pre_update_option_mihdan_index_now_yandex_webmaster', [ $this, 'get_response_code' ], 10, 2 );
-		//add_action( 'update_option_mihdan_index_now_yandex_webmaster', [ $this, 'get_yandex_token' ], 10, 2 );
-		//add_action( 'update_option_mihdan_index_now_yandex_webmaster', [ $this, 'maybe_get_user_id' ], 10, 2 );
-		//add_action( 'admin_init', [ $this, 'get_api_token' ] );
-	}
-
-	public function maybe_get_user_id( $old_value, $value ) {
-		if ( $value['enable'] === 'off' ) {
-			return;
-		}
-
-		if ( ! empty( $value['user_id'] ) ) {
-			return;
-		}
-
-		if ( empty( $value['token'] ) ) {
-			return;
-		}
-
-		$this->get_user_id( $value['token'] );
-	}
-
-	public function get_response_code( $value, $old_value ) {
-
-		if ( $value['enable'] === 'off' ) {
-			return $value;
-		}
-
-		if ( empty( $value['client_id'] ) ) {
-			return $value;
-		}
-
-		if ( empty( $value['client_secret'] ) ) {
-			return $value;
-		}
-
-		if ( ! empty( $value['access_token'] ) ) {
-			return $value;
-		}
-
-		$url = sprintf(
-			'%s?response_type=code&client_id=%s&redirect_uri=%s&force_confirm=yes&display=popup&state=%s',
-			self::CODE_ENDPOINT,
-			$value['client_id'],
-			rawurldecode( admin_url( 'admin.php?page=' . MIHDAN_INDEX_NOW_SLUG ) ),
-			$this->get_slug()
-		);
-		wp_redirect( $url );
-		die;
 	}
 
 	public function get_api_token() {
@@ -113,8 +73,8 @@ class YandexWebmaster extends WebmasterAbstract {
 			$data['body'] = [
 				'grant_type'    => 'authorization_code',
 				'code'          => $_GET['code'],
-				'client_id'     => '08c41fd597854d47b2911716d7f71e2f',
-				'client_secret' => '2a4c5831b44e469f8a86c36fd88101f6',
+				'client_id'     => $this->get_client_id(),
+				'client_secret' => $this->get_client_secret(),
 			];
 
 			$response    = wp_remote_post( self::TOKEN_ENDPOINT, $data );
@@ -122,21 +82,33 @@ class YandexWebmaster extends WebmasterAbstract {
 			$body        = json_decode( wp_remote_retrieve_body( $response ), true );
 
 			if ( $status_code !== 200 ) {
-				$this->error( $body['error_description'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
+				$this->logger->error( $body['error_description'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
 				return;
 			}
 
-			$user_id = $this->get_user_id( $body['access_token'] );
-			$host_id = $this->get_host_id( $user_id, $body['access_token'] );
+			$this->wposa->set_option( 'access_token', $body['access_token'], 'yandex_webmaster' );
+			$this->wposa->set_option( 'refresh_token', $body['refresh_token'], 'yandex_webmaster' );
+			$this->wposa->set_option( 'expires_in', $body['expires_in'] + current_time( 'timestamp' ), 'yandex_webmaster' );
 
-			print_r($body['access_token']);
-			print_r($user_id);
-			print_r($host_id);
+			$user_id = $this->get_api_user_id( $body['access_token'] );
 
-			//$body['access_token']
-			//$body['expires_in']
-			//$body['refresh_token']
-			//$body['token_type']
+			if ( $user_id ) {
+				$this->wposa->set_option( 'user_id', $user_id, 'yandex_webmaster' );
+
+				$host_ids = $this->get_api_host_id( $user_id, $body['access_token'] );
+
+				if ( $host_ids ) {
+					$this->wposa->set_option( 'host_ids', serialize( $host_ids ), 'yandex_webmaster' );
+				}
+			}
+
+			wp_safe_redirect(
+				add_query_arg(
+					'page',
+					Utils::get_plugin_slug(),
+					admin_url( 'admin.php' )
+				)
+			);
 		}
 	}
 
@@ -161,7 +133,7 @@ class YandexWebmaster extends WebmasterAbstract {
 		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $status_code !== 200 ) {
-			$this->error( $body['error_message'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
+			$this->logger->error( $body['error_message'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
 			return 0;
 		}
 
@@ -190,12 +162,12 @@ class YandexWebmaster extends WebmasterAbstract {
 		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( $status_code !== 200 ) {
-			$this->error( $body['error_message'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
+			$this->logger->error( $body['error_message'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
 			return 0;
 		}
 
 		return isset( $body['hosts'] )
-			? wp_list_pluck( $body['hosts'], 'unicode_host_url', 'host_id' )
+			? wp_list_pluck( $body['hosts'], 'host_id' )
 			: [];
 	}
 
