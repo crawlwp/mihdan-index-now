@@ -465,6 +465,7 @@ class WPOSA {
 				$sanitize_callback = isset( $field['sanitize_callback'] ) ? $field['sanitize_callback'] : '';
 
 				$help_tab = $field['help_tab'] ?? '';
+				$class    = $field['class'] ?? "wposa-form-table__row wposa-form-table__row_type_{$type} wposa-form-table__row_{$section}_{$id}";
 
 				$args = array(
 					'id'                => $id,
@@ -481,6 +482,7 @@ class WPOSA {
 					'attributes'        => [
 						'readonly' => $readonly,
 					],
+					'class'             => $class,
 				);
 
 				if ( $help_tab ) {
@@ -884,7 +886,7 @@ class WPOSA {
 	 */
 	function callback_button( $args ) {
 		$value = $args['placeholder'] ?? __( 'Submit' );
-		$class = $args['class'] ?? 'button-secondary';
+		$class = 'button-secondary';
 		$id    = $args['id'] ?? time();
 		?>
 		<input
@@ -1319,6 +1321,9 @@ class WPOSA {
 			}
 			.wposa-section-description {
 				max-width: 600px;
+			}
+			.wposa-form-table__row_type_hidden {
+				display: none;
 			}
 			@media (max-width: 544px) {
 				.wrap--wposa {

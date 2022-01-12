@@ -284,7 +284,6 @@ class Settings {
 				array(
 					'id'          => 'button_get_token',
 					'type'        => 'button',
-					'class'       => 'button-secondary',
 					'name'        => __( '', 'mihdan-index-now' ),
 					'placeholder' => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
 						? __( 'Update Token', 'mihdan-index-now' )
