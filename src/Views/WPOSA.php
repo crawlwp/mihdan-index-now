@@ -10,6 +10,8 @@
 
 namespace Mihdan\IndexNow\Views;
 
+use Mihdan\IndexNow\Utils;
+
 /**
  * WP_OSA.
  *
@@ -24,6 +26,9 @@ class WPOSA {
 	 * Allowed HTML tags and attributes for wp_kses().
 	 */
 	private const ALLOWED_HTML = [
+		'strong'   => [],
+		'b'        => [],
+		'i'        => [],
 		'code'     => [],
 		'ul'       => [],
 		'ol'       => [],
@@ -41,7 +46,8 @@ class WPOSA {
 			'id'    => true,
 		],
 		'option'   => [
-			'value' => true,
+			'value'    => true,
+			'selected' => true,
 		],
 		'div'      => [
 			'id'    => true,
@@ -316,6 +322,28 @@ class WPOSA {
 		return count( $this->get_sidebar_cards() );
 	}
 
+	private function convert_array_to_attributes( array $args ): string {
+		$result = [];
+
+		if ( count( $args ) ) {
+			foreach ( $args as $attr_key => $attr_value ) {
+				if ( $attr_value === true || $attr_value === false ) {
+					if ( $attr_value === true ) {
+						$result[] = esc_attr( $attr_key );
+					}
+				} else {
+					$result[] = sprintf(
+						'%s="%s"',
+						esc_attr( $attr_key ),
+						esc_attr( $attr_value )
+					);
+				}
+			}
+		}
+
+		return implode( ' ', $result );
+	}
+
 	/**
 	 * Initialize API.
 	 *
@@ -430,10 +458,14 @@ class WPOSA {
 				// Standard default placeholder.
 				$placeholder = isset( $field['placeholder'] ) ? $field['placeholder'] : '';
 
+				// Readonly attribute.
+				$readonly = $field['readonly'] ?? false;
+
 				// Sanitize Callback.
 				$sanitize_callback = isset( $field['sanitize_callback'] ) ? $field['sanitize_callback'] : '';
 
 				$help_tab = $field['help_tab'] ?? '';
+				$class    = $field['class'] ?? "wposa-form-table__row wposa-form-table__row_type_{$type} wposa-form-table__row_{$section}_{$id}";
 
 				$args = array(
 					'id'                => $id,
@@ -447,6 +479,10 @@ class WPOSA {
 					'std'               => $default,
 					'placeholder'       => $placeholder,
 					'sanitize_callback' => $sanitize_callback,
+					'attributes'        => [
+						'readonly' => $readonly,
+					],
+					'class'             => $class,
 				);
 
 				if ( $help_tab ) {
@@ -559,7 +595,7 @@ class WPOSA {
 			$desc = '';
 		}
 
-		return $desc;
+		return wp_kses( $desc, self::ALLOWED_HTML );
 	}
 
 
@@ -591,10 +627,22 @@ class WPOSA {
 		$size  = isset( $args['size'] ) && ! is_null( $args['size'] ) ? $args['size'] : 'regular';
 		$type  = isset( $args['type'] ) ? $args['type'] : 'text';
 
-		$html  = sprintf( '<input type="%1$s" class="%2$s-text" id="%3$s[%4$s]" name="%3$s[%4$s]" value="%5$s" placeholder="%6$s"/>', $type, $size, $args['section'], $args['id'], $value, $args['placeholder'] );
+		$attributes = $this->convert_array_to_attributes( $args['attributes'] );
+
+		$html  = sprintf(
+			'<input type="%1$s" class="%2$s-text" id="%3$s[%4$s]" name="%3$s[%4$s]" value="%5$s" placeholder="%6$s" %7$s/>',
+			esc_attr( $type ),
+			esc_attr( $size ),
+			esc_attr( $args['section'] ),
+			esc_attr( $args['id'] ),
+			esc_attr( $value ),
+			esc_attr( $args['placeholder'] ),
+			$attributes
+		);
+
 		$html .= $this->get_field_description( $args );
 
-		echo wp_kses( $html, self::ALLOWED_HTML );
+		echo $html;
 	}
 
 
@@ -709,7 +757,7 @@ class WPOSA {
 		foreach ( $args['options'] as $key => $label ) {
 			$html .= sprintf( '<option value="%s"%s>%s</option>', $key, selected( $value, $key, false ), $label );
 		}
-		$html .= sprintf( '</select>' );
+		$html .= '</select>';
 		$html .= $this->get_field_description( $args );
 
 		echo wp_kses( $html, self::ALLOWED_HTML );
@@ -831,6 +879,40 @@ class WPOSA {
 		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
+	/**
+	 * Displays a Button field for a settings field
+	 *
+	 * @param array $args settings field args
+	 */
+	function callback_button( $args ) {
+		$value = $args['placeholder'] ?? __( 'Submit' );
+		$class = 'button-secondary';
+		$id    = $args['id'] ?? time();
+		?>
+		<input
+			type="button"
+			id="<?php echo esc_attr( $id ); ?>"
+			value="<?php echo esc_attr( $value ); ?>"
+			class="button <?php echo esc_attr( $class ); ?>"
+		/>
+		<?php
+	}
+
+	/**
+	 * Displays a Button field for a settings field
+	 *
+	 * @param array $args settings field args
+	 */
+	function callback_hidden( $args ) {
+		$value = $this->get_option( $args['id'], $args['section'], $args['std'] );
+		?>
+		<input
+			type="hidden"
+			name="<?php echo esc_attr( $args['section'] ); ?>[<?php echo esc_attr( $args['id'] ); ?>]"
+			value="<?php echo esc_attr( $value ); ?>"
+		/>
+		<?php
+	}
 
 	/**
 	 * Get the value of a settings field
@@ -840,15 +922,31 @@ class WPOSA {
 	 * @param string $default default text if it's not found.
 	 * @return mixed
 	 */
-	function get_option( $option, $section, $default = '' ) {
+	public function get_option( $option, $section, $default = '' ) {
 		$section = str_replace( $this->get_prefix() . '_', '', $section );
 		$options = get_option( $this->get_prefix() . '_' . $section );
 
 		if ( isset( $options[ $option ] ) ) {
-			return $options[ $option ];
+			return apply_filters( 'wposa/get_option', $options[ $option ], $option, $section, $default );
 		}
 
-		return $default;
+		return apply_filters( 'wposa/get_option', $default, $option, $section, $default );
+	}
+
+	public function set_option( string $option, $value, string $section ): bool {
+		$name = $this->get_prefix() . '_' . $section;
+
+		// Get option.
+		$options = get_option( $name );
+
+		if ( ! $options ) {
+			return false;
+		}
+
+		// Update option.
+		$options[ $option ] = $value;
+
+		return update_option( $name, $options );
 	}
 
 	/**
@@ -1094,6 +1192,18 @@ class WPOSA {
 							.attr( 'src', self.val() );
 					})
 					.change();
+
+				const REDIRECT_URL  = '<?php echo esc_url( admin_url( 'admin.php?page=' . Utils::get_plugin_slug() ) ); ?>';
+				const CODE_ENDPOINT = 'https://oauth.yandex.ru/authorize?state=yandex-webmaster&response_type=code&force_confirm=yes&redirect_uri=' + REDIRECT_URL + '&client_id=';
+
+				$( '#button_get_token' ).on(
+					'click',
+					function() {
+						const CLIENT_ID = document.getElementById( 'mihdan_index_now_yandex_webmaster[client_id]' ).value;
+
+						window.location.href = CODE_ENDPOINT + CLIENT_ID;
+					}
+				);
 			});
 
 		</script>
@@ -1211,6 +1321,9 @@ class WPOSA {
 			}
 			.wposa-section-description {
 				max-width: 600px;
+			}
+			.wposa-form-table__row_type_hidden {
+				display: none;
 			}
 			@media (max-width: 544px) {
 				.wrap--wposa {

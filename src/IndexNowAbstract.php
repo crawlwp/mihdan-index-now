@@ -124,6 +124,10 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 			return;
 		}
 
+		if ( function_exists( 'is_post_publicly_viewable' ) && ! is_post_publicly_viewable( $post ) ) {
+			return;
+		}
+
 		$this->maybe_do_ping( $post->ID );
 	}
 

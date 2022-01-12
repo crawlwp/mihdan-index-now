@@ -82,7 +82,7 @@ class Main {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		}
 
-		( $this->make( Logger::class ) )->setup_hooks();
+		$this->make( Logger::class );
 
 		$wposa = $this->make(
 			WPOSA::class,
