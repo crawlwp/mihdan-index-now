@@ -65,6 +65,10 @@ class BingWebmaster extends WebmasterAbstract {
 			return;
 		}
 
+		if ( function_exists( 'is_post_publicly_viewable' ) && ! is_post_publicly_viewable( $post ) ) {
+			return;
+		}
+
 		$this->ping( $post );
 	}
 
