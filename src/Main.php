@@ -10,6 +10,7 @@ namespace Mihdan\IndexNow;
 use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\Providers\Bing\BingIndexNow;
 use Mihdan\IndexNow\Providers\Bing\BingWebmaster;
+use Mihdan\IndexNow\Providers\IndexNow\IndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
 use Mihdan\IndexNow\Views\HelpTab;
@@ -55,10 +56,6 @@ class Main {
 		$this->setup_hooks();
 
 		do_action( 'mihdan_index_now/init', $this );
-
-		if ( is_admin() ) {
-			do_action( 'mihdan_index_now/init', $this );
-		}
 	}
 
 	/**
@@ -102,6 +99,7 @@ class Main {
 		( $this->make( Cron::class ) )->setup_hooks();
 		( $this->make( YandexIndexNow::class ) )->setup_hooks();
 		( $this->make( BingIndexNow::class ) )->setup_hooks();
+		( $this->make( IndexNow::class ) )->setup_hooks();
 
 		( $this->make( YandexWebmaster::class ) )->setup_hooks();
 		( $this->make( BingWebmaster::class ) )->setup_hooks();
@@ -155,7 +153,7 @@ class Main {
     			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
     			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
-    			search_engine enum('yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site') NOT NULL DEFAULT 'site',
+    			search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site') NOT NULL DEFAULT 'site',
     			direction enum('incoming','outgoing','internal') NOT NULL DEFAULT 'incoming',
     			status_code INT(11) unsigned NOT NULL,
     			message text NOT NULL,
@@ -212,7 +210,7 @@ class Main {
 	public function render_log_page() {
 		?>
 		<div class="wrap">
-			<h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
+			<h2><?php esc_html_e( get_admin_page_title(), 'mihdan-index-now' ); ?></h2>
 			<form action="" method="post">
 				<?php
 				/**
