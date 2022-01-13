@@ -171,8 +171,9 @@ class Settings {
 				'default'  => 'yandex-index-now',
 				'help_tab' => 'search_engine_support',
 				'options'  => [
-					'yandex-index-now'     => __( 'Yandex', 'mihdan-index-now' ),
 					'bing-index-now'       => __( 'Bing', 'mihdan-index-now' ),
+					'index-now'            => __( 'IndexNow', 'mihdan-index-now' ),
+					'yandex-index-now'     => __( 'Yandex', 'mihdan-index-now' ),
 					//'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
 					//'google'     => __( 'Google', 'mihdan-index-now' ),
 					//'baidu'      => __( 'Baidu', 'mihdan-index-now' ),
