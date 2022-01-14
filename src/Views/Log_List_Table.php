@@ -19,12 +19,21 @@ class Log_List_Table extends WP_List_Table {
 	private $logger;
 
 	/**
+	 * WP_OSA instance.
+	 *
+	 * @var WPOSA $wposa
+	 */
+	public $wposa;
+
+	/**
 	 * Log constructor.
 	 *
 	 * @param Logger $logger Logger instance.
+	 * @param WPOSA  $wposa WPOSA instance.
 	 */
-	public function __construct( Logger $logger ) {
+	public function __construct( Logger $logger, WPOSA $wposa ) {
 		$this->logger = $logger;
+		$this->wposa  = $wposa;
 
 		parent::__construct(array(
 			'singular' => 'log',
@@ -230,11 +239,14 @@ class Log_List_Table extends WP_List_Table {
 					)
 				);
 
-				$data = [
-					'direction' => 'internal',
-				];
+				if ( $this->wposa->get_option( 'bulk_actions', 'logs', 'off' ) === 'on' ) {
 
-				$this->logger->info( sprintf( 'The log entries with IDs %s were deleted successfully.', $log_rows ), $data );
+					$data = [
+						'direction' => 'internal',
+					];
+
+					$this->logger->info( sprintf( 'The log entries with IDs %s were deleted successfully.', $log_rows ), $data );
+				}
 			}
 		}
 	}
