@@ -4,7 +4,7 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.8
-Stable tag: 2.1.0.1
+Stable tag: 2.2.0
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,9 +113,18 @@ See the documentation available from each search engine for more details about I
 
 == Changelog ==
 
+= 2.2.0 (14.01.2022) =
+* Added new hook `mihdan_index_now/post_updated`
+* Added new hook `mihdan_index_now/comment_updated`
+* Added new hook `mihdan_index_now/term_updated`
+* Added default settings when installing the plugin
+* Added ability to notify the search engine when terms (tags, categories, etc.) are updated
+* Added ability to disable logging cron events
+* Added ability to disable logging bulk actions
+* Added ability to disable logging outgoing request
+
 = 2.1.0 (13.01.2022) =
 * Added indexnow.org ping
-* Added default settings when installing the plugin
 * Added plugin assets
 * Fixed bug with Bing Webmaster ping
 
