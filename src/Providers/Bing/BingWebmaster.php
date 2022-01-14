@@ -31,7 +31,7 @@ class BingWebmaster extends WebmasterAbstract {
 	}
 
 	public function is_enabled(): bool {
-		return $this->wposa->get_option( 'enable', 'bing_webmaster', 'on' ) === 'on';
+		return $this->wposa->get_option( 'enable', 'bing_webmaster', 'off' ) === 'on';
 	}
 
 	public function setup_hooks() {

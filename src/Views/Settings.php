@@ -7,6 +7,8 @@
 
 namespace Mihdan\IndexNow\Views;
 
+use Mihdan\IndexNow\Utils;
+
 /**
  * Class Settings.
  */
@@ -33,6 +35,11 @@ class Settings {
 	private $post_types;
 
 	/**
+	 * @var array $taxonomies
+	 */
+	private $taxonomies;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param WPOSA   $wposa WPOSA instance.
@@ -52,6 +59,7 @@ class Settings {
 		);
 
 		$this->post_types = wp_list_pluck( get_post_types( $args, 'objects' ), 'label', 'name' );
+		$this->taxonomies = wp_list_pluck( get_taxonomies( $args, 'objects' ), 'label', 'name' );
 	}
 
 	/**
@@ -59,16 +67,49 @@ class Settings {
 	 *
 	 * @return array
 	 */
-	private function get_post_types() {
+	private function get_post_types(): array {
 		return $this->post_types;
+	}
+
+	/**
+	 * Get taxonomies.
+	 *
+	 * @return array
+	 */
+	private function get_taxonomies(): array {
+		return $this->taxonomies;
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	public function setup_hooks() {
+	public function setup_hooks(): void {
 		add_action( 'init', [ $this, 'setup_vars' ], 100 );
 		add_action( 'init', [ $this, 'setup_fields' ], 101 );
+		//register_activation_hook( Utils::get_plugin_file(), [ $this, 'set_default_setting' ] );
+	}
+
+	public function set_default_setting(): void {
+		$sections = [
+			'general' => [
+				'post_types'   => [ 'post' => 'post' ],
+				'ping_on_post' => 'on',
+			],
+			'index_now' => [
+				'enable'  => 'on',
+				'api_key' => Utils::generate_key(),
+			],
+			'bing_webmaster' => [],
+			'yandex_webmaster' => [],
+			'google_webmaster' => [],
+			'logs' => [],
+		];
+
+		foreach ( $sections as $section => $fields ) {
+			foreach ( $fields as $key => $value ) {
+				//$this->wposa->set_option( $key, $value, $section );
+			}
+		}
 	}
 
 	/**
@@ -90,7 +131,7 @@ class Settings {
 				[
 					'id'    => 'rtfm',
 					'title' => __( 'Do you need help?', 'mihdan-index-now' ),
-					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li><li><a href="https://t.me/mihdan" target="_blank">Help via Telegram</a></li></ol>', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li><li><a href="https://t.me/+rBLAx8RzcNk1ZWY6" target="_blank">Help via Telegram</a></li></ol>', 'mihdan-index-now' ),
 				]
 			);
 
@@ -108,7 +149,18 @@ class Settings {
 				'type'    => 'multicheck',
 				'name'    => __( 'Post Types', 'mihdan-index-now' ),
 				'options' => $this->get_post_types(),
-				'default' => array( 'post' => 'post' ),
+				'default' => [ 'post' => 'post' ],
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
+			array(
+				'id'      => 'taxonomies',
+				'type'    => 'multicheck',
+				'name'    => __( 'Taxonomies', 'mihdan-index-now' ),
+				'options' => $this->get_taxonomies(),
+				'default' => [ 'category' => 'category' ],
 			)
 		);
 
@@ -124,10 +176,28 @@ class Settings {
 		$this->wposa->add_field(
 			'general',
 			array(
+				'id'      => 'ping_on_post',
+				'type'    => 'switch',
+				'name'    => __( 'Post added', 'mihdan-index-now' ),
+				'default' => 'on',
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
+			array(
+				'id'      => 'ping_on_term',
+				'type'    => 'switch',
+				'name'    => __( 'Term added', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
+			array(
 				'id'      => 'ping_on_comment',
 				'type'    => 'switch',
 				'name'    => __( 'Comment added', 'mihdan-index-now' ),
-				'default' => 'on',
 			)
 		);
 
@@ -156,9 +226,9 @@ class Settings {
 				'type'        => 'text',
 				'name'        => __( 'API Key', 'mihdan-index-now' ),
 				'placeholder' => __( 'Set the API key', 'mihdan-index-now' ),
-				'default'     => $this->generate_key(),
+				'default'     => Utils::generate_key(),
 				'help_tab'    => 'index_now_api_key',
-				'desc'        => sprintf( '<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'mihdan_index_now_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr( $this->generate_key() ), __( 'Show example', 'mihdan-index-now' ) ),
+				'desc'        => sprintf( '<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'mihdan_index_now_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr( Utils::generate_key() ), __( 'Show example', 'mihdan-index-now' ) ),
 			)
 		);
 
@@ -359,16 +429,6 @@ class Settings {
 
 		$this->wposa->add_section(
 			array(
-				'id'    => 'manual_submission',
-				'title' => __( 'Manual submission', 'mihdan-index-now' ),
-				//'desc'  => __( 'IndexNow is an easy way for websites owners to instantly inform search engines about latest content changes on their website. In its simplest form, IndexNow is a simple ping so that search engines know that a URL and its content has been added, updated, or deleted, allowing search engines to quickly reflect this change in their search results.', 'mihdan-index-now' ),
-				'disabled' => true,
-				'badge'    => __( 'Soon', 'mihdan-index-now' ),
-			)
-		);
-
-		$this->wposa->add_section(
-			array(
 				'id'    => 'logs',
 				'title' => __( 'Logs', 'mihdan-index-now' ),
 				'desc'  => __( 'Module for logging incoming request from search engine and outgoing request from site.', 'mihdan-index-now' ),
@@ -388,6 +448,46 @@ class Settings {
 		$this->wposa->add_field(
 			'logs',
 			array(
+				'id'      => 'key_logging',
+				'type'    => 'switch',
+				'name'    => __( 'Key logging', 'mihdan-index-now' ),
+				'default' => 'on',
+			)
+		);
+
+		$this->wposa->add_field(
+			'logs',
+			array(
+				'id'      => 'outgoing_requests',
+				'type'    => 'switch',
+				'name'    => __( 'Outgoing requests', 'mihdan-index-now' ),
+				'default' => 'on',
+			)
+		);
+
+		$this->wposa->add_field(
+			'logs',
+			array(
+				'id'      => 'cron_events',
+				'type'    => 'switch',
+				'name'    => __( 'Cron events', 'mihdan-index-now' ),
+				'default' => 'off',
+			)
+		);
+
+		$this->wposa->add_field(
+			'logs',
+			array(
+				'id'      => 'bulk_actions',
+				'type'    => 'switch',
+				'name'    => __( 'Bulk Actions', 'mihdan-index-now' ),
+				'default' => 'off',
+			)
+		);
+
+		$this->wposa->add_field(
+			'logs',
+			array(
 				'id'      => 'lifetime',
 				'type'    => 'number',
 				'name'    => __( 'Lifetime', 'mihdan-index-now' ),
@@ -395,42 +495,6 @@ class Settings {
 				'desc'    => __( 'Logs lifetime in days', 'mihdan-index-now' ),
 			)
 		);
-
-		$this->wposa->add_field(
-			'logs',
-			array(
-				'id'      => 'types',
-				'type'    => 'multicheck',
-				'name'    => __( 'Types', 'mihdan-index-now' ),
-				'options' => [
-					'ping' => __( 'Outgoing: ping', 'mihdan-index-now' ),
-					//'url'  => __( 'Incoming: url', 'mihdan-index-now' ),
-					'cron' => __( 'Cron events', 'mihdan-index-now' ),
-				],
-				'default' => [
-					'ping' => 'ping',
-				],
-			)
-		);
-
-		$this->wposa->add_field(
-			'logs',
-			array(
-				'id'      => 'key_logging',
-				'type'    => 'switch',
-				'name'    => __( 'Key logging', 'mihdan-index-now' ),
-				'default' => 'on',
-			)
-		);
-	}
-
-	/**
-	 * Generate random key.
-	 *
-	 * @return string
-	 */
-	private function generate_key() {
-		return str_replace( '-', '', wp_generate_uuid4() );
 	}
 
 	public function get_yandex_webmaster_host_ids() {

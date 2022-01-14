@@ -81,6 +81,8 @@ class Main {
 
 		$this->make( Logger::class );
 
+		( $this->make( Hooks::class ) )->setup_hooks();
+
 		$wposa = $this->make(
 			WPOSA::class,
 			[

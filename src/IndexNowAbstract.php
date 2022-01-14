@@ -51,6 +51,13 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	private $post_types;
 
 	/**
+	 * Taxonomies.
+	 *
+	 * @var array[]
+	 */
+	private $taxonomies;
+
+	/**
 	 * IndexNowAbstract constructor.
 	 *
 	 * @param Logger $logger Logger instance.
@@ -60,7 +67,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		$this->wposa      = $wposa;
 		$this->host       = apply_filters( 'mihdan_index_now/host', wp_parse_url( get_home_url(), PHP_URL_HOST ) );
 		$this->post_types = apply_filters( 'mihdan_index_now/post_types', (array) $this->wposa->get_option( 'post_types', 'general', [] ) );
-		$this->api_key    = $this->wposa->get_option( 'api_key', 'index_now' );
+		$this->taxonomies = apply_filters( 'mihdan_index_now/taxonomies', (array) $this->wposa->get_option( 'taxonomies', 'general', [] ) );
+		$this->api_key    = $this->wposa->get_option( 'api_key', 'index_now', Utils::generate_key() );
 	}
 
 	public function setup_hooks() {
@@ -69,28 +77,37 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		}
 
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
-		add_action( 'transition_post_status', [ $this, 'ping_on_post_update' ], 10, 3 );
-		add_action( 'wp_insert_comment', [ $this, 'ping_on_insert_comment' ], 10, 2 );
+
+		if ( $this->is_ping_on_post() ) {
+			add_action( 'mihdan_index_now/post_updated', [ $this, 'ping_on_post_update' ], 10, 2 );
+		}
+
+		if ( $this->is_ping_on_comment() ) {
+			add_action( 'mihdan_index_now/comment_updated', [ $this, 'ping_on_insert_comment' ], 10, 2 );
+		}
+
+		if ( $this->is_ping_on_term() ) {
+			add_action( 'mihdan_index_now/term_updated', [ $this, 'ping_on_insert_term' ], 10, 2 );
+		}
 	}
 
 	abstract protected function get_api_url(): string;
 	abstract protected function get_bot_useragent(): string;
-
-	public function ping_on_insert_comment( int $id, WP_Comment $comment ) {
-
-		if ( ! $this->is_ping_on_comment() ) {
-			return;
-		}
-
-		$this->maybe_do_ping( $comment->comment_post_ID );
-	}
 
 	public function is_enabled(): bool {
 		return $this->wposa->get_option( 'enable', 'index_now', 'on' ) === 'on';
 	}
 
 	private function is_ping_on_comment(): bool {
-		return $this->wposa->get_option( 'ping_on_comment', 'general', 'on' ) === 'on';
+		return $this->wposa->get_option( 'ping_on_comment', 'general', 'off' ) === 'on';
+	}
+
+	private function is_ping_on_post(): bool {
+		return $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on';
+	}
+
+	private function is_ping_on_term(): bool {
+		return $this->wposa->get_option( 'ping_on_term', 'general', 'off' ) === 'on';
 	}
 
 	private function is_key_logging_enabled(): bool {
@@ -104,34 +121,24 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	/**
 	 * Fires actions related to the transitioning of a post's status.
 	 *
-	 * @param string  $new_status New post status.
-	 * @param string  $old_status Old post status.
+	 * @param int     $post_id Post ID.
 	 * @param WP_Post $post    Post data.
 	 *
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function ping_on_post_update( $new_status, $old_status, WP_Post $post ) {
-
-		if ( $new_status !== 'publish' ) {
-			return;
-		}
-
-		if ( ! empty( $_REQUEST['meta-box-loader'] ) ) { // phpcs:ignore
-			return;
-		}
-
-		if ( wp_is_post_revision( $post ) || wp_is_post_autosave( $post ) ) {
-			return;
-		}
-
-		if ( function_exists( 'is_post_publicly_viewable' ) && ! is_post_publicly_viewable( $post ) ) {
-			return;
-		}
-
-		$this->maybe_do_ping( $post->ID );
+	public function ping_on_post_update( int $post_id, WP_Post $post ) {
+		$this->maybe_do_ping_post( $post_id );
 	}
 
-	private function maybe_do_ping( int $post_id ) {
+	public function ping_on_insert_comment( int $post_id, WP_Comment $comment ) {
+		$this->maybe_do_ping_post( $post_id );
+	}
+
+	public function ping_on_insert_term( int $term_id, string $taxonomy ) {
+		$this->maybe_do_ping_term( $term_id, $taxonomy );
+	}
+
+	private function maybe_do_ping_post( int $post_id ) {
 		$post = get_post( $post_id );
 
 		if ( ! in_array( $post->post_type, $this->get_post_types(), true ) ) {
@@ -139,7 +146,18 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		}
 
 		if ( $this->get_current_search_engine() === $this->get_slug() ) {
-			$this->push( $post );
+			$this->push( [ get_permalink( $post_id ) ] );
+		}
+	}
+
+	private function maybe_do_ping_term( int $term_id, string $taxonomy ) {
+
+		if ( ! in_array( $taxonomy, $this->get_taxonomies(), true ) ) {
+			return;
+		}
+
+		if ( $this->get_current_search_engine() === $this->get_slug() ) {
+			$this->push( [ get_term_link( $term_id, $taxonomy ) ] );
 		}
 	}
 
@@ -153,6 +171,10 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		return $this->post_types;
 	}
 
+	private function get_taxonomies(): array {
+		return $this->taxonomies;
+	}
+
 	/**
 	 * Get host name.
 	 *
@@ -162,16 +184,14 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		return $this->host;
 	}
 
-	public function push( WP_Post $post ): bool {
+	public function push( array $url_list ): bool {
 		$args = array(
 			'timeout' => 30,
 			'body'    => wp_json_encode(
 				array(
 					'host'    => $this->get_host(),
 					'key'     => $this->get_api_key(),
-					'urlList' => [
-						get_permalink( $post->ID ),
-					],
+					'urlList' => $url_list,
 				)
 			),
 			'headers' => [
@@ -190,8 +210,10 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		];
 
 		if ( Utils::is_response_code_success( $status_code ) ) {
-			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post ), get_the_title( $post ) );
-			$this->logger->info( $message, $data );
+			foreach ( $url_list as $url ) {
+				$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', $url, $url );
+				$this->logger->info( $message, $data );
+			}
 		} else {
 			$this->logger->error( $body['message'] ?? '', $data );
 		}

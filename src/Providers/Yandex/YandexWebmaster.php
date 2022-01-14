@@ -52,7 +52,7 @@ class YandexWebmaster extends WebmasterAbstract {
 	}
 
 	public function is_enabled(): bool {
-		return $this->wposa->get_option( 'enable', 'yandex_webmaster', 'on' ) === 'on';
+		return $this->wposa->get_option( 'enable', 'yandex_webmaster', 'off' ) === 'on';
 	}
 
 	public function setup_hooks() {
