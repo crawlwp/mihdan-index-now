@@ -4,18 +4,22 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.8
-Stable tag: 2.2.0
+Stable tag: 2.2.0.1
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.
+Index Now — это бесплатный плагин под WordPress для быстрого уведомления поисковых систем всякий раз, когда контент создается, обновляется или удаляется.
 
 == Description ==
 
-Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу [IndexNow](https://www.indexnow.org).
+Index Now — это бесплатный плагин под WordPress для быстрого уведомления поисковых систем всякий раз, когда контент создается, обновляется или удаляется.
 
-### What is IndexNow? ###
+Используются протоколы IndexNow, Яндекс API, Bing API (а скоро и Google API !!!), что почти с 99% вероятностью гарантирует индексацию новых страниц сайтов!
+
+Забудьте про проблемы с индексацией и сосредоточьтесь на создании качественного контента для вашего сайта!
+
+### ⚓ What is IndexNow? ###
 
 IndexNow is an easy way for websites owners to instantly inform search engines about latest content changes on their website. In its simplest form, IndexNow is a simple ping so that search engines know that a URL and its content has been added, updated, or deleted, allowing search engines to quickly reflect this change in their search results.
 
@@ -23,9 +27,25 @@ Without IndexNow, it can take days to weeks for search engines to discover that 
 
 IndexNow is offered under the terms of the Attribution-ShareAlike Creative Commons License and has support from Microsoft Bing, Yandex.
 
-### Requirement for search engines ###
+### ✅ Requirement for search engines ###
 
 Search Engines adopting the IndexNow protocol agree that submitted URLs will be automatically shared with all other participating Search Engines. To participate, search engines must have a noticeable presence in at least one market.
+
+### ⛑️ Documentation and support ###
+If you have some questions or suggestions, welcome to our [GitHub repository](https://github.com/mihdan/mihdan-index-now/issues).
+
+### 💙 Love Index Now for WordPress? ###
+If the plugin was useful, rate it with a [5 star rating](https://wordpress.org/support/plugin/mihdan-index-now/reviews/) and write a few nice words.
+
+### 🏳️ Translations ###
+[Help translate Index Now](https://translate.wordpress.org/projects/wp-plugins/mihdan-index-now/)
+
+- 🇺🇸 English (en_US) - [mihdan](https://profiles.wordpress.org/mihdan)
+- 🇷🇺 Русский (ru_RU) - [mihdan](https://profiles.wordpress.org/mihdan)
+- 🇺🇦 Українська (uk_UA) - [seojacky](https://profiles.wordpress.org/seojacky)
+- [You could be next](https://translate.wordpress.org/projects/wp-plugins/mihdan-index-now/)...
+
+Can you help with plugin translation? Please feel free to contribute!
 
 == Frequently Asked Questions ==
 
@@ -33,6 +53,7 @@ Search Engines adopting the IndexNow protocol agree that submitted URLs will be 
 
 Microsoft Bing - https://www.bing.com/indexnow?url=url-changed&key=your-key
 Yandex - https://yandex.com/indexnow?url=url-changed&key=your-key
+IndexNow - https://api.indexnow.org/indexnow/?url=url-changed&key=your-key
 
 Starting November 2021, IndexNow-enabled search engines will share immediately all URLs submitted to all other IndexNow-enabled search engines, so when you notify one, you will notify all search engines.
 
