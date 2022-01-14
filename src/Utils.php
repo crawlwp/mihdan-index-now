@@ -96,4 +96,13 @@ class Utils {
 	public static function set_db_version( string $version ): bool {
 		return update_option( self::get_plugin_prefix() . '_version', $version, false );
 	}
+
+	/**
+	 * Generate random key.
+	 *
+	 * @return string
+	 */
+	public static function generate_key() {
+		return str_replace( '-', '', wp_generate_uuid4() );
+	}
 }

@@ -871,12 +871,9 @@ class WPOSA {
 	 * @param array $args settings field args
 	 */
 	function callback_separator( $args ) {
-		$type = isset( $args['type'] ) ? $args['type'] : 'separator';
-
-		$html  = '';
-		$html .= '<div class="wpsa-settings-separator"></div>';
-
-		echo wp_kses( $html, self::ALLOWED_HTML );
+		?>
+		<div class="wpsa-settings-separator"></div>
+		<?php
 	}
 
 	/**
@@ -1325,6 +1322,20 @@ class WPOSA {
 			.wposa-form-table__row_type_hidden {
 				display: none;
 			}
+			.wposa-form-table__row_type_number .regular-text {
+				width: 50px;
+			}
+			.wposa-form-table__row_mihdan_index_now_logs_enable label,
+			.wposa-form-table__row_mihdan_index_now_yandex_webmaster_enable label,
+			.wposa-form-table__row_mihdan_index_now_bing_webmaster_enable label,
+			.wposa-form-table__row_mihdan_index_now_index_now_enable label {
+				color: #135e96 !important;
+			}
+
+			.wrap-column--form form {
+				max-width: 600px;
+			}
+
 			@media (max-width: 544px) {
 				.wrap--wposa {
 					flex-direction: column;
