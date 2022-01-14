@@ -181,3 +181,17 @@ See the documentation available from each search engine for more details about I
 
 = 1.0.0 (28.10.2021) =
 * Init plugin
+
+== Installation ==
+
+= From your WordPress dashboard =
+1. Visit 'Plugins > Add New'
+2. Search for 'Index Now'
+3. Activate Index Now from your Plugins page.
+4. [Optional] Configure plugin in 'WP Booster > True Lazy Analytics'.
+
+= From WordPress.org =
+1. Download Index Now.
+2. Upload the 'mihdan-index-now' directory to your '/wp-content/plugins/' directory, using your favorite method (ftp, sftp, scp, etc...)
+3. Activate Index Now from your Plugins page.
+4. [Optional] Configure plugin in 'Index Now > Index Now'.
