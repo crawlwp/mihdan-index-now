@@ -2,7 +2,7 @@
   "name": "mihdan/index-now",
   "description": "Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.",
   "type": "wordpress-plugin",
-  "license": "GPL2",
+  "license": "GPL-2.0-or-later",
   "autoload": {
     "psr-4": {
       "Mihdan\\IndexNow\\": "src/"
