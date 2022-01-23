@@ -3,8 +3,8 @@ Contributors: mihdan
 Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
-Tested up to: 5.8
-Stable tag: 2.2.0.1
+Tested up to: 5.9
+Stable tag: 2.3.0
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -40,9 +40,10 @@ If the plugin was useful, rate it with a [5 star rating](https://wordpress.org/s
 ### 🏳️ Translations ###
 [Help translate Index Now](https://translate.wordpress.org/projects/wp-plugins/mihdan-index-now/)
 
-- 🇺🇸 English (en_US) - [mihdan](https://profiles.wordpress.org/mihdan)
-- 🇷🇺 Русский (ru_RU) - [mihdan](https://profiles.wordpress.org/mihdan)
-- 🇺🇦 Українська (uk_UA) - [seojacky](https://profiles.wordpress.org/seojacky)
+- 🇺🇸 English (en_US) - [Mikhail kobzarev](https://profiles.wordpress.org/mihdan)
+- 🇷🇺 Русский (ru_RU) - [Mikhail kobzarev](https://profiles.wordpress.org/mihdan)
+- 🇺🇦 Українська (uk_UA) - [Eugen Kalinsky](https://profiles.wordpress.org/seojacky)
+- 🇳🇱 Dutch (nl_NL) - [Peter Smits](https://profiles.wordpress.org/psmits1567)
 - [You could be next](https://translate.wordpress.org/projects/wp-plugins/mihdan-index-now/)...
 
 Can you help with plugin translation? Please feel free to contribute!
@@ -133,6 +134,11 @@ Yes, when sitemaps are an easy way for webmasters to inform search engines about
 See the documentation available from each search engine for more details about IndexNow.
 
 == Changelog ==
+
+= 2.3.0 (23.01.2022) =
+* Added Google Webmaster ping via API
+* Added more documentation
+* Updated plugin assets
 
 = 2.2.0 (14.01.2022) =
 * Added new hook `mihdan_index_now/post_updated`
