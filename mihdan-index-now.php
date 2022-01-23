@@ -7,6 +7,8 @@
  * Author URI: https://www.kobzarev.com/
  * Plugin URI: https://wordpress.org/plugins/mihdan-index-now/
  * GitHub Plugin URI: https://github.com/mihdan/mihdan-index-now
+ * Requires PHP: 7.1
+ * Requires at least: 5.0
  *
  * @link https://github.com/mihdan/mihdan-index-now
  * @package mihdan-index-now
