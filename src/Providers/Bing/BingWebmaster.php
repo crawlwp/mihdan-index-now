@@ -8,7 +8,6 @@
 namespace Mihdan\IndexNow\Providers\Bing;
 
 use Mihdan\IndexNow\WebmasterAbstract;
-use WP_Post;
 use Mihdan\IndexNow\Utils;
 
 class BingWebmaster extends WebmasterAbstract {
@@ -39,47 +38,17 @@ class BingWebmaster extends WebmasterAbstract {
 			return;
 		}
 
-		add_action( 'transition_post_status', [ $this, 'ping_on_post_update' ], 10, 3 );
-	}
-
-	/**
-	 * Fires actions related to the transitioning of a post's status.
-	 *
-	 * @param string  $new_status New post status.
-	 * @param string  $old_status Old post status.
-	 * @param WP_Post $post    Post data.
-	 *
-	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
-	 */
-	public function ping_on_post_update( $new_status, $old_status, WP_Post $post ) {
-
-		if ( $new_status !== 'publish' ) {
-			return;
-		}
-
-		if ( ! empty( $_REQUEST['meta-box-loader'] ) ) { // phpcs:ignore
-			return;
-		}
-
-		if ( wp_is_post_revision( $post ) || wp_is_post_autosave( $post ) ) {
-			return;
-		}
-
-		if ( function_exists( 'is_post_publicly_viewable' ) && ! is_post_publicly_viewable( $post ) ) {
-			return;
-		}
-
-		$this->ping( $post );
+		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
 	}
 
 	/**
 	 * Bing Webmaster ping.
 	 *
-	 * @param WP_Post $post WP_Post instance.
+	 * @param int $post_id Post ID.
 	 *
 	 * @link https://www.bing.com/webmasters/url-submission-api#APIs
 	 */
-	public function ping( WP_Post $post ) {
+	public function ping( int $post_id ) {
 		$url  = sprintf( $this->get_ping_endpoint(), $this->get_token() );
 		$args = array(
 			'timeout' => 30,
@@ -90,7 +59,7 @@ class BingWebmaster extends WebmasterAbstract {
 				[
 					'siteUrl' => get_home_url(),
 					'urlList' => [
-						get_permalink( $post->ID ),
+						get_permalink( $post_id ),
 					],
 				]
 			),
@@ -106,7 +75,7 @@ class BingWebmaster extends WebmasterAbstract {
 		];
 
 		if ( Utils::is_response_code_success( $status_code ) ) {
-			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post ), get_the_title( $post ) );
+			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post_id ), get_the_title( $post_id ) );
 			$this->logger->info( $message, $data );
 		} else {
 			$this->logger->error( $body['Message'], $data );

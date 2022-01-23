@@ -9,7 +9,6 @@ namespace Mihdan\IndexNow;
 
 use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\Views\WPOSA;
-use WP_Post;
 
 abstract class WebmasterAbstract implements SearchEngineInterface {
 	/**
@@ -28,7 +27,7 @@ abstract class WebmasterAbstract implements SearchEngineInterface {
 
 	abstract public function get_token(): string;
 	abstract public function get_ping_endpoint(): string;
-	abstract public function ping( WP_Post $post );
+	abstract public function ping( int $post_id );
 
 	/**
 	 * WebmasterAbstract constructor.

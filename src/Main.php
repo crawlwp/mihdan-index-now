@@ -10,6 +10,7 @@ namespace Mihdan\IndexNow;
 use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\Providers\Bing\BingIndexNow;
 use Mihdan\IndexNow\Providers\Bing\BingWebmaster;
+use Mihdan\IndexNow\Providers\Google\GoogleWebmaster;
 use Mihdan\IndexNow\Providers\IndexNow\IndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
@@ -22,7 +23,6 @@ use WP_List_Table;
 use Auryn\Injector;
 use Auryn\InjectionException;
 use Auryn\ConfigException;
-use WP_Upgrader;
 
 /**
  * Class Main.
@@ -41,6 +41,13 @@ class Main {
 	 * @var WPOSA $wposa
 	 */
 	private $wposa;
+
+	/**
+	 * Logger instance.
+	 *
+	 * @var Logger
+	 */
+	private $logger;
 
 	/**
 	 * Constructor.
@@ -79,7 +86,7 @@ class Main {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		}
 
-		$this->make( Logger::class );
+		$this->logger = $this->make( Logger::class );
 
 		( $this->make( Hooks::class ) )->setup_hooks();
 
@@ -105,6 +112,7 @@ class Main {
 
 		( $this->make( YandexWebmaster::class ) )->setup_hooks();
 		( $this->make( BingWebmaster::class ) )->setup_hooks();
+		( $this->make( GoogleWebmaster::class ) )->setup_hooks();
 	}
 
 	/**
@@ -172,12 +180,27 @@ class Main {
 		if ( version_compare( $db_version, '2.0.0', '<' ) ) {
 			$this->migrate_to_2_0_0();
 		}
+
+		if ( version_compare( $db_version, '2.3.0', '<' ) ) {
+			$this->migrate_to_2_3_0();
+		}
 	}
 
 	private function migrate_to_2_0_0() {
 		$this->drop_tables();
 		$this->create_tables();
 		Utils::set_db_version( '2.0.0' );
+	}
+
+	private function migrate_to_2_3_0() {
+		global $wpdb;
+
+		$sql = sprintf(
+			"ALTER TABLE %s MODIFY COLUMN search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster') NOT NULL DEFAULT 'site'",
+			$this->logger->get_logger_table_name()
+		);
+		$wpdb->query( $sql );
+		Utils::set_db_version( '2.3.0' );
 	}
 
 	/**
@@ -256,10 +279,6 @@ class Main {
 	 * Parse incoming request.
 	 */
 	public function parse_incoming_request() { return;
-
-		if ( ! in_array( Utils::get_user_agent(), $this->get_bots(), true ) ) {
-			return;
-		}
 
 		$actual_link = ( is_ssl() ? "https" : "http" ) . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
 		$post_id     = url_to_postid( $actual_link );
