@@ -9,6 +9,8 @@
  * GitHub Plugin URI: https://github.com/mihdan/mihdan-index-now
  * Requires PHP: 7.1
  * Requires at least: 5.0
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
  * @link https://github.com/mihdan/mihdan-index-now
  * @package mihdan-index-now
