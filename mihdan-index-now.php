@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Index Now
- * Description: Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.
+ * Plugin Name: IndexNow
+ * Description: IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
  * Version: 2.3.0
  * Author: Mikhail Kobzarev
  * Author URI: https://www.kobzarev.com/
