@@ -163,7 +163,7 @@ class Main {
     			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
     			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
-    			search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site') NOT NULL DEFAULT 'site',
+    			search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster') NOT NULL DEFAULT 'site',
     			direction enum('incoming','outgoing','internal') NOT NULL DEFAULT 'incoming',
     			status_code INT(11) unsigned NOT NULL,
     			message text NOT NULL,
