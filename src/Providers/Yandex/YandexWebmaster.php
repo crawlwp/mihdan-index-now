@@ -9,11 +9,9 @@ namespace Mihdan\IndexNow\Providers\Yandex;
 
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\WebmasterAbstract;
-use WP_Post;
 
 class YandexWebmaster extends WebmasterAbstract {
 
-	private const CODE_ENDPOINT    = 'https://oauth.yandex.ru/authorize';
 	private const USER_ENDPOINT    = 'https://api.webmaster.yandex.net/v4/user/';
 	private const TOKEN_ENDPOINT   = 'https://oauth.yandex.ru/token';
 	private const HOSTS_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%d/hosts';
@@ -63,7 +61,7 @@ class YandexWebmaster extends WebmasterAbstract {
 			return;
 		}
 
-		add_action( 'transition_post_status', [ $this, 'ping_on_post_update' ], 10, 3 );
+		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
 	}
 
 	public function get_api_token() {
@@ -172,43 +170,13 @@ class YandexWebmaster extends WebmasterAbstract {
 	}
 
 	/**
-	 * Fires actions related to the transitioning of a post's status.
-	 *
-	 * @param string  $new_status New post status.
-	 * @param string  $old_status Old post status.
-	 * @param WP_Post $post    Post data.
-	 *
-	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
-	 */
-	public function ping_on_post_update( $new_status, $old_status, WP_Post $post ) {
-
-		if ( $new_status !== 'publish' ) {
-			return;
-		}
-
-		if ( ! empty( $_REQUEST['meta-box-loader'] ) ) { // phpcs:ignore
-			return;
-		}
-
-		if ( wp_is_post_revision( $post ) || wp_is_post_autosave( $post ) ) {
-			return;
-		}
-
-		if ( function_exists( 'is_post_publicly_viewable' ) && ! is_post_publicly_viewable( $post ) ) {
-			return;
-		}
-
-		$this->ping( $post );
-	}
-
-	/**
 	 * Yandex Webmaster ping.
 	 *
-	 * @param WP_Post $post WP_Post unstance.
+	 * @param int $post_id Post ID.
 	 *
 	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function ping( WP_Post $post ) {
+	public function ping( int $post_id ) {
 
 		$url = sprintf( $this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id() );
 
@@ -220,7 +188,7 @@ class YandexWebmaster extends WebmasterAbstract {
 			),
 			'body'    => wp_json_encode(
 				array(
-					'url' => get_permalink( $post->ID ),
+					'url' => get_permalink( $post_id ),
 				)
 			),
 		);
@@ -235,7 +203,7 @@ class YandexWebmaster extends WebmasterAbstract {
 		];
 
 		if ( Utils::is_response_code_success( $status_code ) ) {
-			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post ), get_the_title( $post ) );
+			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post_id ), get_the_title( $post_id ) );
 			$this->logger->info( $message, $data );
 		} else {
 			$this->logger->error( $body['error_message'], $data );

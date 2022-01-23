@@ -7,7 +7,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_path() {
+	public static function get_plugin_path(): string {
 		return MIHDAN_INDEX_NOW_DIR;
 	}
 
@@ -16,7 +16,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_basename() {
+	public static function get_plugin_basename(): string {
 		return MIHDAN_INDEX_NOW_BASENAME;
 	}
 
@@ -25,7 +25,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_version() {
+	public static function get_plugin_version(): string {
 		return MIHDAN_INDEX_NOW_VERSION;
 	}
 
@@ -34,8 +34,28 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_file() {
+	public static function get_plugin_file(): string {
 		return MIHDAN_INDEX_NOW_FILE;
+	}
+
+	/**
+	 * Get plugin URL.
+	 *
+	 * @return string
+	 */
+	public static function get_plugin_url(): string {
+		return MIHDAN_INDEX_NOW_URL;
+	}
+
+	/**
+	 * Get plugin asset URL.
+	 *
+	 * @param string $asset Asset path.
+	 *
+	 * @return string
+	 */
+	public static function get_plugin_asset_url( string $asset ): string {
+		return self::get_plugin_url() . 'assets/' . $asset;
 	}
 
 	/**
@@ -43,7 +63,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_slug() {
+	public static function get_plugin_slug(): string {
 		return MIHDAN_INDEX_NOW_SLUG;
 	}
 
@@ -52,7 +72,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_prefix() {
+	public static function get_plugin_prefix(): string {
 		return MIHDAN_INDEX_NOW_PREFIX;
 	}
 
@@ -61,7 +81,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function get_plugin_name() {
+	public static function get_plugin_name(): string {
 		return MIHDAN_INDEX_NOW_NAME;
 	}
 
@@ -102,7 +122,7 @@ class Utils {
 	 *
 	 * @return string
 	 */
-	public static function generate_key() {
+	public static function generate_key(): string {
 		return str_replace( '-', '', wp_generate_uuid4() );
 	}
 }

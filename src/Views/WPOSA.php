@@ -1336,6 +1336,10 @@ class WPOSA {
 				max-width: 600px;
 			}
 
+			.wposa-img {
+				max-width: 800px;
+			}
+
 			@media (max-width: 544px) {
 				.wrap--wposa {
 					flex-direction: column;

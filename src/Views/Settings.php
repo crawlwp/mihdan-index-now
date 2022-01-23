@@ -281,6 +281,35 @@ class Settings {
 
 		$this->wposa->add_section(
 			array(
+				'id'    => 'google_webmaster',
+				'title' => __( 'Google API', 'mihdan-index-now' ),
+				'desc'  => __( 'Google Instant Indexing API Settings. Submit posts from these post types automatically to the Google Instant Indexing API when a post is published, edited, or deleted.', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'google_webmaster',
+			array(
+				'id'   => 'enable',
+				'type' => 'switch',
+				'name' => __( 'Enable', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'google_webmaster',
+			array(
+				'id'          => 'json_key',
+				'type'        => 'textarea',
+				'name'        => __( 'Google JSON Key', 'mihdan-index-now' ),
+				'placeholder' => __( 'Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now' ),
+				'desc'        => __( 'Paste the Service Account JSON key file contents you obtained from Google API Console in the field.', 'mihdan-index-now' ),
+				'help_tab'    => 'google_webmaster_json_key',
+			)
+		);
+
+		$this->wposa->add_section(
+			array(
 				'id'       => 'yandex_webmaster',
 				'title'    => __( 'Yandex API', 'mihdan-index-now' ),
 				'desc'     => __( 'Sending a page for reindexing', 'mihdan-index-now' ),
@@ -405,25 +434,6 @@ class Settings {
 				'id'   => 'host_ids',
 				'type' => 'hidden',
 				'name' => '',
-			)
-		);
-
-		$this->wposa->add_section(
-			array(
-				'id'    => 'google_webmaster',
-				'title' => __( 'Google API', 'mihdan-index-now' ),
-				'desc'  => __( 'Sending a sitemap.xml for reindexing', 'mihdan-index-now' ),
-				'disabled' => true,
-				'badge'    => __( 'Soon', 'mihdan-index-now' ),
-			)
-		);
-
-		$this->wposa->add_field(
-			'google_webmaster',
-			array(
-				'id'   => 'enable',
-				'type' => 'switch',
-				'name' => __( 'Enable', 'mihdan-index-now' ),
 			)
 		);
 
