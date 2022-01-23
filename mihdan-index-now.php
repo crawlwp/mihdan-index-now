@@ -27,6 +27,7 @@ define( 'MIHDAN_INDEX_NOW_NAME', 'IndexNow' );
 define( 'MIHDAN_INDEX_NOW_FILE', __FILE__ );
 define( 'MIHDAN_INDEX_NOW_DIR', __DIR__ );
 define( 'MIHDAN_INDEX_NOW_BASENAME', plugin_basename( __FILE__ ) );
+define( 'MIHDAN_INDEX_NOW_URL', plugin_dir_url( __FILE__ ) );
 
 require_once __DIR__ . '/vendor/autoload.php';
 
