@@ -4,22 +4,24 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.9
-Stable tag: 2.3.0
+Stable tag: 2.3.1
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Index Now — это бесплатный плагин под WordPress для быстрого уведомления поисковых систем всякий раз, когда контент создается, обновляется или удаляется.
+IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
 
 == Description ==
 
-Index Now — это бесплатный плагин под WordPress для быстрого уведомления поисковых систем всякий раз, когда контент создается, обновляется или удаляется.
+IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
 
-Используются протоколы IndexNow, Яндекс API, Bing API (а скоро и Google API !!!), что почти с 99% вероятностью гарантирует индексацию новых страниц сайтов!
+Improve your rankings by taking control of the crawling and indexing process, so search engines know what to focus on!
 
-Забудьте про проблемы с индексацией и сосредоточьтесь на создании качественного контента для вашего сайта!
+Once installed, it detects pages/terms creation/update/deletion in WordPress and automatically submits the URLs in the background via IndexNow, Google API, Bing API, and Yandex API protocols.
 
-### ⚓ What is IndexNow? ###
+It ensures that search engines invariably have the latest updates about your site.
+
+### 🤖 What is IndexNow? ###
 
 IndexNow is an easy way for websites owners to instantly inform search engines about latest content changes on their website. In its simplest form, IndexNow is a simple ping so that search engines know that a URL and its content has been added, updated, or deleted, allowing search engines to quickly reflect this change in their search results.
 
