@@ -25,3 +25,7 @@ node_modules/
 .phpcs.cache
 
 /vendor/
+
+# dev-env and such
+/custom/*
+!/custom/.keep

@@ -38,3 +38,6 @@ node_modules
 *.tar.gz
 *.zip
 assets/src
+custom
+tools
+Makefile
