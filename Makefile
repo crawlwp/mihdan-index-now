@@ -1,6 +1,21 @@
 jjj:
 	@ echo "There is no default task"
 
+## Tests
+test-e2e:
+	cd ./custom/dev-env && \
+	docker-compose exec -w "/project" test_php vendor/bin/codecept build && \
+	docker-compose exec -w "/project" test_php vendor/bin/codecept run acceptance
+
+vnc:
+	# sudo apt-get -y install tigervnc-common xtightvncviewer
+	# vncpasswd ./tests/.vnc-passwd
+	# password is "secret" (default for Selenium docker-images)
+	vncviewer -passwd ./tests/.vnc-passwd localhost::5900 &
+
+dev-env--shell-test:
+	cd ./custom/dev-env && docker-compose exec test_php bash
+
 ## Development environment (dev-env)
 
 ### Setup
