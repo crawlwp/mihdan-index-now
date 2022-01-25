@@ -107,6 +107,9 @@ return array(
 				$contents = str_replace( "'Google_", "'" . $prefix . '\Google_', $contents );
 				//$contents = str_replace( '"Google_', '"' . $prefix . '\Google_', $contents );
 			}
+			if ( false !== strpos( $file_path, 'vendor/symfony/polyfill-intl-idn/bootstrap80.php' ) ) {
+				$contents = str_replace( ': string|false', '', $contents );
+			}
 			return $contents;
 		},
 	),
