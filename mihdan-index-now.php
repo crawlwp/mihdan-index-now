@@ -18,7 +18,7 @@
 
 namespace Mihdan\IndexNow;
 
-use Auryn\Injector;
+use \Mihdan\IndexNow\Dependencies\Auryn\Injector;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -33,6 +33,6 @@ define( 'MIHDAN_INDEX_NOW_DIR', __DIR__ );
 define( 'MIHDAN_INDEX_NOW_BASENAME', plugin_basename( __FILE__ ) );
 define( 'MIHDAN_INDEX_NOW_URL', plugin_dir_url( __FILE__ ) );
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/vendor-prefixed/autoload.php';
 
 ( new Main( new Injector() ) )->init();

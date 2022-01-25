@@ -7,13 +7,14 @@
 
 namespace Mihdan\IndexNow\Providers\Google;
 
-use Google\Service\Indexing;
-use Google\Service\Indexing\UrlNotification;
+
 use Mihdan\IndexNow\WebmasterAbstract;
 use Mihdan\IndexNow\Utils;
-use Google\Client;
+use Mihdan\IndexNow\Dependencies\Google\Service\Indexing;
+use Mihdan\IndexNow\Dependencies\Google\Service\Indexing\UrlNotification;
+use Mihdan\IndexNow\Dependencies\Google\Client;
+use Mihdan\IndexNow\Dependencies\Google\Service\Exception as Google_Service_Exception;
 use Exception;
-use Google\Service\Exception as Google_Service_Exception;
 
 class GoogleWebmaster extends WebmasterAbstract {
 	private const URL_UPDATED      = 'URL_UPDATED';
@@ -56,7 +57,7 @@ class GoogleWebmaster extends WebmasterAbstract {
 	 */
 	public function ping( int $post_id ) {
 		try {
-			/** @var \Google\Client $client */
+			/** @var \Mihdan\IndexNow\Dependencies\Google\Client $client */
 			$client = new Client();
 			$client->setApplicationName( Utils::get_plugin_name() );
 			$client->setAuthConfig( json_decode( $this->get_token(), true ) );

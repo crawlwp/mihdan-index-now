@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6a1fd433e0cc73aca31613514d21697",
+    "content-hash": "455c2cf6b20c2d1d2cc71829220922e6",
     "packages": [
         {
             "name": "firebase/php-jwt",
@@ -1320,70 +1320,6 @@
                 }
             ],
             "time": "2021-05-27T09:17:38+00:00"
-        },
-        {
-            "name": "whichbrowser/parser",
-            "version": "v2.1.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/WhichBrowser/Parser-PHP.git",
-                "reference": "bcf642a1891032de16a5ab976fd352753dd7f9a0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/WhichBrowser/Parser-PHP/zipball/bcf642a1891032de16a5ab976fd352753dd7f9a0",
-                "reference": "bcf642a1891032de16a5ab976fd352753dd7f9a0",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.4.0",
-                "psr/cache": "^1.0"
-            },
-            "require-dev": {
-                "cache/array-adapter": "^1.1",
-                "icomefromthenet/reverse-regex": "0.0.6.3",
-                "php-coveralls/php-coveralls": "^2.0",
-                "phpunit/php-code-coverage": "^5.0 || ^7.0",
-                "phpunit/phpunit": "^6.0 || ^8.0",
-                "squizlabs/php_codesniffer": "^3.5",
-                "symfony/yaml": "~3.4 || ~4.0"
-            },
-            "suggest": {
-                "cache/array-adapter": "Allows testing of the caching functionality"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "WhichBrowser\\": [
-                        "src/",
-                        "tests/src/"
-                    ]
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Niels Leenheer",
-                    "email": "niels@leenheer.nl",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Useragent sniffing library for PHP",
-            "homepage": "http://whichbrowser.net",
-            "keywords": [
-                "browser",
-                "sniffing",
-                "ua",
-                "useragent"
-            ],
-            "support": {
-                "issues": "https://github.com/WhichBrowser/Parser-PHP/issues",
-                "source": "https://github.com/WhichBrowser/Parser-PHP/tree/v2.1.2"
-            },
-            "time": "2021-05-10T10:18:11+00:00"
         }
     ],
     "packages-dev": [
@@ -2797,12 +2733,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Roave/SecurityAdvisories.git",
-                "reference": "25a216c5c0426f341fbff7f045fa3946c8041521"
+                "reference": "341bf2dc38dcbc17c9cc7bd1b44c3a40c84959e0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/25a216c5c0426f341fbff7f045fa3946c8041521",
-                "reference": "25a216c5c0426f341fbff7f045fa3946c8041521",
+                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/341bf2dc38dcbc17c9cc7bd1b44c3a40c84959e0",
+                "reference": "341bf2dc38dcbc17c9cc7bd1b44c3a40c84959e0",
                 "shasum": ""
             },
             "conflict": {
@@ -2842,7 +2778,7 @@
                 "cesnet/simplesamlphp-module-proxystatistics": "<3.1",
                 "codeception/codeception": "<3.1.3|>=4,<4.1.22",
                 "codeigniter/framework": "<=3.0.6",
-                "codeigniter4/framework": "<4.1.6",
+                "codeigniter4/framework": "<4.1.8",
                 "codiad/codiad": "<=2.8.4",
                 "composer/composer": "<1.10.23|>=2-alpha.1,<2.1.9",
                 "concrete5/concrete5": "<8.5.5",
@@ -3234,7 +3170,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2022-01-22T00:48:41+00:00"
+            "time": "2022-01-25T09:14:18+00:00"
         },
         {
             "name": "sebastian/code-unit-reverse-lookup",

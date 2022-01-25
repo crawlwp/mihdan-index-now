@@ -20,9 +20,9 @@ use Mihdan\IndexNow\Views\Settings;
 use Mihdan\IndexNow\Views\WPOSA;
 use WP_Post;
 use WP_List_Table;
-use Auryn\Injector;
-use Auryn\InjectionException;
-use Auryn\ConfigException;
+use Mihdan\IndexNow\Dependencies\Auryn\Injector;
+use Mihdan\IndexNow\Dependencies\Auryn\InjectionException;
+use Mihdan\IndexNow\Dependencies\Auryn\ConfigException;
 
 /**
  * Class Main.

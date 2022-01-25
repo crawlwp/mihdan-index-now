@@ -1,7 +1,7 @@
 <?php
 namespace Mihdan\IndexNow\Logger;
 
-use Psr\Log\AbstractLogger;
+use Mihdan\IndexNow\Dependencies\Psr\Log\AbstractLogger;
 use WP_Post;
 
 class Logger extends AbstractLogger {
