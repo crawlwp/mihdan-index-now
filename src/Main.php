@@ -88,8 +88,6 @@ class Main {
 
 		$this->logger = $this->make( Logger::class );
 
-		( $this->make( Hooks::class ) )->setup_hooks();
-
 		$wposa = $this->make(
 			WPOSA::class,
 			[
@@ -102,6 +100,8 @@ class Main {
 
 		$this->wposa = $wposa;
 		$this->wposa->setup_hooks();
+
+		( $this->make( Hooks::class ) )->setup_hooks();
 
 		( $this->make( HelpTab::class ) )->setup_hooks();
 		( $this->make( Settings::class ) )->setup_hooks();

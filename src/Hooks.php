@@ -5,10 +5,25 @@
 
 namespace Mihdan\IndexNow;
 
+use Mihdan\IndexNow\Views\WPOSA;
 use WP_Post;
 use WP_Comment;
 
 class Hooks {
+	/**
+	 * @var WPOSA
+	 */
+	private $wposa;
+
+	/**
+	 * Hooks constructor.
+	 *
+	 * @param WPOSA $wposa WPOSA instance.
+	 */
+	public function __construct( WPOSA $wposa ) {
+		$this->wposa = $wposa;
+	}
+
 	public function setup_hooks() {
 		add_action( 'transition_post_status', [ $this, 'post_updated' ], 10, 3 );
 		add_action( 'wp_insert_comment', [ $this, 'comment_updated' ], 10, 2 );
@@ -39,6 +54,10 @@ class Hooks {
 		}
 
 		if ( function_exists( 'is_post_publicly_viewable' ) && ! is_post_publicly_viewable( $post ) ) {
+			return;
+		}
+
+		if ( ! in_array( $post->post_type, (array) $this->wposa->get_option( 'post_types', 'general', [] ), true ) ) {
 			return;
 		}
 

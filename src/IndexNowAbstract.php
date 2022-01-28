@@ -139,11 +139,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	}
 
 	private function maybe_do_ping_post( int $post_id ) {
-		$post = get_post( $post_id );
-
-		if ( ! in_array( $post->post_type, $this->get_post_types(), true ) ) {
-			return;
-		}
 
 		if ( $this->get_current_search_engine() === $this->get_slug() ) {
 			$this->push( [ get_permalink( $post_id ) ] );
