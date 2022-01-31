@@ -39,3 +39,6 @@ php-scoper
 *.tar.gz
 *.zip
 assets/src
+custom
+tools
+Makefile
