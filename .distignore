@@ -34,6 +34,7 @@ scoper.inc.php
 bin
 tests
 node_modules
+php-scoper
 *.sql
 *.tar.gz
 *.zip

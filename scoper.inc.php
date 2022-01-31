@@ -14,21 +14,13 @@ use Isolated\Symfony\Component\Finder\Finder;
 $google_services = implode(
 	'|',
 	array(
-		'Analytics',
-		'AnalyticsReporting',
-		'Adsense',
-		'GoogleAnalyticsAdmin',
-		'Ideahub',
-		'PagespeedInsights',
-		'PeopleService',
-		'SearchConsole',
-		'SiteVerification',
-		'TagManager',
+		'Indexing',
+		'Foo',
 	)
 );
 
 return array(
-	'prefix'                     => 'Google\\Site_Kit_Dependencies',
+	'prefix'                     => 'Mihdan\\IndexNow\\Dependencies',
 	'finders'                    => array(
 
 		// General dependencies, except Google API services.
@@ -55,6 +47,11 @@ return array(
 		      ->path( '#^ralouphie/#' )
 		      ->path( '#^react/#' )
 		      ->path( '#^true/#' )
+		      ->path( '#^symfony/#' )
+		      ->path( '#^paragonie/#' )
+		      ->path( '#^phpseclib/#' )
+		      ->path( '#^rdlowrey/#' )
+		      ->path( '#^whichbrowser/#' )
 		      ->in( 'vendor' ),
 
 		// Google API service infrastructure classes.
@@ -102,13 +99,19 @@ return array(
 			if ( false !== strpos( $file_path, 'vendor/google/apiclient/' ) || false !== strpos( $file_path, 'vendor/google/auth/' ) ) {
 				$prefix   = str_replace( '\\', '\\\\', $prefix );
 				$contents = str_replace( "'\\\\GuzzleHttp\\\\ClientInterface", "'\\\\" . $prefix . '\\\\GuzzleHttp\\\\ClientInterface', $contents );
-				$contents = str_replace( '"\\\\GuzzleHttp\\\\ClientInterface', '"\\\\' . $prefix . '\\\\GuzzleHttp\\\\ClientInterface', $contents );
+				//$contents = str_replace( '"\\\\GuzzleHttp\\\\ClientInterface', '"\\\\' . $prefix . '\\\\GuzzleHttp\\\\ClientInterface', $contents );
 				$contents = str_replace( "'GuzzleHttp\\\\ClientInterface", "'" . $prefix . '\\\\GuzzleHttp\\\\ClientInterface', $contents );
-				$contents = str_replace( '"GuzzleHttp\\\\ClientInterface', '"' . $prefix . '\\\\GuzzleHttp\\\\ClientInterface', $contents );
+				//$contents = str_replace( '"GuzzleHttp\\\\ClientInterface', '"' . $prefix . '\\\\GuzzleHttp\\\\ClientInterface', $contents );
 			}
 			if ( false !== strpos( $file_path, 'vendor/google/apiclient/' ) ) {
 				$contents = str_replace( "'Google_", "'" . $prefix . '\Google_', $contents );
-				$contents = str_replace( '"Google_', '"' . $prefix . '\Google_', $contents );
+				//$contents = str_replace( '"Google_', '"' . $prefix . '\Google_', $contents );
+			}
+			if (
+				false !== strpos( $file_path, 'vendor/symfony/polyfill-intl-idn/bootstrap80.php' ) ||
+				false !== strpos( $file_path, 'vendor/symfony/polyfill-intl-normalizer/bootstrap80.php' )
+			) {
+				$contents = str_replace( ': string|false', '', $contents );
 			}
 			return $contents;
 		},

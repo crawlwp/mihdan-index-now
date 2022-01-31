@@ -137,6 +137,9 @@ See the documentation available from each search engine for more details about I
 
 == Changelog ==
 
+= 2.3.1 (28.01.2022) =
+* Fixed a bug with the exclusion of Post Types from notifications
+
 = 2.3.0 (23.01.2022) =
 * Added Google Webmaster ping via API
 * Added more documentation

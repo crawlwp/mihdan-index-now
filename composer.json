@@ -6,7 +6,22 @@
   "autoload": {
     "psr-4": {
       "Mihdan\\IndexNow\\": "src/"
-    }
+    },
+    "classmap": [
+      "vendor-prefixed"
+    ],
+    "files": [
+      "vendor-prefixed/ralouphie/getallheaders/src/getallheaders.php",
+      "vendor-prefixed/guzzlehttp/psr7/src/functions_include.php",
+      "vendor-prefixed/guzzlehttp/promises/src/functions_include.php",
+      "vendor-prefixed/symfony/polyfill-php72/bootstrap.php",
+      "vendor-prefixed/symfony/polyfill-intl-normalizer/bootstrap.php",
+      "vendor-prefixed/symfony/polyfill-intl-idn/bootstrap.php",
+      "vendor-prefixed/phpseclib/phpseclib/phpseclib/bootstrap.php",
+      "vendor-prefixed/guzzlehttp/guzzle/src/functions_include.php",
+      "vendor-prefixed/google/apiclient-services/autoload.php",
+      "vendor-prefixed/google/apiclient/src/aliases.php"
+    ]
   },
   "authors": [
     {
@@ -22,8 +37,8 @@
     }
   },
   "require": {
+    "php": ">=7.1",
     "ext-json": "*",
-    "whichbrowser/parser": "^2.1",
     "rdlowrey/auryn": "^1.4",
     "psr/log": "^1.1",
     "google/apiclient": "^2.12.1"
@@ -46,7 +61,33 @@
   "scripts": {
     "phpcs": "phpcs --standard=./phpcs.xml",
     "phpcbf": "phpcbf --standard=./phpcs.xml",
-    "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+    "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
+    "pre-install-cmd": "@create-vendor-prefix-folder",
+    "pre-update-cmd": "@create-vendor-prefix-folder",
+    "create-vendor-prefix-folder": [
+      "mkdir -p ./vendor-prefixed"
+    ],
+    "prefix-dependencies": [
+      "@composer --working-dir=php-scoper install",
+      "php-scoper/vendor/bin/php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet",
+      "@remove-vendor",
+      "@composer dump-autoload",
+      "cp -R vendor/* vendor-prefixed/",
+      "rm -rf vendor"
+    ],
+    "remove-vendor": [
+      "rm -fr ./vendor/google",
+      "rm -fr ./vendor/firebase",
+      "rm -fr ./vendor/guzzlehttp",
+      "rm -fr ./vendor/monolog",
+      "rm -fr ./vendor/psr",
+      "rm -fr ./vendor/ralouphie",
+      "rm -fr ./vendor/paragonie",
+      "rm -fr ./vendor/phpseclib",
+      "rm -fr ./vendor/rdlowrey",
+      "rm -fr ./vendor/symfony",
+      "rm -fr ./vendor/whichbrowser"
+    ]
   },
   "extra": {
     "google/apiclient-services": [

@@ -916,10 +916,10 @@ class WPOSA {
 	 *
 	 * @param string $option  settings field name.
 	 * @param string $section the section name this field belongs to.
-	 * @param string $default default text if it's not found.
+	 * @param mixed  $default default text if it's not found.
 	 * @return mixed
 	 */
-	public function get_option( $option, $section, $default = '' ) {
+	public function get_option( string $option, string $section, $default = '' ) {
 		$section = str_replace( $this->get_prefix() . '_', '', $section );
 		$options = get_option( $this->get_prefix() . '_' . $section );
 
