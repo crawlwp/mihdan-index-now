@@ -52,11 +52,14 @@
     "phpcompatibility/php-compatibility": "^9.3",
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "wp-coding-standards/wpcs": "^2.3",
-    "php-coveralls/php-coveralls": "^v2.4"
+    "php-coveralls/php-coveralls": "^v2.4",
+    "vimeo/psalm": "^4.20",
+    "humanmade/psalm-plugin-wordpress": "^2.0"
   },
   "scripts": {
     "phpcs": "phpcs --standard=./phpcs.xml",
     "phpcbf": "phpcbf --standard=./phpcs.xml",
+    "psalm": "vendor/bin/psalm --config=psalm.xml",
     "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
     "pre-install-cmd": "@create-vendor-prefix-folder",
     "pre-update-cmd": "@create-vendor-prefix-folder",

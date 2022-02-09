@@ -5,7 +5,7 @@ use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\Views\WPOSA;
 
 class Cron {
-	const EVENT_NAME = 'mihdan-index-now__clear-log';
+	public const EVENT_NAME = 'mihdan-index-now__clear-log';
 
 	/**
 	 * Logger instance.

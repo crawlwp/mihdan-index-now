@@ -35,11 +35,11 @@ class Hooks {
 	 *
 	 * @param string  $new_status New post status.
 	 * @param string  $old_status Old post status.
-	 * @param WP_Post $post    Post data.
+	 * @param WP_Post $post       Post data.
 	 *
 	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function post_updated( $new_status, $old_status, WP_Post $post ): void {
+	public function post_updated( string $new_status, string $old_status, WP_Post $post ): void {
 
 		if ( $new_status !== 'publish' ) {
 			return;
