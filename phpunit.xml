@@ -7,24 +7,19 @@
 		 convertWarningsToExceptions="true"
 		 beStrictAboutTestsThatDoNotTestAnything="false"
 		 xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd">
-	<coverage>
-		<include>
-			<directory suffix=".php">.</directory>
-		</include>
-		<exclude>
-			<directory>.github</directory>
-			<directory>.make</directory>
-			<directory>assets</directory>
-			<directory>languages</directory>
-			<directory>lib</directory>
-			<directory>src/js</directory>
-			<directory>tests</directory>
-			<directory>vendor</directory>
-		</exclude>
-	</coverage>
+	<filter>
+		<whitelist>
+			<directory suffix=".php">./src</directory>
+		</whitelist>
+	</filter>
 	<testsuites>
-		<testsuite name="cyr2lat-tests">
+		<testsuite name="mihdan-index-now-tests">
 			<directory suffix=".php">tests/phpunit</directory>
+			<coverage>
+				<include>
+					<directory suffix=".php">./src</directory>
+				</include>
+			</coverage>
 		</testsuite>
 	</testsuites>
 </phpunit>

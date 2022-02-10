@@ -58,7 +58,8 @@
     "wp-coding-standards/wpcs": "^2.3",
     "php-coveralls/php-coveralls": "^v2.4",
     "vimeo/psalm": "^4.20",
-    "humanmade/psalm-plugin-wordpress": "^2.0"
+    "humanmade/psalm-plugin-wordpress": "^2.0",
+    "brain/monkey": "^2.6"
   },
   "scripts": {
     "phpcs": "phpcs --standard=./phpcs.xml",
