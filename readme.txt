@@ -4,7 +4,7 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
 Tested up to: 5.9
-Stable tag: 2.3.1
+Stable tag: 2.3.2
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -136,6 +136,9 @@ Yes, when sitemaps are an easy way for webmasters to inform search engines about
 See the documentation available from each search engine for more details about IndexNow.
 
 == Changelog ==
+
+= 2.3.2 (02.03.2022) =
+* Integrated with [Adfinity.pro](https://bit.ly/3vdOhUR)
 
 = 2.3.1 (28.01.2022) =
 * Fixed a bug with the exclusion of Post Types from notifications

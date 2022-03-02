@@ -981,7 +981,9 @@ class WPOSA {
 					<div class="wrap-column wrap-column--sidebar">
 						<?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
 							<div class="card wpsa-card wpsa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
-								<h2 class="title"><?php echo esc_html( $card['title'] )?></h2>
+								<?php if ( ! empty( $card['title'] ) ) : ?>
+									<h2 class="title"><?php echo esc_html( $card['title'] )?></h2>
+								<?php endif; ?>
 								<?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
 							</div>
 						<?php endforeach; ?>
@@ -1338,6 +1340,15 @@ class WPOSA {
 
 			.wposa-img {
 				max-width: 800px;
+			}
+
+			.wpsa-card img {
+				display: block;
+				border: 0;
+			}
+			.wpsa-card--mihdan_index_now_adfinity {
+				padding: 0;
+				border: 0;
 			}
 
 			@media (max-width: 544px) {
