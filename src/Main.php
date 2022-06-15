@@ -12,6 +12,7 @@ use Mihdan\IndexNow\Providers\Bing\BingIndexNow;
 use Mihdan\IndexNow\Providers\Bing\BingWebmaster;
 use Mihdan\IndexNow\Providers\Google\GoogleWebmaster;
 use Mihdan\IndexNow\Providers\IndexNow\IndexNow;
+use Mihdan\IndexNow\Providers\Seznam\SeznamIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
 use Mihdan\IndexNow\Views\HelpTab;
@@ -108,6 +109,7 @@ class Main {
 		( $this->make( Cron::class ) )->setup_hooks();
 		( $this->make( YandexIndexNow::class ) )->setup_hooks();
 		( $this->make( BingIndexNow::class ) )->setup_hooks();
+		( $this->make( SeznamIndexNow::class ) )->setup_hooks();
 		( $this->make( IndexNow::class ) )->setup_hooks();
 
 		( $this->make( YandexWebmaster::class ) )->setup_hooks();
@@ -184,6 +186,10 @@ class Main {
 		if ( version_compare( $db_version, '2.3.0', '<' ) ) {
 			$this->migrate_to_2_3_0();
 		}
+
+		if ( version_compare( $db_version, '2.4.0', '<' ) ) {
+			$this->migrate_to_2_4_0();
+		}
 	}
 
 	private function migrate_to_2_0_0() {
@@ -201,6 +207,17 @@ class Main {
 		);
 		$wpdb->query( $sql );
 		Utils::set_db_version( '2.3.0' );
+	}
+
+	private function migrate_to_2_4_0() {
+		global $wpdb;
+
+		$sql = sprintf(
+			"ALTER TABLE %s MODIFY COLUMN search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster','seznam-index-now') NOT NULL DEFAULT 'site'",
+			$this->logger->get_logger_table_name()
+		);
+		$wpdb->query( $sql );
+		Utils::set_db_version( '2.4.0' );
 	}
 
 	/**

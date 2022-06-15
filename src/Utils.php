@@ -1,6 +1,8 @@
 <?php
 namespace Mihdan\IndexNow;
 
+use Mihdan\IndexNow\Dependencies\phpseclib3\Crypt\EC\Curves\secp112r1;
+
 class Utils {
 	/**
 	 * Get full plugin path.
@@ -124,5 +126,16 @@ class Utils {
 	 */
 	public static function generate_key(): string {
 		return str_replace( '-', '', wp_generate_uuid4() );
+	}
+
+	/**
+	 * Check if a string is JSON.
+	 *
+	 * @param mixed $string Input string.
+	 *
+	 * @return bool
+	 */
+	public static function is_json( $string ): bool {
+		return is_string( $string ) && is_array( json_decode( $string, true ) ) && ( json_last_error() === JSON_ERROR_NONE );
 	}
 }

@@ -122,13 +122,6 @@ class Settings {
 		$this->wposa
 			->add_sidebar_card(
 				[
-					'id'    => 'adfinity',
-					'title' => '',
-					'desc'  => sprintf( '<a href="https://bit.ly/3vdOhUR" target="_blank"><img src="%s" width="300" height="600" class="wposa-img"></a>', esc_url( Utils::get_plugin_asset_url( 'images/partner.gif' ) ) ),
-				]
-			)
-			->add_sidebar_card(
-				[
 					'id'    => 'donate',
 					'title' => __( 'Enjoyed IndexNow?', 'mihdan-index-now' ),
 					'desc'  => __( '<p>Please leave us a <a href="https://wordpress.org/support/plugin/mihdan-index-now/reviews/#new-post" target="_blank" title="Rate &amp; review it">★★★★★</a> rating. We really appreciate your support</p>', 'mihdan-index-now' ),
@@ -251,6 +244,7 @@ class Settings {
 					'bing-index-now'       => __( 'Bing', 'mihdan-index-now' ),
 					'index-now'            => __( 'IndexNow', 'mihdan-index-now' ),
 					'yandex-index-now'     => __( 'Yandex', 'mihdan-index-now' ),
+					'seznam-index-now'     => __( 'Seznam', 'mihdan-index-now' ),
 					//'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
 					//'google'     => __( 'Google', 'mihdan-index-now' ),
 					//'baidu'      => __( 'Baidu', 'mihdan-index-now' ),

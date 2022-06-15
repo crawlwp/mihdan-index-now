@@ -197,7 +197,11 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		$response    = wp_remote_post( $this->get_api_url(), $args );
 		$status_code = wp_remote_retrieve_response_code( $response );
 
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$body = wp_remote_retrieve_body( $response );
+
+		if ( Utils::is_json( $body ) ) {
+			$body = json_decode( $body, true );
+		}
 
 		$data = [
 			'status_code'   => $status_code,
@@ -210,7 +214,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 				$this->logger->info( $message, $data );
 			}
 		} else {
-			$this->logger->error( $body['message'] ?? '', $data );
+			$this->logger->error( $body['message'] ?? print_r( $body, 1 ), $data );
 		}
 
 		return true;
