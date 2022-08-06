@@ -201,6 +201,16 @@ class Settings {
 			)
 		);
 
+		$this->wposa->add_field(
+			'general',
+			array(
+				'id'      => 'disable_for_bulk_edit',
+				'type'    => 'switch',
+				'name'    => __( 'Disable for Bulk Edit', 'mihdan-index-now' ),
+				'default' => 'on',
+			)
+		);
+
 		$this->wposa->add_section(
 			array(
 				'id'    => 'index_now',

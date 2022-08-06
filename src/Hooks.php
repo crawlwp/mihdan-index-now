@@ -61,6 +61,11 @@ class Hooks {
 			return;
 		}
 
+		// Disable for Bulk Edit screen.
+		if ( isset( $_REQUEST['bulk_edit'] ) && $this->wposa->get_option( 'disable_for_bulk_edit', 'general', 'on' ) === 'on' ) {
+			return;
+		}
+
 		do_action( 'mihdan_index_now/post_updated', $post->ID, $post );
 	}
 

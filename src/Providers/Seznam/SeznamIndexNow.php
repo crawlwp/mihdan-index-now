@@ -24,6 +24,6 @@ class SeznamIndexNow extends IndexNowAbstract {
 	}
 
 	protected function get_bot_useragent(): string {
-		return 'Mozilla/5.0 (compatible; SeznamBot/3.0; +http://seznam.cz/bots)';
+		return 'Mozilla/5.0 (compatible; SeznamBot/3.2; +http://napoveda.seznam.cz/en/seznambot-intro/)';
 	}
 }
