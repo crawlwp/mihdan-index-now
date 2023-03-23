@@ -3,8 +3,8 @@ Contributors: mihdan
 Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.0
-Tested up to: 6.0
-Stable tag: 2.4.1
+Tested up to: 6.1
+Stable tag: 2.5.0
 Requires PHP: 7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -137,12 +137,16 @@ See the documentation available from each search engine for more details about I
 
 == Changelog ==
 
+= 2.5.0 (23.03.2023) =
+* Added support for WordPress 6.1+
+* Added support for Multisite
+
 = 2.4.1 (06.08.2022) =
 * Added an option to disable the plugin on the Bulk Edit screen
 * Fixed integration with Seznam provider
 
 = 2.4.0 (16.06.2022) =
-* Added support for Wordpress 6.0
+* Added support for WordPress 6.0
 * Added support for Seznam.cz provider
 * Updated built-in documentation
 * Disabled integration with [Adfinity.pro](https://bit.ly/3vdOhUR)
