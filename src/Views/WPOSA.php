@@ -75,6 +75,10 @@ class WPOSA {
 		'h2'       => [
 			'class' => true,
 		],
+		'nav'      => [
+			'class'      => true,
+			'aria-label' => true,
+		],
 		'span'     => [
 			'class' => true,
 			'style' => true,
@@ -872,7 +876,7 @@ class WPOSA {
 	 */
 	function callback_separator( $args ) {
 		?>
-		<div class="wpsa-settings-separator"></div>
+		<div class="wposa-field wposa-field--separator"></div>
 		<?php
 	}
 
@@ -970,21 +974,23 @@ class WPOSA {
 
 	public function plugin_page() {
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( $this->plugin_name ); ?> <span style="font-size:50%;">v<?php echo esc_html( $this->plugin_version )?></span></h1>
+		<div class="wrap wposa">
+			<h1 class="wposa__title wposa__title--h1"><?php echo esc_html( $this->plugin_name ); ?> <span style="font-size:50%;">v<?php echo esc_html( $this->plugin_version )?></span></h1>
 			<?php $this->show_navigation(); ?>
-			<div class="wrap--wposa">
-				<div class="wrap-column wrap-column--form">
+			<div class="wposa__grid">
+				<div class="wposa__column">
 					<?php $this->show_forms(); ?>
 				</div>
 				<?php if ( $this->get_sidebar_cards_total() ) : ?>
-					<div class="wrap-column wrap-column--sidebar">
+					<div class="wposa__column">
 						<?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
-							<div class="card wpsa-card wpsa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
+							<div class="card wposa-card wposa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
 								<?php if ( ! empty( $card['title'] ) ) : ?>
-									<h2 class="title"><?php echo esc_html( $card['title'] )?></h2>
+									<h2 class="title wposa__title wposa__title--h2 wposa-card__title"><?php echo esc_html( $card['title'] )?></h2>
 								<?php endif; ?>
-								<?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
+								<div class="wposa-card__content">
+									<?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
+								</div>
 							</div>
 						<?php endforeach; ?>
 					</div>
@@ -1000,7 +1006,10 @@ class WPOSA {
 	 * Shows all the settings section labels as tab
 	 */
 	function show_navigation() {
-		$html = '<h2 class="nav-tab-wrapper">';
+		$html = sprintf(
+			'<nav class="nav-tab-wrapper" aria-label="%s">',
+			esc_html__( 'Secondary Navigation', 'wposa' )
+		);
 
 		foreach ( $this->sections_array as $tab ) {
 			if ( isset( $tab['disabled'] ) && $tab['disabled'] === true ) {
@@ -1014,7 +1023,7 @@ class WPOSA {
 			}
 		}
 
-		$html .= '</h2>';
+		$html .= '</nav>';
 
 		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
@@ -1039,7 +1048,7 @@ class WPOSA {
 				?>
 				<!-- style="display: none;" -->
 				<div id="<?php echo esc_attr( $form['id'] ); ?>" class="group" >
-					<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>">
+					<form class="wposa__form" method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>">
 						<?php
 						do_action( 'wsa_form_top_' . $form['id'], $form );
 						settings_fields( $form['id'] );
@@ -1208,21 +1217,14 @@ class WPOSA {
 		</script>
 
 		<style>
-			/** WordPress 3.8 Fix **/
-			.form-table th {
-				padding: 20px 10px;
-			}
-
-			#wpbody-content .metabox-holder {
+			#wpbody-content .wposa .metabox-holder {
 				padding-top: 5px;
 			}
-
 			.wpsa-image-preview img {
 				height: auto;
 				max-width: 70px;
 			}
-
-			.wpsa-settings-separator {
+			.wposa-field--separator {
 				background: #ccc;
 				border: 0;
 				color: #ccc;
@@ -1234,7 +1236,6 @@ class WPOSA {
 			.group .form-table input.color-picker {
 				max-width: 100px;
 			}
-
 			.wpsa-help-tab-toggle {
 				display: inline-block;
 				width: 14px;
@@ -1248,16 +1249,10 @@ class WPOSA {
 				vertical-align: text-bottom;
 				user-select: none;
 			}
-			.wrap--wposa {
-				display: flex;
-				gap: 20px;
-			}
-
-			.wrap-column--form {
-				flex-basis: 100%;
-			}
-			.wrap-column--sidebar {
-				flex-basis: 300px;
+			.wposa__grid {
+				display: grid;
+				grid-gap: 20px;
+				grid-template-columns: auto 300px;
 			}
 
 			input.wposa-field--switch {
@@ -1327,37 +1322,40 @@ class WPOSA {
 			.wposa-form-table__row_type_number .regular-text {
 				width: 50px;
 			}
-			.wposa-form-table__row_mihdan_index_now_logs_enable label,
-			.wposa-form-table__row_mihdan_index_now_yandex_webmaster_enable label,
-			.wposa-form-table__row_mihdan_index_now_bing_webmaster_enable label,
-			.wposa-form-table__row_mihdan_index_now_index_now_enable label {
-				color: #135e96 !important;
-			}
-
-			.wrap-column--form form {
+			.wposa__form {
 				max-width: 600px;
 			}
-
-			.wposa-img {
-				max-width: 800px;
-			}
-
 			.wpsa-card img {
 				display: block;
 				border: 0;
 			}
-			.wpsa-card--mihdan_index_now_adfinity {
-				padding: 0;
-				border: 0;
+			.wposa__table {
+				border: 1px solid #c3c4c7;
+				border-collapse: collapse;
 			}
-
-			@media (max-width: 544px) {
-				.wrap--wposa {
-					flex-direction: column;
+			.wposa__table th {
+				text-align: left;
+				vertical-align: top;
+				line-height: 1.2em;
+			}
+			.wposa__table th,
+			.wposa__table td {
+				border: 0;
+				padding: 7px;
+			}
+			.wposa__table tr:nth-child(even) {
+				background-color: #f0f0f1;
+			}
+			.wposa__table tr:nth-child(odd) {
+				background-color: #fff;
+			}
+			@media (max-width: 782px) {
+				.wposa__grid {
+					grid-template-columns: 1fr;
 				}
-				.wrap-column {
-					flex-basis: 100%;
-				}
+			}
+			.wposa__helptab {
+				max-width: 600px;
 			}
 		</style>
 		<?php

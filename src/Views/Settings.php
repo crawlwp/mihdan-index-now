@@ -342,7 +342,7 @@ class Settings {
 				'id'          => 'client_id',
 				'type'        => 'text',
 				'help_tab'    => 'yandex_webmaster_authorization',
-				'name'        => __( 'App ID', 'mihdan-index-now' ),
+				'name'        => __( 'ClientID', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example 12c41fd597854d47b2911716d7f71e2f', 'mihdan-index-now' ),
 			)
 		);
@@ -353,7 +353,7 @@ class Settings {
 				'id'          => 'client_secret',
 				'type'        => 'text',
 				'help_tab'    => 'yandex_webmaster_authorization',
-				'name'        => __( 'App Password', 'mihdan-index-now' ),
+				'name'        => __( 'Client secret', 'mihdan-index-now' ),
 				'placeholder' => __( 'Example 1a4c5831b44e469f8a86c36fd88101f5', 'mihdan-index-now' ),
 			)
 		);
