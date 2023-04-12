@@ -26,14 +26,14 @@
 	<arg name="cache" value=".phpcs.cache"/>
 
 	<config name="installed_paths" value="vendor/phpcompatibility/php-compatibility,vendor/phpcompatibility/phpcompatibility-paragonie,vendor/phpcompatibility/phpcompatibility-wp,vendor/wp-coding-standards/wpcs"/>
-	<config name="testVersion" value="7.1-"/>
+	<config name="testVersion" value="7.4-"/>
 
 	<!-- Rules: Check PHP version compatibility -->
 	<rule ref="PHPCompatibility"/>
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!-- Rules: WordPress Coding Standards -->
-	<config name="minimum_supported_wp_version" value="5.1"/>
+	<config name="minimum_supported_wp_version" value="5.9"/>
 
     <rule ref="WordPress">
         <exclude name="Generic.Arrays.DisallowShortArraySyntax.Found"/>

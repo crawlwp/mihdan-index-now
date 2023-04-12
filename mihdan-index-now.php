@@ -8,7 +8,7 @@
  * Plugin URI: https://wordpress.org/plugins/mihdan-index-now/
  * GitHub Plugin URI: https://github.com/mihdan/mihdan-index-now
  * Requires PHP: 7.4
- * Requires at least: 5.6
+ * Requires at least: 5.9
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
