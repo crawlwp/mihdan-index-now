@@ -16,6 +16,7 @@ class YandexWebmaster extends WebmasterAbstract {
 	private const TOKEN_ENDPOINT   = 'https://oauth.yandex.ru/token';
 	private const HOSTS_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%d/hosts';
 	private const RECRAWL_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
+	private const QUOTA_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/quota';
 
 	public function get_slug(): string {
 		return 'yandex-webmaster';
@@ -49,6 +50,10 @@ class YandexWebmaster extends WebmasterAbstract {
 		return self::RECRAWL_ENDPOINT;
 	}
 
+	public function get_quota_endpoint(): string {
+		return self::QUOTA_ENDPOINT;
+	}
+
 	public function is_enabled(): bool {
 		return $this->wposa->get_option( 'enable', 'yandex_webmaster', 'off' ) === 'on';
 	}
@@ -61,6 +66,8 @@ class YandexWebmaster extends WebmasterAbstract {
 			return;
 		}
 
+		//$this->get_quota();
+		add_action( 'mihdan_index_now/post_added', [ $this, 'ping' ] );
 		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
 	}
 
@@ -207,6 +214,41 @@ class YandexWebmaster extends WebmasterAbstract {
 			$this->logger->info( $message, $data );
 		} else {
 			$this->logger->error( $body['error_message'], $data );
+		}
+	}
+
+	public function get_quota(): array {
+		$url = sprintf( $this->get_quota_endpoint(), $this->get_user_id(), $this->get_host_id() );
+
+		$args = array(
+			'timeout' => 30,
+			'headers' => array(
+				'Authorization' => 'OAuth ' . $this->get_token(),
+				'Content-Type'  => 'application/json',
+			),
+		);
+
+		$response    = wp_remote_get( $url, $args );
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		$data = [
+			'status_code'   => $status_code,
+			'search_engine' => $this->get_slug(),
+		];
+
+		if ( Utils::is_response_code_success( $status_code ) ) {
+			$message = 'Data on daily limit successfully received';
+			$this->logger->info( $message, $data );
+
+			return $body;
+		} else {
+			$this->logger->error( $body['error_message'], $data );
+
+			return [
+				'daily_quota'     => 0,
+				'quota_remainder' => 0,
+			];
 		}
 	}
 }

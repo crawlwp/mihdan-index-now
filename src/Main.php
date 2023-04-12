@@ -126,7 +126,75 @@ class Main {
 		add_action( 'template_redirect', [ $this, 'parse_incoming_request' ] );
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
+
+		//add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
+		//add_filter( 'page_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
+
+		// Add last update column.
+		if ( $this->wposa->get_option( 'show_last_update_column', 'general', 'on' ) === 'on' ) {
+			foreach ( (array) $this->wposa->get_option( 'post_types', 'general', [] ) as $post_type ) {
+				add_filter( "manage_{$post_type}_posts_columns", [ $this, 'add_last_update_column' ] );
+				add_action( "manage_{$post_type}_posts_custom_column", [ $this, 'add_last_update_column_content' ], 10, 2 );
+			}
+
+			add_action( 'admin_head', [ $this, 'add_css_for_column' ] );
+		}
+
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+	}
+
+	public function add_css_for_column(): void {
+		?>
+		<style>
+			.column-index-now {
+				width: 8em;
+			}
+			.column-index-now img {
+				vertical-align: bottom;
+			}
+		</style>
+		<?php
+	}
+
+	public function add_last_update_column( array $columns ): array {
+		$columns['index-now'] = sprintf(
+			'<span class="dashicons dashicons-share" title="%s"></span>',
+			__( 'IndexNow: Last Update', 'mihdan-index-now' )
+		);
+
+		return $columns;
+	}
+
+	public function add_last_update_column_content( string $column_name, int $post_id ): void {
+		if ( $column_name !== 'index-now' ) {
+			return;
+		}
+
+		$last_update = (int) get_post_meta( $post_id, Utils::get_plugin_prefix() . '_last_update', true );
+
+		if ( $last_update === 0 ) {
+			return;
+		}
+
+		echo esc_html( date( 'd.m.Y H:i', $last_update ) );
+	}
+
+	public function post_row_actions( array $actions, WP_Post $post ): array {
+		if ( ! in_array( $post->post_type, (array) $this->wposa->get_option( 'post_types', 'general', [] ), true ) ) {
+			return $actions;
+		}
+
+		if ( ! is_post_publicly_viewable( $post ) ) {
+			return $actions;
+		}
+
+		$actions['index_now'] = sprintf(
+			'<a title="%s" href="%s">IndexNow</a>',
+			esc_attr( __( 'Notify the search engine', 'mihdan-index-now' ) ),
+			1
+		);
+
+		return $actions;
 	}
 
 	/**

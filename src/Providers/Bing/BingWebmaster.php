@@ -38,6 +38,7 @@ class BingWebmaster extends WebmasterAbstract {
 			return;
 		}
 
+		add_action( 'mihdan_index_now/post_added', [ $this, 'ping' ] );
 		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
 	}
 
@@ -80,5 +81,10 @@ class BingWebmaster extends WebmasterAbstract {
 		} else {
 			$this->logger->error( $body['Message'], $data );
 		}
+	}
+
+	public function get_quota(): array {
+		// TODO: Implement get_quota() method.
+		return [];
 	}
 }

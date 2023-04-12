@@ -27,6 +27,7 @@ abstract class WebmasterAbstract implements SearchEngineInterface {
 
 	abstract public function get_token(): string;
 	abstract public function get_ping_endpoint(): string;
+	abstract public function get_quota(): array;
 	abstract public function ping( int $post_id );
 
 	/**

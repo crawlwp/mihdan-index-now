@@ -16,12 +16,18 @@ class Hooks {
 	private $wposa;
 
 	/**
+	 * @var int $ping_delay Ping delay in seconds.
+	 */
+	private $ping_delay;
+
+	/**
 	 * Hooks constructor.
 	 *
 	 * @param WPOSA $wposa WPOSA instance.
 	 */
 	public function __construct( WPOSA $wposa ) {
-		$this->wposa = $wposa;
+		$this->wposa      = $wposa;
+		$this->ping_delay = (int) $this->wposa->get_option( 'ping_delay', 'general', 60 );
 	}
 
 	public function setup_hooks() {
@@ -66,11 +72,56 @@ class Hooks {
 			return;
 		}
 
-		do_action( 'mihdan_index_now/post_updated', $post->ID, $post );
+		// Delay.
+		$last_update = (int) get_post_meta(
+			$post->ID,
+			Utils::get_plugin_prefix() . '_last_update',
+			true
+		);
+
+		if ( ( current_time( 'timestamp' ) - $last_update ) < $this->ping_delay ) {
+			return;
+		}
+
+		if ( $old_status === $new_status ) {
+			// Post updated.
+			if ( $this->wposa->get_option( 'ping_on_post_updated', 'general', 'on' ) === 'on' ) {
+				do_action( 'mihdan_index_now/post_updated', $post->ID, $post );
+			}
+		} else {
+			// Post added.
+			if ( $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on' ) {
+				do_action( 'mihdan_index_now/post_added', $post->ID, $post );
+			}
+		}
+
+		update_post_meta(
+			$post->ID,
+			Utils::get_plugin_prefix() . '_last_update',
+			current_time( 'timestamp' )
+		);
 	}
 
 	public function comment_updated( int $id, WP_Comment $comment ): void {
+
+		// Delay.
+		$last_update = (int) get_comment_meta(
+			$id,
+			Utils::get_plugin_prefix() . '_last_update',
+			true
+		);
+
+		if ( ( current_time( 'timestamp' ) - $last_update ) < $this->ping_delay ) {
+			return;
+		}
+
 		do_action( 'mihdan_index_now/comment_updated', $comment->comment_post_ID, $comment );
+
+		update_comment_meta(
+			$id,
+			Utils::get_plugin_prefix() . '_last_update',
+			current_time( 'timestamp' )
+		);
 	}
 
 	/**
@@ -81,6 +132,24 @@ class Hooks {
 	 * @param string $taxonomy Taxonomy slug.
 	 */
 	public function term_updated( int $term_id, int $tt_id, string $taxonomy ): void {
+
+		// Delay.
+		$last_update = (int) get_term_meta(
+			$term_id,
+			Utils::get_plugin_prefix() . '_last_update',
+			true
+		);
+
+		if ( ( current_time( 'timestamp' ) - $last_update ) < $this->ping_delay ) {
+			return;
+		}
+
 		do_action( 'mihdan_index_now/term_updated', $term_id, $taxonomy );
+
+		update_term_meta(
+			$term_id,
+			Utils::get_plugin_prefix() . '_last_update',
+			current_time( 'timestamp' )
+		);
 	}
 }

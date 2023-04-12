@@ -77,10 +77,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		}
 
 		add_action( 'parse_request', [ $this, 'set_virtual_key_file' ] );
-
-		if ( $this->is_ping_on_post() ) {
-			add_action( 'mihdan_index_now/post_updated', [ $this, 'ping_on_post_update' ], 10, 2 );
-		}
+		add_action( 'mihdan_index_now/post_added', [ $this, 'ping_on_post_update' ], 10, 2 );
+		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping_on_post_update' ], 10, 2 );
 
 		if ( $this->is_ping_on_comment() ) {
 			add_action( 'mihdan_index_now/comment_updated', [ $this, 'ping_on_insert_comment' ], 10, 2 );
@@ -102,8 +100,12 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		return $this->wposa->get_option( 'ping_on_comment', 'general', 'off' ) === 'on';
 	}
 
-	private function is_ping_on_post(): bool {
+	private function is_ping_on_post_added(): bool {
 		return $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on';
+	}
+
+	private function is_ping_on_post_updated(): bool {
+		return $this->wposa->get_option( 'ping_on_post_updated', 'general', 'on' ) === 'on';
 	}
 
 	private function is_ping_on_term(): bool {
