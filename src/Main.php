@@ -24,6 +24,7 @@ use WP_List_Table;
 use Mihdan\IndexNow\Dependencies\Auryn\Injector;
 use Mihdan\IndexNow\Dependencies\Auryn\InjectionException;
 use Mihdan\IndexNow\Dependencies\Auryn\ConfigException;
+use WP_Site;
 
 /**
  * Class Main.
@@ -141,6 +142,34 @@ class Main {
 		}
 
 		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+
+		// Multisite.
+		add_action( 'wp_delete_site', [ $this, 'delete_site_tables' ] );
+		add_action( 'wp_insert_site', [ $this, 'add_site_tables' ] );
+	}
+
+	/**
+	 * Delete site tables when deleting a site.
+	 *
+	 * @param WP_Site $old_site Site ID.
+	 * @return void
+	 */
+	public function delete_site_tables( WP_Site $old_site ): void {
+		switch_to_blog( $old_site->id );
+		$this->drop_tables();
+		restore_current_blog();
+	}
+
+	/**
+	 * Add site tables when creating a site.
+	 *
+	 * @param WP_Site $new_site Site ID.
+	 * @return void
+	 */
+	public function add_site_tables( WP_Site $new_site ): void {
+		switch_to_blog( $new_site->id );
+		$this->create_tables();
+		restore_current_blog();
 	}
 
 	public function add_css_for_column(): void {
@@ -206,30 +235,43 @@ class Main {
 	 *
 	 * @return int
 	 */
-	public function set_screen_option( $status, $option, $value ) {
+	public function set_screen_option( $status, $option, $value ): int {
 		return (int) $value;
 	}
 
 	/**
 	 * Fired on plugin activate.
 	 */
-	public function activate_plugin() {
-		$this->create_tables();
+	public function activate_plugin( $network_wide ) {
+		global $wpdb;
+
+		if ( is_multisite() && $network_wide ) {
+			$sites = get_sites( [ 'fields' => 'ids' ] );
+			foreach ( $sites as $site_id ) {
+				switch_to_blog( $site_id );
+				$this->create_tables();
+				restore_current_blog();
+			}
+		} else {
+			$this->create_tables();
+		}
 	}
 
 	private function drop_tables() {
 		global $wpdb;
 
-		$sql = "DROP TABLE IF EXISTS {$wpdb->base_prefix}index_now_log";
+		$sql = "DROP TABLE IF EXISTS {$wpdb->prefix}index_now_log";
 		$wpdb->query( $sql );
 	}
 
 	private function create_tables() {
 		global $wpdb;
 
+		$table_name      = $wpdb->prefix . 'index_now_log';
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql = "CREATE TABLE {$wpdb->base_prefix}index_now_log (
+		if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) {
+			$sql = "CREATE TABLE {$wpdb->prefix}index_now_log (
     			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
     			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
@@ -240,7 +282,10 @@ class Main {
     			PRIMARY KEY (log_id)
 				) {$charset_collate};";
 
-		dbDelta( $sql );
+			dbDelta($sql);
+
+			Utils::set_db_version( Utils::get_plugin_version() );
+		}
 	}
 
 	public function maybe_upgrade() {
@@ -248,44 +293,7 @@ class Main {
 		$plugin_version = Utils::get_plugin_version();
 
 		if ( version_compare( $db_version, '2.0.0', '<' ) ) {
-			$this->migrate_to_2_0_0();
 		}
-
-		if ( version_compare( $db_version, '2.3.0', '<' ) ) {
-			$this->migrate_to_2_3_0();
-		}
-
-		if ( version_compare( $db_version, '2.4.0', '<' ) ) {
-			$this->migrate_to_2_4_0();
-		}
-	}
-
-	private function migrate_to_2_0_0() {
-		$this->drop_tables();
-		$this->create_tables();
-		Utils::set_db_version( '2.0.0' );
-	}
-
-	private function migrate_to_2_3_0() {
-		global $wpdb;
-
-		$sql = sprintf(
-			"ALTER TABLE %s MODIFY COLUMN search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster') NOT NULL DEFAULT 'site'",
-			$this->logger->get_logger_table_name()
-		);
-		$wpdb->query( $sql );
-		Utils::set_db_version( '2.3.0' );
-	}
-
-	private function migrate_to_2_4_0() {
-		global $wpdb;
-
-		$sql = sprintf(
-			"ALTER TABLE %s MODIFY COLUMN search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster','seznam-index-now') NOT NULL DEFAULT 'site'",
-			$this->logger->get_logger_table_name()
-		);
-		$wpdb->query( $sql );
-		Utils::set_db_version( '2.4.0' );
 	}
 
 	/**

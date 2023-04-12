@@ -146,12 +146,19 @@ See the documentation available from each search engine for more details about I
 * Fixed saving empty taxonomy array error
 * Code refactoring
 
+= 2.5.1 (25.03.2023) =
+* Updated the built-in documentation
+
+= 2.5.0 (23.03.2023) =
+* Added support for WordPress 6.1+
+* Added support for Multisite
+
 = 2.4.1 (06.08.2022) =
 * Added an option to disable the plugin on the Bulk Edit screen
 * Fixed integration with Seznam provider
 
 = 2.4.0 (16.06.2022) =
-* Added support for Wordpress 6.0
+* Added support for WordPress 6.0
 * Added support for Seznam.cz provider
 * Updated built-in documentation
 * Disabled integration with [Adfinity.pro](https://bit.ly/3vdOhUR)
