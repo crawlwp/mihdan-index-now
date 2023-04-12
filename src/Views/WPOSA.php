@@ -987,7 +987,7 @@ class WPOSA {
 
 	public function plugin_page() {
 		?>
-		<div class="wposa-wrap">
+		<div class="wposa">
 			<div class="wposa-header">
 				<div class="wposa-header--left">
 					<img class="wposa-logo" title="IndexNow" src="<?php echo esc_url( Utils::get_plugin_asset_url( 'images/icons/index-now-logo--gradient.svg' ) ); ?>" width="80" alt="" />
@@ -1241,19 +1241,14 @@ class WPOSA {
 		</script>
 
 		<style>
-			#wpbody-content .wposa .metabox-holder {}
-			.toplevel_page_mihdan-index-now #wpcontent {
-				/*padding-left: 0;*/
+			#wpbody-content .wposa .metabox-holder {
+				padding-left: 0;
 			}
 			.toplevel_page_mihdan-index-now #screen-meta-links {
 				position: relative;
 				z-index: 10;
 			}
-			/** WordPress 3.8 Fix **/
-			.form-table th {
-				padding: 20px 10px;
-			}
-			.wposa-wrap {
+			.wposa {
 				position: relative;
 				clear: both;
 				z-index: 9;
@@ -1403,6 +1398,7 @@ class WPOSA {
 			}
 			.wposa-form-table__row_mihdan_index_now_logs_enable label,
 			.wposa-form-table__row_mihdan_index_now_yandex_webmaster_enable label,
+			.wposa-form-table__row_mihdan_index_now_google_webmaster_enable label,
 			.wposa-form-table__row_mihdan_index_now_bing_webmaster_enable label,
 			.wposa-form-table__row_mihdan_index_now_index_now_enable label {
 				color: #135e96 !important;
@@ -1426,10 +1422,11 @@ class WPOSA {
 			}
 			.wposa__table th,
 			.wposa__table td {
-			.wpsa-card--mihdan_index_now_wpshop {
+				padding: 7px;
+			}
+			.wposa-card--mihdan_index_now_wpshop {
 				padding: 0;
 				border: 0;
-				padding: 7px;
 			}
 			.wposa__table tr:nth-child(even) {
 				background-color: #f0f0f1;
@@ -1437,18 +1434,10 @@ class WPOSA {
 			.wposa__table tr:nth-child(odd) {
 				background-color: #fff;
 			}
-			@media (max-width: 782px) {
-				.wposa__grid {
-					grid-template-columns: 1fr;
 
-			.wpsa-card--mihdan_index_now_donate {
+			.wposa-card--mihdan_index_now_rtfm {
 				position: sticky;
-				top: 20px;
-			}
-
-			#mmpf_plugins .form-table > tr > th,
-			#mmpf_plugins .form-table > tbody > tr > th {
-				display: none;
+				top: 50px;
 			}
 
 			.wposa-form-table__row_mihdan_index_now_plugins_plugins th {
@@ -1515,19 +1504,24 @@ class WPOSA {
 					grid-template-columns: 1fr 1fr;
 				}
 			}
+			@media (max-width: 782px) {
+				.wposa__grid {
+					grid-template-columns: 1fr;
+				}
+				.wposa__column {
+					padding-right: 10px;
+				}
+			}
 			@media (max-width : 992px) {
 				.wposa-plugins {
 					grid-template-columns: 1fr;
 				}
 			}
 			@media (max-width: 544px) {
-				.wrap--wposa {
-					flex-direction: column;
+				.toplevel_page_mihdan-index-now #wpcontent {
+					/*padding-left: 0;*/
 				}
-				.wrap-column {
-					flex-basis: 100%;
-				}
-				.wposa-wrap {
+				.wposa {
 					top: -60px;
 				}
 				.wposa-header--right {
