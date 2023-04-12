@@ -50,9 +50,10 @@ class WPOSA {
 			'selected' => true,
 		],
 		'div'      => [
-			'id'    => true,
-			'style' => true,
-			'class' => true,
+			'id'     => true,
+			'style'  => true,
+			'class'  => true,
+			'data-w' => true,
 		],
 		'a'        => [
 			'id'      => true,
@@ -112,6 +113,10 @@ class WPOSA {
 			'readonly'    => true,
 			'disabled'    => true,
 		],
+		'script' => [
+			'src'   => true,
+			'async' => true,
+		]
 	];
 
 	/**
@@ -710,6 +715,10 @@ class WPOSA {
 		$value = $this->get_option( $args['id'], $args['section'], $args['std'] );
 
 		$html = '<fieldset>';
+		$html .= sprintf(
+			'<input type="hidden" name="%s[%s][]" value="" />',
+			$args['section'], $args['id']
+		);
 		foreach ( $args['options'] as $key => $label ) {
 			$checked = isset( $value[ $key ] ) ? $value[ $key ] : '0';
 			$html   .= sprintf( '<label for="wposa-%1$s[%2$s][%3$s]">', $args['section'], $args['id'], $key );
@@ -970,8 +979,19 @@ class WPOSA {
 
 	public function plugin_page() {
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html( $this->plugin_name ); ?> <span style="font-size:50%;">v<?php echo esc_html( $this->plugin_version )?></span></h1>
+		<div class="wposa-wrap">
+			<div class="wposa-header">
+				<div class="wposa-header--left">
+					<img class="wposa-logo" title="IndexNow" src="<?php echo esc_url( Utils::get_plugin_asset_url( 'images/icons/index-now-logo--gradient.svg' ) ); ?>" width="80" alt="" />
+				</div>
+				<div class="wposa-header--center">
+					<div class="wposa-heading"><?php echo esc_html( $this->plugin_name ); ?></div>
+					<div class="wposa-version"><?php esc_html_e( 'Version' ); ?>: <?php echo esc_html( $this->plugin_version )?></div>
+				</div>
+				<div class="wposa-header--right">
+					<p><?php esc_html_e( 'IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.', 'mihdan-index-now' ); ?></p>
+				</div>
+			</div>
 			<?php $this->show_navigation(); ?>
 			<div class="wrap--wposa">
 				<div class="wrap-column wrap-column--form">
@@ -1208,9 +1228,58 @@ class WPOSA {
 		</script>
 
 		<style>
+			.toplevel_page_mihdan-index-now #wpcontent {
+				/*padding-left: 0;*/
+			}
+			.toplevel_page_mihdan-index-now #screen-meta-links {
+				position: relative;
+				z-index: 10;
+			}
 			/** WordPress 3.8 Fix **/
 			.form-table th {
 				padding: 20px 10px;
+			}
+			.wposa-wrap {
+				position: relative;
+				clear: both;
+				z-index: 9;
+				top: -30px;
+			}
+			.wposa-header {
+				display: grid;
+				grid-template-columns: 80px 120px auto;
+				grid-gap: 15px;
+				align-items: center;
+				margin-bottom: 20px;
+				background-color: #fff;
+				padding: 14px 20px;
+				position: relative;
+				margin-left: -20px;
+				border-top: 1px solid #c3c4c7;
+				border-bottom: 1px solid #c3c4c7;
+			}
+			.wposa-header--left {
+
+			}
+			.wposa-header--center {
+
+			}
+			.wposa-header--right {
+				color: #909090;
+			}
+			.wposa-header--right > p {
+				max-width: 600px;
+			}
+			.wposa-logo {
+				display: block;
+			}
+			.wposa-heading {
+				font-size: 24px;
+				font-weight: 400;
+				line-height: 1.3;
+			}
+			.wposa-version {
+				font-size: 13px;
 			}
 
 			#wpbody-content .metabox-holder {
@@ -1346,9 +1415,19 @@ class WPOSA {
 				display: block;
 				border: 0;
 			}
-			.wpsa-card--mihdan_index_now_adfinity {
+			.wpsa-card--mihdan_index_now_wpshop {
 				padding: 0;
 				border: 0;
+			}
+
+			.wpsa-card--mihdan_index_now_donate {
+				position: sticky;
+				top: 20px;
+			}
+
+			#mmpf_plugins .form-table > tr > th,
+			#mmpf_plugins .form-table > tbody > tr > th {
+				display: none;
 			}
 
 			@media (max-width: 544px) {
@@ -1357,6 +1436,15 @@ class WPOSA {
 				}
 				.wrap-column {
 					flex-basis: 100%;
+				}
+				.wposa-wrap {
+					top: -60px;
+				}
+				.wposa-header--right {
+					display: none
+				}
+				.form-table th {
+					padding: 10px 0;
 				}
 			}
 		</style>
