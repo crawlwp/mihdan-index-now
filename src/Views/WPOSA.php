@@ -30,7 +30,9 @@ class WPOSA {
 		'b'        => [],
 		'i'        => [],
 		'code'     => [],
-		'ul'       => [],
+		'ul'       => [
+			'class' => true,
+		],
 		'ol'       => [],
 		'li'       => [],
 		'br'       => [
@@ -65,7 +67,9 @@ class WPOSA {
 			'target'  => true,
 		],
 		'img'      => [
-			'src' => true,
+			'src'    => true,
+			'width'  => true,
+			'height' => true,
 		],
 		'p'        => [
 			'class' => true,
@@ -1404,7 +1408,7 @@ class WPOSA {
 			}
 
 			.wrap-column--form form {
-				max-width: 600px;
+				/*max-width: 600px;*/
 			}
 
 			.wposa-img {
@@ -1430,6 +1434,75 @@ class WPOSA {
 				display: none;
 			}
 
+			.wposa-form-table__row_mihdan_index_now_plugins_plugins th {
+				display: none;
+			}
+			.wposa-form-table__row_mihdan_index_now_plugins_plugins td {
+				padding: 0;
+			}
+			.wposa-plugins {
+				display: grid;
+				grid-gap: 20px;
+				grid-template-columns: repeat(3, 1fr);
+			}
+			.wposa-plugins a {
+				text-decoration: none;
+			}
+			.wposa-plugins__item {
+				border: 1px solid #c3c4c7;
+				background: #fff;
+			}
+			.wposa-plugin {
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+			}
+			.wposa-plugin__content {
+				display: grid;
+				grid-gap: 20px;
+				grid-template-columns: 100px auto;
+				padding: 20px;
+			}
+			.wposa-plugin__icon {}
+			.wposa-plugin__data {}
+			.wposa-plugin__name {
+				font-weight: bold;
+				margin-bottom: 5px;
+				font-size: 1.2em;
+			}
+			.wposa-plugin__description {
+				font-size: 0.9em;
+			}
+			.wposa-plugin__footer {
+				background: #f6f7f7;
+				padding: 20px 20px;
+				display: grid;
+				grid-gap: 20px;
+				grid-template-columns: 1fr 1fr;
+			}
+			.wposa-plugin__install {
+				align-self: end;
+				text-align: right;
+			}
+			.wposa-plugin__meta {
+				margin: 0;
+				padding: 0;
+				font-size: 0.9em;
+			}
+			.wposa-plugin__meta > li {
+				padding: 0;
+				margin-bottom: 2px;
+			}
+			@media (max-width : 1480px) {
+				.wposa-plugins {
+					grid-template-columns: 1fr 1fr;
+				}
+			}
+			@media (max-width : 992px) {
+				.wposa-plugins {
+					grid-template-columns: 1fr;
+				}
+			}
 			@media (max-width: 544px) {
 				.wrap--wposa {
 					flex-direction: column;
@@ -1445,6 +1518,9 @@ class WPOSA {
 				}
 				.form-table th {
 					padding: 10px 0;
+				}
+				.wposa-plugins {
+					grid-template-columns: 1fr;
 				}
 			}
 		</style>

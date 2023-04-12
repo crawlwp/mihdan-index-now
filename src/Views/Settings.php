@@ -87,6 +87,14 @@ class Settings {
 		add_action( 'init', [ $this, 'setup_vars' ], 100 );
 		add_action( 'init', [ $this, 'setup_fields' ], 101 );
 		//register_activation_hook( Utils::get_plugin_file(), [ $this, 'set_default_setting' ] );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+	}
+
+	public function admin_enqueue_scripts() {
+		wp_enqueue_script( 'plugin_install' );
+		wp_enqueue_script( 'updates' );
+		//wp_enqueue_style( 'list-tables' );
+		add_thickbox();
 	}
 
 	public function set_default_setting(): void {
@@ -120,6 +128,13 @@ class Settings {
 	public function setup_fields() {
 
 		$this->wposa
+			->add_sidebar_card(
+				[
+					'id'    => 'wpshop',
+					'title' => '',
+					'desc'  => '<script src="//wpwidget.ru/js/wps-widget-entry.min.js" async></script><div class="wps-widget" data-w="//wpwidget.ru/greetings?orientation=2&pid=7934"></div>',
+				]
+			)
 			->add_sidebar_card(
 				[
 					'id'    => 'donate',
@@ -186,6 +201,16 @@ class Settings {
 		$this->wposa->add_field(
 			'general',
 			array(
+				'id'      => 'ping_on_post_updated',
+				'type'    => 'switch',
+				'name'    => __( 'Post updated', 'mihdan-index-now' ),
+				'default' => 'off',
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
+			array(
 				'id'      => 'ping_on_term',
 				'type'    => 'switch',
 				'name'    => __( 'Term added', 'mihdan-index-now' ),
@@ -208,6 +233,35 @@ class Settings {
 				'type'    => 'switch',
 				'name'    => __( 'Disable for Bulk Edit', 'mihdan-index-now' ),
 				'default' => 'on',
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
+			array(
+				'id'      => 'show_last_update_column',
+				'type'    => 'switch',
+				'name'    => __( 'Show last update column', 'mihdan-index-now' ),
+				'default' => 'on',
+			)
+		);
+
+		$this->wposa->add_field(
+			'general',
+			array(
+				'id'      => 'ping_delay',
+				'type'    => 'select',
+				'name'    => __( 'Ping Delay', 'mihdan-index-now' ),
+				'desc'    => __( 'Delay between notifications for a single URL', 'mihdan-index-now' ),
+				'options' => [
+					60   => __( '1 minute', 'mihdan-index-now' ),
+					120  => __( '2 minutes', 'mihdan-index-now' ),
+					300  => __( '5 minutes', 'mihdan-index-now' ),
+					600  => __( '10 minutes', 'mihdan-index-now' ),
+					1200 => __( '20 minutes', 'mihdan-index-now' ),
+					1800 => __( '30 minutes', 'mihdan-index-now' ),
+					3600 => __( '60 minutes', 'mihdan-index-now' ),
+				],
 			)
 		);
 
@@ -514,6 +568,137 @@ class Settings {
 				'name'    => __( 'Lifetime', 'mihdan-index-now' ),
 				'default' => 1,
 				'desc'    => __( 'Logs lifetime in days', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_section(
+			array(
+				'id'    => 'plugins',
+				'title' => __( 'Plugins', 'mihdan-index-now' ),
+				'desc'  => __( 'You can also install our other useful plugins.', 'mihdan-index-now' ),
+			)
+		);
+
+		$this->wposa->add_field(
+			'plugins',
+			array(
+				'id'   => 'plugins',
+				'type' => 'html',
+				'name' => '',
+				'desc' => function () {
+
+					$transient = Utils::get_plugin_slug() . '-plugins';
+					$cached    = get_transient( $transient );
+
+					if ( false !== $cached ) {
+						return $cached;
+					}
+
+					require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+
+					$args      = array(
+						'per_page' => 100,
+						'page'     => 1,
+						'author'   => 'mihdan',
+						'fields'   => array(
+							'downloaded'        => true,
+							'rating'            => true,
+							'ratings'           => false,
+							'description'       => false,
+							'short_description' => true,
+							'donate_link'       => false,
+							'tags'              => true,
+							'sections'          => false,
+							'added'             => false,
+							'last_updated'      => false,
+							'compatibility'     => false,
+							'tested'            => false,
+							'requires'          => false,
+							'downloadlink'      => true,
+							'banners'           => true,
+						),
+					);
+
+					$result = plugins_api( 'query_plugins', $args );
+
+					if ( empty( $result->info['results'] ) ) {
+						return __( 'HTTP error', 'mihdan-index-now' );
+					}
+
+					ob_start();
+
+					?>
+					<div class="wposa-plugins">
+						<?php
+
+						foreach ( $result->plugins as $plugin ) {
+							$info_url = add_query_arg(
+								[
+									'tab'       => 'plugin-information',
+									'plugin'    => $plugin['slug'],
+									'TB_iframe' => 'true',
+									'width'     => '800',
+									'height'    => '550',
+								],
+								admin_url( 'plugin-install.php' )
+							);
+							$install_url = add_query_arg(
+								[
+									'action'   => 'install-plugin',
+									'plugin'   => $plugin['slug'],
+									'_wpnonce' => wp_create_nonce( 'install-plugin_' . $plugin['slug'] ),
+								],
+								admin_url( 'update.php' )
+							);
+							?>
+							<div class="wposa-plugins__item wposa-plugin">
+								<div class="wposa-plugin__content">
+									<div class="wposa-plugin__icon">
+										<a href="<?php echo esc_url( $info_url ); ?>" class="thickbox open-plugin-details-modal">
+											<img src="<?php echo esc_url( $plugin['icons']['1x'] ?? $plugin['icons']['default'] ); ?>" width="100" height="100">
+										</a>
+										<?php
+										wp_star_rating(
+											array(
+												'rating' => $plugin['rating'],
+												'type'   => 'percent',
+												'number' => $plugin['num_ratings'],
+											)
+										);
+										?>
+									</div>
+									<div class="wposa-plugin__data">
+										<div class="wposa-plugin__name">
+											<a href="<?php echo esc_url( $info_url ); ?>" class="thickbox open-plugin-details-modal"><?php echo esc_html( $plugin['name'] ); ?></a>
+										</div>
+										<div class="wposa-plugin__description">
+											<?php echo esc_html( $plugin['short_description'] ); ?>
+										</div>
+									</div>
+								</div>
+								<div class="wposa-plugin__footer">
+									<ul class="wposa-plugin__meta">
+
+										<li><b><?php esc_html_e( 'Version', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['version'] ); ?></li>
+										<li><b><?php esc_html_e( 'Installations', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['active_installs'] ); ?></li>
+										<li><b><?php esc_html_e( 'Downloaded', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['downloaded'] ); ?></li>
+									</ul>
+									<div class="wposa-plugin__install">
+										<a href="<?php echo esc_url( $install_url ); ?>" class="install-now button"><?php esc_html_e( 'Install', 'mihdan-index-now' ); ?></a>
+									</div>
+								</div>
+							</div>
+							<?php
+						}
+
+						?>
+					</div>
+					<?php
+					$content = ob_get_clean();
+					set_transient( $transient, $content, 1 * DAY_IN_SECONDS );
+
+					return $content;
+				},
 			)
 		);
 	}
