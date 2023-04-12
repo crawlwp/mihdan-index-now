@@ -228,25 +228,27 @@ class Log_List_Table extends WP_List_Table {
 			return;
 		}
 
-		if ( 'delete' === $this->current_action() ) {
-			if ( is_array( $_POST['log_rows'] ) ) {
-				$log_rows   = implode( ',', array_map( 'absint', $_POST['log_rows'] ) );
-				$table_name = $this->logger->get_logger_table_name();
+		if ( isset( $_POST['log_rows'] ) && is_array( $_POST['log_rows'] ) && 'delete' === $this->current_action() ) {
+			$log_rows   = array_map( 'absint', $_POST['log_rows'] );
+			$table_name = $this->logger->get_logger_table_name();
 
-				$wpdb->query(
-					$wpdb->prepare(
-						"DELETE FROM {$table_name} WHERE log_id IN ({$log_rows})"
-					)
-				);
+			$how_many     = count( $log_rows );
+			$placeholders = array_fill( 0, $how_many, '%d' );
+			$format       = implode( ', ', $placeholders );
 
-				if ( $this->wposa->get_option( 'bulk_actions', 'logs', 'off' ) === 'on' ) {
+			$query = "DELETE FROM {$table_name} WHERE log_id IN ({$format})";
 
-					$data = [
-						'direction' => 'internal',
-					];
+			$wpdb->query(
+				$wpdb->prepare( $query, $log_rows )
+			);
 
-					$this->logger->info( sprintf( 'The log entries with IDs %s were deleted successfully.', $log_rows ), $data );
-				}
+			if ( $this->wposa->get_option( 'bulk_actions', 'logs', 'off' ) === 'on' ) {
+
+				$data = [
+					'direction' => 'internal',
+				];
+
+				$this->logger->info( sprintf( 'The log entries with IDs %s were deleted successfully.', $log_rows ), $data );
 			}
 		}
 	}
