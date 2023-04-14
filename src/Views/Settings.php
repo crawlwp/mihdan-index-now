@@ -423,36 +423,25 @@ class Settings {
 					'options' => $this->get_yandex_webmaster_host_ids()
 				)
 			);
-
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'       => 'access_token_view',
-					'type'     => 'html',
-					'readonly' => true,
-					'name'     => __( 'Access Token', 'mihdan-index-now' ),
-					'desc'     => function() {
-						return sprintf(
-							'Key: %s<br> Expires In: %s',
-							$this->wposa->get_option( 'access_token', 'yandex_webmaster' ),
-							date( 'd.m.Y', $this->wposa->get_option( 'expires_in', 'yandex_webmaster' ) )
-						);
-					},
-				)
-			);
 		}
 
 		// Показать кнопку только если заполнены доступы к API.
-		if ( $this->wposa->get_option( 'client_id', 'yandex_webmaster' ) && $this->wposa->get_option( 'client_secret', 'yandex_webmaster' ) ) {
+		if (
+			$this->wposa->get_option( 'client_id', 'yandex_webmaster' ) &&
+			$this->wposa->get_option( 'client_secret', 'yandex_webmaster' )
+		) {
 			$this->wposa->add_field(
 				'yandex_webmaster',
 				array(
 					'id'          => 'button_get_token',
 					'type'        => 'button',
-					'name'        => __( '', 'mihdan-index-now' ),
+					'name'        => __( 'Token', 'mihdan-index-now' ),
 					'placeholder' => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
 						? __( 'Update Token', 'mihdan-index-now' )
 						: __( 'Get Token', 'mihdan-index-now' ),
+					'desc' => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
+						? __( 'Expires In', 'mihdan-index-now' ) . ': ' . date( 'd.m.Y', $this->wposa->get_option( 'expires_in', 'yandex_webmaster' ) )
+						: '',
 				)
 			);
 		}
@@ -573,9 +562,10 @@ class Settings {
 
 		$this->wposa->add_section(
 			array(
-				'id'    => 'plugins',
-				'title' => __( 'Plugins', 'mihdan-index-now' ),
-				'desc'  => __( 'You can also install our other useful plugins.', 'mihdan-index-now' ),
+				'id'           => 'plugins',
+				'reset_button' => false,
+				'title'        => __( 'Plugins', 'mihdan-index-now' ),
+				'desc'         => __( 'You can also install our other useful plugins.', 'mihdan-index-now' ),
 			)
 		);
 

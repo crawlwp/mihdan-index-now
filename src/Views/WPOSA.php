@@ -207,6 +207,9 @@ class WPOSA {
 
 		// Menu.
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+
+		// Ajax.
+		add_action( 'wp_ajax_' . Utils::get_plugin_prefix() . '_reset_form', [ $this, 'reset_form' ] );
 	}
 
 	/**
@@ -497,6 +500,10 @@ class WPOSA {
 					],
 					'class'             => $class,
 				);
+
+				if ( ! empty( $field['button_class'] ) ) {
+					$args['button_class'] = $field['button_class'];
+				}
 
 				if ( $help_tab ) {
 					$name .= $this->show_help_tab_toggle( $help_tab );
@@ -900,7 +907,7 @@ class WPOSA {
 	 */
 	function callback_button( $args ) {
 		$value = $args['placeholder'] ?? __( 'Submit' );
-		$class = 'button-secondary';
+		$class = $args['button_class'] ?? 'button-secondary';
 		$id    = $args['id'] ?? time();
 		?>
 		<input
@@ -909,6 +916,7 @@ class WPOSA {
 			value="<?php echo esc_attr( $value ); ?>"
 			class="button <?php echo esc_attr( $class ); ?>"
 		/>
+		<?php echo wp_kses( $this->get_field_description( $args ), self::ALLOWED_HTML ); ?>
 		<?php
 	}
 
@@ -1061,8 +1069,9 @@ class WPOSA {
 		$default = array(
 			'label_submit' => null,
 			'submit_type'  => 'primary',
-			'wrap'         => true,
+			'wrap'         => false,
 			'attributes'   => null,
+			'reset_button' => true,
 		);
 		?>
 		<div class="metabox-holder">
@@ -1079,8 +1088,20 @@ class WPOSA {
 						do_settings_sections( $form['id'] );
 						do_action( 'wsa_form_bottom_' . $form['id'], $form );
 						?>
-						<div style="padding-left: 10px">
-							<?php submit_button( $form['label_submit'], $form['submit_type'], 'submit_' . $form['id'], $form['wrap'], $form['attributes'] ); ?>
+						<div class="wposa-footer">
+							<div class="wposa-footer__column wposa-footer__column--left">
+								<?php submit_button( $form['label_submit'], $form['submit_type'], 'submit_' . $form['id'], $form['wrap'], $form['attributes'] ); ?>
+							</div>
+							<div class="wposa-footer__column wposa-footer__column--right">
+								<?php if ( $form['reset_button'] ) : ?>
+									<input type="button"
+										   class="button button-danger button-link"
+										   data-section="<?php echo esc_attr( $form['id'] ); ?>"
+										   id="<?php echo esc_attr( $form['id'] ); ?>_reset_form"
+										   value="<?php echo esc_attr( __( 'Reset Form', 'mihdan-index-now' ) ); ?>"
+									/>
+								<?php endif; ?>
+							</div>
 						</div>
 					</form>
 				</div>
@@ -1109,13 +1130,15 @@ class WPOSA {
 	 *
 	 * This code uses localstorage for displaying active tabs
 	 */
-	function script() {
+	public function script() {
 		?>
 		<script>
 			jQuery( document ).ready( function( $ ) {
 
-				const $show_settings_toggler = $('.show-settings');
-				const $help = $('.wpsa-help-tab-toggle');
+				const
+					$show_settings_toggler = $('.show-settings'),
+					$help = $('.wpsa-help-tab-toggle'),
+					wp = window.wp;
 
 				$help.on(
 					'click',
@@ -1236,6 +1259,28 @@ class WPOSA {
 						window.location.href = CODE_ENDPOINT + CLIENT_ID;
 					}
 				);
+
+				$( 'input:button[id$="_reset_form"]' ).on(
+					'click',
+					function() {
+						const $button = $( this );
+
+						if ( confirm( '<?php echo esc_attr( __( 'Are you sure?', 'mihdan-index-now' ) ); ?>' ) ) {
+							wp.ajax.post(
+								'<?php echo esc_html( Utils::get_plugin_prefix() ); ?>_reset_form',
+								{
+									section: $button.data( 'section' ),
+								}
+							).always( function ( response ) {
+								if ( response === 'ok' ) {
+									document.location.reload();
+								} else {
+									console.log( response );
+								}
+							} );
+						}
+					}
+				);
 			});
 
 		</script>
@@ -1253,6 +1298,15 @@ class WPOSA {
 				clear: both;
 				z-index: 9;
 				top: -30px;
+			}
+			.wposa .buttons-group {
+				display: flex;
+				gap: 10px;
+			}
+			.wposa .button {}
+			.wposa .button-danger {
+				color: #d63638;
+				border-color: #d63638;
 			}
 			.wposa-header {
 				display: grid;
@@ -1327,6 +1381,10 @@ class WPOSA {
 				display: grid;
 				grid-gap: 20px;
 				grid-template-columns: auto 300px;
+			}
+
+			.wposa .description {
+				max-width: 350px;
 			}
 
 			input.wposa-field--switch {
@@ -1537,7 +1595,45 @@ class WPOSA {
 			.wposa__helptab {
 				max-width: 600px;
 			}
+			.wposa code {
+				white-space: nowrap;
+			}
+			.wposa-overflow {
+				overflow-x: auto;
+				max-width: 300px;
+			}
+			.wposa-footer {
+				display: grid;
+				grid-gap: 20px;
+				grid-template-columns: 1fr 1fr;
+				padding-top: 50px;
+			}
+			.wposa-footer__column {}
+			.wposa-footer__column--left {}
+			.wposa-footer__column--right {
+				text-align: right;
+			}
 		</style>
 		<?php
+	}
+
+	public function reset_form() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				__( 'You have no rights to do this', 'mihdan-index-now' )
+			);
+		}
+
+		$section = sanitize_text_field( $_POST['section'] ?? '' );
+
+		if ( ! $section ) {
+			wp_send_json_error(
+				__( 'Invalid section name', 'mihdan-index-now' )
+			);
+		}
+
+		delete_option( $section );
+
+		wp_send_json_success( 'ok' );
 	}
 }
