@@ -186,9 +186,10 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 			'timeout' => 30,
 			'body'    => wp_json_encode(
 				array(
-					'host'    => $this->get_host(),
-					'key'     => $this->get_api_key(),
-					'urlList' => $url_list,
+					'host'        => $this->get_host(),
+					'key'         => $this->get_api_key(),
+					'keyLocation' => $this->get_api_key_location(),
+					'urlList'     => $url_list,
 				)
 			),
 			'headers' => [
@@ -229,6 +230,15 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	 */
 	private function get_api_key() {
 		return $this->api_key;
+	}
+
+	/**
+	 * Get virtual API key location.
+	 *
+	 * @return string
+	 */
+	private function get_api_key_location(): string {
+		return trailingslashit( get_home_url() ) . $this->get_api_key() . '.txt';
 	}
 
 	/**
