@@ -253,6 +253,11 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 			return;
 		}
 
+		// Exclude key file from cache.
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+
 		if ( $this->is_key_logging_enabled() ) {
 			$data = [
 				'search_engine' => $this->get_current_search_engine(),
