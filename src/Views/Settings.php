@@ -130,13 +130,6 @@ class Settings {
 		$this->wposa
 			->add_sidebar_card(
 				[
-					'id'    => 'wpshop',
-					'title' => '',
-					'desc'  => '<script src="//wpwidget.ru/js/wps-widget-entry.min.js" async></script><div class="wps-widget" data-w="//wpwidget.ru/greetings?orientation=2&pid=7934"></div>',
-				]
-			)
-			->add_sidebar_card(
-				[
 					'id'    => 'donate',
 					'title' => __( 'Enjoyed IndexNow?', 'mihdan-index-now' ),
 					'desc'  => __( '<p>Please leave us a <a href="https://wordpress.org/support/plugin/mihdan-index-now/reviews/#new-post" target="_blank" title="Rate &amp; review it">★★★★★</a> rating. We really appreciate your support</p>', 'mihdan-index-now' ),
@@ -309,6 +302,7 @@ class Settings {
 					'index-now'            => __( 'IndexNow', 'mihdan-index-now' ),
 					'yandex-index-now'     => __( 'Yandex', 'mihdan-index-now' ),
 					'seznam-index-now'     => __( 'Seznam', 'mihdan-index-now' ),
+					'naver-index-now'      => __( 'Naver', 'mihdan-index-now' ),
 					//'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
 					//'google'     => __( 'Google', 'mihdan-index-now' ),
 					//'baidu'      => __( 'Baidu', 'mihdan-index-now' ),
@@ -620,8 +614,14 @@ class Settings {
 					?>
 					<div class="wposa-plugins">
 						<?php
-
 						foreach ( $result->plugins as $plugin ) {
+
+							if ( is_object( $plugin ) ) {
+								continue;
+							}
+
+							$plugin = (array) $plugin;
+
 							$info_url = add_query_arg(
 								[
 									'tab'       => 'plugin-information',
@@ -668,10 +668,9 @@ class Settings {
 								</div>
 								<div class="wposa-plugin__footer">
 									<ul class="wposa-plugin__meta">
-
 										<li><b><?php esc_html_e( 'Version', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['version'] ); ?></li>
-										<li><b><?php esc_html_e( 'Installations', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['active_installs'] ); ?></li>
-										<li><b><?php esc_html_e( 'Downloaded', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['downloaded'] ); ?></li>
+										<li><b><?php esc_html_e( 'Installations', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( number_format( $plugin['active_installs'], 0, '', ' ' ) ); ?></li>
+										<li><b><?php esc_html_e( 'Downloaded', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( number_format( $plugin['downloaded'], 0, '', ' ' ) ); ?></li>
 									</ul>
 									<div class="wposa-plugin__install">
 										<a href="<?php echo esc_url( $install_url ); ?>" class="install-now button"><?php esc_html_e( 'Install', 'mihdan-index-now' ); ?></a>

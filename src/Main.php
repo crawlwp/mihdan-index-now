@@ -13,6 +13,7 @@ use Mihdan\IndexNow\Providers\Bing\BingWebmaster;
 use Mihdan\IndexNow\Providers\Google\GoogleWebmaster;
 use Mihdan\IndexNow\Providers\IndexNow\IndexNow;
 use Mihdan\IndexNow\Providers\Seznam\SeznamIndexNow;
+use Mihdan\IndexNow\Providers\Naver\NaverIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
 use Mihdan\IndexNow\Views\HelpTab;
@@ -111,6 +112,7 @@ class Main {
 		( $this->make( YandexIndexNow::class ) )->setup_hooks();
 		( $this->make( BingIndexNow::class ) )->setup_hooks();
 		( $this->make( SeznamIndexNow::class ) )->setup_hooks();
+		( $this->make( NaverIndexNow::class ) )->setup_hooks();
 		( $this->make( IndexNow::class ) )->setup_hooks();
 
 		( $this->make( YandexWebmaster::class ) )->setup_hooks();
@@ -264,18 +266,18 @@ class Main {
 		$wpdb->query( $sql );
 	}
 
-	private function create_tables() {
+	private function create_tables( bool $upgrade = false ) {
 		global $wpdb;
 
 		$table_name      = $wpdb->prefix . 'index_now_log';
 		$charset_collate = $wpdb->get_charset_collate();
 
-		if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) {
+		if ( $upgrade || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) {
 			$sql = "CREATE TABLE {$wpdb->prefix}index_now_log (
     			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
     			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
-    			search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster') NOT NULL DEFAULT 'site',
+    			search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster','seznam-index-now','naver-index-now') NOT NULL DEFAULT 'site',
     			direction enum('incoming','outgoing','internal') NOT NULL DEFAULT 'incoming',
     			status_code INT(11) unsigned NOT NULL,
     			message text NOT NULL,
@@ -292,7 +294,8 @@ class Main {
 		$db_version     = Utils::get_db_version();
 		$plugin_version = Utils::get_plugin_version();
 
-		if ( version_compare( $db_version, '2.0.0', '<' ) ) {
+		if ( version_compare( $db_version, $plugin_version, '<' ) ) {
+			$this->create_tables( true );
 		}
 	}
 

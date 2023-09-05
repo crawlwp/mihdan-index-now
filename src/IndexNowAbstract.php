@@ -197,10 +197,11 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 			],
 		);
 
-		$response    = wp_remote_post( $this->get_api_url(), $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
+		$response = wp_remote_post( $this->get_api_url(), $args );
 
-		$body = wp_remote_retrieve_body( $response );
+		$body             = wp_remote_retrieve_body( $response );
+		$status_code      = wp_remote_retrieve_response_code( $response );
+		$response_message = wp_remote_retrieve_response_message( $response );
 
 		if ( Utils::is_json( $body ) ) {
 			$body = json_decode( $body, true );
@@ -217,7 +218,18 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 				$this->logger->info( $message, $data );
 			}
 		} else {
-			$this->logger->error( $body['message'] ?? print_r( $body, 1 ), $data );
+
+			if ( ! empty( $body['message'] ) ) {
+				$message = $body['message'];
+			} elseif ( ! empty( $body ) ) {
+				$message = print_r( $body, 1 ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
+			} elseif ( ! empty( $response_message ) ) {
+				$message = $response_message;
+			} else {
+				$message = '';
+			}
+
+			$this->logger->error( $message, $data );
 		}
 
 		return true;
