@@ -218,6 +218,8 @@ class WPOSA {
 	 * @since 1.0.0
 	 */
 	public function admin_scripts() {
+		global $wp_version;
+
 		// jQuery is needed.
 		wp_enqueue_script( 'jquery' );
 
@@ -226,12 +228,9 @@ class WPOSA {
 			'iris',
 			admin_url( 'js/iris.min.js' ),
 			array( 'jquery-ui-draggable', 'jquery-ui-slider', 'jquery-touch-punch' ),
-			false,
-			1
+			$wp_version,
+			true
 		);
-
-		// Media Uploader.
-		wp_enqueue_media();
 	}
 
 

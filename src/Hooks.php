@@ -1,6 +1,8 @@
 <?php
 /**
+ * Class Hooks.
  *
+ * @package mihdan-index-now
  */
 
 namespace Mihdan\IndexNow;
@@ -9,16 +11,23 @@ use Mihdan\IndexNow\Views\WPOSA;
 use WP_Post;
 use WP_Comment;
 
+/**
+ * Class Hooks.
+ */
 class Hooks {
 	/**
+	 * WPOSA Instance.
+	 *
 	 * @var WPOSA
 	 */
-	private $wposa;
+	private WPOSA $wposa;
 
 	/**
-	 * @var int $ping_delay Ping delay in seconds.
+	 * Ping delay in seconds.
+	 *
+	 * @var int $ping_delay
 	 */
-	private $ping_delay;
+	private int $ping_delay;
 
 	/**
 	 * Hooks constructor.
@@ -30,10 +39,51 @@ class Hooks {
 		$this->ping_delay = (int) $this->wposa->get_option( 'ping_delay', 'general', 60 );
 	}
 
+	/**
+	 * Hooks init.
+	 *
+	 * @return void
+	 */
 	public function setup_hooks() {
 		add_action( 'transition_post_status', [ $this, 'post_updated' ], 10, 3 );
-		add_action( 'wp_insert_comment', [ $this, 'comment_updated' ], 10, 2 );
+		add_action( 'transition_comment_status', [ $this, 'comment_updated' ], 10, 3 );
+		add_action( 'wp_insert_comment', [ $this, 'comment_inserted' ], 10, 2 );
 		add_action( 'saved_term', [ $this, 'term_updated' ], 10, 3 );
+	}
+
+	/**
+	 * Fires immediately after a comment is inserted into the database.
+	 *
+	 * @param int        $id      Идентификатор комментария.
+	 * @param WP_Comment $comment Объект комментария.
+	 *
+	 * @return void
+	 */
+	public function comment_inserted( int $id, WP_Comment $comment ): void {
+
+		// Comment must be manually approved.
+		if ( (int) $comment->comment_approved !== 1 ) {
+			return;
+		}
+
+		// Delay.
+		$last_update = (int) get_comment_meta(
+			$id,
+			Utils::get_plugin_prefix() . '_last_update',
+			true
+		);
+
+		if ( ( current_time( 'timestamp' ) - $last_update ) < $this->ping_delay ) {
+			return;
+		}
+
+		do_action( 'mihdan_index_now/comment_updated', $comment->comment_post_ID, $comment );
+
+		update_comment_meta(
+			$id,
+			Utils::get_plugin_prefix() . '_last_update',
+			current_time( 'timestamp' )
+		);
 	}
 
 	/**
@@ -102,11 +152,21 @@ class Hooks {
 		);
 	}
 
-	public function comment_updated( int $id, WP_Comment $comment ): void {
+	/**
+	 * Fires when the comment status is in transition
+	 * from one specific status to another.
+	 *
+	 * @param int|string $new_status The new comment status.
+	 * @param int|string $old_status The old comment status.
+	 * @param WP_Comment $comment    Comment object.
+	 *
+	 * @return void
+	 */
+	public function comment_updated( $new_status, $old_status, WP_Comment $comment ): void {
 
 		// Delay.
 		$last_update = (int) get_comment_meta(
-			$id,
+			$comment->comment_ID,
 			Utils::get_plugin_prefix() . '_last_update',
 			true
 		);
@@ -115,10 +175,14 @@ class Hooks {
 			return;
 		}
 
+		if ( $new_status !== 'approved' ) {
+			return;
+		}
+
 		do_action( 'mihdan_index_now/comment_updated', $comment->comment_post_ID, $comment );
 
 		update_comment_meta(
-			$id,
+			$comment->comment_ID,
 			Utils::get_plugin_prefix() . '_last_update',
 			current_time( 'timestamp' )
 		);
