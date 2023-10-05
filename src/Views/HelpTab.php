@@ -34,6 +34,19 @@ class HelpTab {
 
 		$screen->add_help_tab(
 			[
+				'id'       => MIHDAN_INDEX_NOW_PREFIX . '_search_engine_support',
+				'title'    => __( 'Search engine support', 'mihdan-index-now' ),
+				'callback' => function() {
+					?>
+					<h1>Поддержка IndexNow</h1>
+					<p>На сегодняшний день <?php echo esc_html( date( 'd.m.Y' ) ); ?> официально технологию поддерживают только <i>Яндекс</i>, <i>Bing</i>, <i>Seznam.cz</i>, <i>Naver</i> и сам официальный сайт <i>indexnow.org</i>, остальные поисковые системы пока морозятся.</p>
+					<?php
+				},
+			]
+		);
+
+		$screen->add_help_tab(
+			[
 				'id'       => MIHDAN_INDEX_NOW_PREFIX . '_index_now_api_key',
 				'title'    => __( 'IndexNow API key', 'mihdan-index-now' ),
 				'callback' => function() {
@@ -53,27 +66,14 @@ class HelpTab {
 
 		$screen->add_help_tab(
 			[
-				'id'       => MIHDAN_INDEX_NOW_PREFIX . '_search_engine_support',
-				'title'    => __( 'Search engine support', 'mihdan-index-now' ),
-				'callback' => function() {
-					?>
-					<h1>Поддержка IndexNow</h1>
-					<p>На сегодняшний день <?php echo esc_html( date( 'd.m.Y' ) ); ?> официально технологию поддерживают только <i>Яндекс</i>, <i>Bing</i>, <i>Seznam.cz</i> и сам официальный сайт <i>indexnow.org</i>, остальные поисковые системы пока морозятся.</p>
-					<?php
-				},
-			]
-		);
-
-		$screen->add_help_tab(
-			[
 				'id'       => MIHDAN_INDEX_NOW_PREFIX . '_bing_webmaster_api_key',
 				'title'    => __( 'Bing API key', 'mihdan-index-now' ),
 				'callback' => function() {
 					?>
-					<h1>Ключ для Bing API</h1>
-					<p>Ключ API — это уникальный идентификатор, который используется для аутентификации запросов API.</p>
-					<p>Ключ для доступа к API Bing можно получить через панель <a href="https://www.bing.com/webmasters/home" target="_blank">Bing Webmaster Tools</a> в разделе Настройки -> Доступ по API -> Ключ API.</p>
-					<p>Предупреждение: Не давайте ключ API третьим лицам или тем, кому не доверяете.</p>
+					<h1>Bing API key</h1>
+					<p>An API key is a unique identifier that is used to authenticate API requests.</p>
+					<p>The Bing API key can be obtained through the <a href="https://www.bing.com/webmasters/home" target="_blank">Bing Webmaster Tools</a> panel under Settings -> API Access -> API Key.</p>
+					<p>Warning: Do not give the API key to third parties or those you do not trust.</p>
 					<?php
 				},
 			]
