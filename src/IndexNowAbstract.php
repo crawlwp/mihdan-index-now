@@ -259,6 +259,10 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	 * @param WP $wp WP instance.
 	 */
 	public function set_virtual_key_file( WP $wp ) {
+		if ( ! get_option( 'permalink_structure' ) ) {
+			return;
+		}
+
 		$api_key = $this->get_api_key();
 
 		if ( $wp->request !== $api_key . '.txt' ) {
