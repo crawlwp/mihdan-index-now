@@ -4,7 +4,7 @@ Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.9
 Tested up to: 6.4
-Stable tag: 2.6.3
+Stable tag: 2.6.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -136,6 +136,9 @@ Yes, when sitemaps are an easy way for webmasters to inform search engines about
 See the documentation available from each search engine for more details about IndexNow.
 
 == Changelog ==
+
+= 2.6.4 (12.01.2024) =
+* Fixed security issue
 
 = 2.6.3 (21.11.2023) =
 * Added support for WordPress 6.4+

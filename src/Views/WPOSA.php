@@ -1262,13 +1262,16 @@ class WPOSA {
 				$( 'input:button[id$="_reset_form"]' ).on(
 					'click',
 					function() {
-						const $button = $( this );
+						const
+							$button = $( this ),
+							$nonce  = $( this ).parents( 'form' ).find( '#_wpnonce' );
 
 						if ( confirm( '<?php echo esc_attr( __( 'Are you sure?', 'mihdan-index-now' ) ); ?>' ) ) {
 							wp.ajax.post(
 								'<?php echo esc_html( Utils::get_plugin_prefix() ); ?>_reset_form',
 								{
 									section: $button.data( 'section' ),
+									nonce:   $nonce.val(),
 								}
 							).always( function ( response ) {
 								if ( response === 'ok' ) {
@@ -1616,18 +1619,37 @@ class WPOSA {
 		<?php
 	}
 
-	public function reset_form() {
+	/**
+	 * Reset settings for given section.
+	 *
+	 * @return void
+	 * @link https://wpmag.ru/2015/nonces-wordpress-security/
+	 */
+	public function reset_form(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error(
 				__( 'You have no rights to do this', 'mihdan-index-now' )
 			);
 		}
 
-		$section = sanitize_text_field( $_POST['section'] ?? '' );
+		$nonce   = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+		$section = sanitize_text_field( wp_unslash( $_POST['section'] ?? '' ) );
 
 		if ( ! $section ) {
 			wp_send_json_error(
 				__( 'Invalid section name', 'mihdan-index-now' )
+			);
+		}
+
+		if ( ! $nonce ) {
+			wp_send_json_error(
+				__( 'Invalid nonce', 'mihdan-index-now' )
+			);
+		}
+
+		if ( ! wp_verify_nonce( $nonce, $section . '-options' ) ) {
+			wp_send_json_error(
+				__( 'Invalid nonce', 'mihdan-index-now' )
 			);
 		}
 
