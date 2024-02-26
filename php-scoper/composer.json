@@ -1,14 +1,11 @@
 {
   "require": {
-    "humbug/php-scoper": "^0.15.0"
+    "humbug/php-scoper": "^0.18.0"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "config": {
     "preferred-install": "dist",
-    "sort-packages": true,
-    "platform": {
-      "php": "7.3.5"
-    }
+    "sort-packages": true
   }
 }

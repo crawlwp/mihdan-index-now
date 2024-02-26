@@ -83,7 +83,7 @@ return array(
 		      ->depth( '== 0' )
 		      ->in( 'vendor/google/apiclient-services' ),
 	),
-	'files-whitelist'            => array(
+	'exclude-files'            => array(
 
 		// This dependency is a global function which should remain global.
 		'vendor/ralouphie/getallheaders/src/getallheaders.php',
@@ -113,8 +113,7 @@ return array(
 			return $contents;
 		},
 	),
-	'whitelist'                  => array(),
-	'whitelist-global-constants' => false,
-	'whitelist-global-classes'   => false,
-	'whitelist-global-functions' => false,
+	'expose-global-constants' => false,
+	'expose-global-classes'   => false,
+	'expose-global-functions' => false,
 );
