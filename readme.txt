@@ -1,5 +1,5 @@
 === Index Now ===
-Contributors: mihdan
+Contributors: mihdan, collizo4sky, properfraction
 Donate link: https://www.kobzarev.com/donate/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.9
