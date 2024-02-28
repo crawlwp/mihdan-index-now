@@ -13,7 +13,7 @@ use Mihdan\IndexNow\WebmasterAbstract;
 class YandexWebmaster extends WebmasterAbstract {
 
 	private const USER_ENDPOINT    = 'https://api.webmaster.yandex.net/v4/user/';
-	private const TOKEN_ENDPOINT   = 'https://oauth.yandex.ru/token';
+	private const TOKEN_ENDPOINT   = 'https://oauth.yandex.com/token';
 	private const HOSTS_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%d/hosts';
 	private const RECRAWL_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
 	private const QUOTA_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/quota';

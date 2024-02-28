@@ -168,23 +168,6 @@ class HelpTab {
 
 		$screen->add_help_tab(
 			[
-				'id'       => MIHDAN_INDEX_NOW_PREFIX . '_bing_webmaster',
-				'title'    => __( 'Bing', 'mihdan-index-now' ),
-				'callback' => function () {
-					?>
-					<h1>Authorization</h1>
-					<p>In order to perform actions on Yandex.Webmaster on behalf of a particular user, a client application must be registered in the Yandex.OAuth service.</p>
-					<p>Authorization uses the OAuth 2.0 protocol. The interaction between the application and the OAuth server is shown on the OAuth implementation in Yandex page.</p>
-					<p>The user information is accepted as an access token in the Authorization HTTP header. The authorization procedure is described in the Extract a token from the URL section of the Yandex.OAuth documentation.</p>
-					<p>If the user data is requested without an access token, the HTTP status 401 Unauthorized is returned.</p>
-					<?php
-				},
-				'priority' => 11,
-			]
-		);
-
-		$screen->add_help_tab(
-			[
 				'id'       => MIHDAN_INDEX_NOW_PREFIX . '_google_webmaster_json_key',
 				'title'    => __( 'Google API', 'mihdan-index-now' ),
 				'callback' => function () {

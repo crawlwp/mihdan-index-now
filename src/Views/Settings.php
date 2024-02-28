@@ -123,7 +123,7 @@ class Settings {
 	/**
 	 * Setup setting fields.
 	 *
-	 * @link https://yandex.ru/support/webmaster/indexnow/key.html
+	 * @link https://yandex.com/support/webmaster/indexnow/key.html
 	 */
 	public function setup_fields() {
 
@@ -139,7 +139,7 @@ class Settings {
 				[
 					'id'    => 'rtfm',
 					'title' => __( 'Do you need help?', 'mihdan-index-now' ),
-					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li><li><a href="https://t.me/+rBLAx8RzcNk1ZWY6" target="_blank">Help via Telegram</a></li></ol>', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/crawlwp/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
 				]
 			);
 
@@ -297,15 +297,13 @@ class Settings {
 				'name'     => __( 'Search Engine', 'mihdan-index-now' ),
 				'default'  => 'bing-index-now',
 				'help_tab' => 'search_engine_support',
+				'desc'    => __( 'You only need to select one search engine because with the IndexNow protocol, the selected one will notify the others.', 'mihdan-index-now' ),
 				'options'  => [
 					'bing-index-now'   => __( 'Bing', 'mihdan-index-now' ),
 					'index-now'        => __( 'IndexNow', 'mihdan-index-now' ),
 					'yandex-index-now' => __( 'Yandex', 'mihdan-index-now' ),
 					'seznam-index-now' => __( 'Seznam', 'mihdan-index-now' ),
-					'naver-index-now'  => __( 'Naver', 'mihdan-index-now' ),
-					//'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
-					//'google'     => __( 'Google', 'mihdan-index-now' ),
-					//'baidu'      => __( 'Baidu', 'mihdan-index-now' ),
+					'naver-index-now'  => __( 'Naver', 'mihdan-index-now' )
 				],
 			)
 		);
@@ -314,7 +312,7 @@ class Settings {
 			array(
 				'id'    => 'bing_webmaster',
 				'title' => __( 'Bing API', 'mihdan-index-now' ),
-				'desc'  => __( 'Easy to plug-in API solution that websites can call to notify Bing whenever website contents is updated or created allowing instant crawling, indexing and discovery of your site content.', 'mihdan-index-now' ),
+				'desc'  => sprintf(__( 'Easy to plug-in API solution that websites can call to notify Bing whenever website contents is updated or created allowing instant crawling, indexing and discovery of your site content. %sBing supports the IndexNow protocol. You do not need to enable this if IndexNow is active.%s', 'mihdan-index-now' ), '<strong>', '</strong>'),
 			)
 		);
 
@@ -342,7 +340,7 @@ class Settings {
 			array(
 				'id'    => 'google_webmaster',
 				'title' => __( 'Google API', 'mihdan-index-now' ),
-				'desc'  => __( 'Google Instant Indexing API Settings. Submit posts from these post types automatically to the Google Instant Indexing API when a post is published, edited, or deleted.', 'mihdan-index-now' ),
+				'desc'  => __( 'Google Instant Indexing API Settings. For notifying Google via the Instant Indexing API when a post is published, edited, or deleted.', 'mihdan-index-now' ),
 			)
 		);
 
@@ -371,7 +369,7 @@ class Settings {
 			array(
 				'id'    => 'yandex_webmaster',
 				'title' => __( 'Yandex API', 'mihdan-index-now' ),
-				'desc'  => __( 'Sending a page for reindexing', 'mihdan-index-now' ),
+				'desc'  => __( 'Sending a page for reindexing. Yandex supports the IndexNow protocol, so you might not need this if IndexNow is active', 'mihdan-index-now' ),
 			)
 		);
 
