@@ -2,11 +2,11 @@
 /**
  * Plugin Name: IndexNow
  * Description: IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
- * Version: 2.6.4
- * Author: Mikhail Kobzarev
- * Author URI: https://www.kobzarev.com/
+ * Version: 2.6.5
+ * Author: Collins Agbonghama
+ * Author URI: https://w3guy.com/
  * Plugin URI: https://wordpress.org/plugins/mihdan-index-now/
- * GitHub Plugin URI: https://github.com/mihdan/mihdan-index-now
+ * GitHub Plugin URI: https://github.com/crawlwp/mihdan-index-now
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * License: GPLv2 or later
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MIHDAN_INDEX_NOW_VERSION', '2.6.4' );
+define( 'MIHDAN_INDEX_NOW_VERSION', '2.6.5' );
 define( 'MIHDAN_INDEX_NOW_SLUG', 'mihdan-index-now' );
 define( 'MIHDAN_INDEX_NOW_PREFIX', 'mihdan_index_now' );
 define( 'MIHDAN_INDEX_NOW_NAME', 'IndexNow' );

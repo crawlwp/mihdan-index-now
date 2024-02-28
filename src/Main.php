@@ -130,6 +130,7 @@ class Main {
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
 
+		/** @todo */
 		//add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
 		//add_filter( 'page_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
 
