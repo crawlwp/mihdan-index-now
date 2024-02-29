@@ -93,7 +93,7 @@ class Hooks {
 	 * @param string  $old_status Old post status.
 	 * @param WP_Post $post       Post data.
 	 *
-	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
+	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
 	public function post_updated( string $new_status, string $old_status, WP_Post $post ): void {
 

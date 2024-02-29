@@ -126,7 +126,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	 * @param int     $post_id Post ID.
 	 * @param WP_Post $post    Post data.
 	 *
-	 * @link https://yandex.ru/dev/webmaster/doc/dg/reference/host-recrawl-post.html
+	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
 	public function ping_on_post_update( int $post_id, WP_Post $post ) {
 		$this->maybe_do_ping_post( $post_id );

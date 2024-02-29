@@ -42,7 +42,7 @@ class Settings {
 	/**
 	 * Constructor.
 	 *
-	 * @param WPOSA   $wposa WPOSA instance.
+	 * @param WPOSA $wposa WPOSA instance.
 	 * @param HelpTab $help_tab HelpTab instance.
 	 */
 	public function __construct( WPOSA $wposa, HelpTab $help_tab ) {
@@ -99,18 +99,18 @@ class Settings {
 
 	public function set_default_setting(): void {
 		$sections = [
-			'general' => [
+			'general'          => [
 				'post_types'   => [ 'post' => 'post' ],
 				'ping_on_post' => 'on',
 			],
-			'index_now' => [
+			'index_now'        => [
 				'enable'  => 'on',
 				'api_key' => Utils::generate_key(),
 			],
-			'bing_webmaster' => [],
+			'bing_webmaster'   => [],
 			'yandex_webmaster' => [],
 			'google_webmaster' => [],
-			'logs' => [],
+			'logs'             => [],
 		];
 
 		foreach ( $sections as $section => $fields ) {
@@ -123,7 +123,7 @@ class Settings {
 	/**
 	 * Setup setting fields.
 	 *
-	 * @link https://yandex.ru/support/webmaster/indexnow/key.html
+	 * @link https://yandex.com/support/webmaster/indexnow/key.html
 	 */
 	public function setup_fields() {
 
@@ -139,7 +139,7 @@ class Settings {
 				[
 					'id'    => 'rtfm',
 					'title' => __( 'Do you need help?', 'mihdan-index-now' ),
-					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://www.kobzarev.com/projects/index-now/" target="_blank">Plugin docs</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/mihdan/mihdan-index-now/" target="_blank">Issue tracker</a></li><li><a href="https://t.me/+rBLAx8RzcNk1ZWY6" target="_blank">Help via Telegram</a></li></ol>', 'mihdan-index-now' ),
+					'desc'  => __( '<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/crawlwp/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now' ),
 				]
 			);
 
@@ -175,9 +175,9 @@ class Settings {
 		$this->wposa->add_field(
 			'general',
 			array(
-				'id'      => 'ping_when',
-				'type'    => 'html',
-				'name'    => __( 'Notify SE when', 'mihdan-index-now' ),
+				'id'   => 'ping_when',
+				'type' => 'html',
+				'name' => __( 'Notify SE when', 'mihdan-index-now' ),
 			)
 		);
 
@@ -204,18 +204,18 @@ class Settings {
 		$this->wposa->add_field(
 			'general',
 			array(
-				'id'      => 'ping_on_term',
-				'type'    => 'switch',
-				'name'    => __( 'Term added', 'mihdan-index-now' ),
+				'id'   => 'ping_on_term',
+				'type' => 'switch',
+				'name' => __( 'Term added', 'mihdan-index-now' ),
 			)
 		);
 
 		$this->wposa->add_field(
 			'general',
 			array(
-				'id'      => 'ping_on_comment',
-				'type'    => 'switch',
-				'name'    => __( 'Comment added', 'mihdan-index-now' ),
+				'id'   => 'ping_on_comment',
+				'type' => 'switch',
+				'name' => __( 'Comment added', 'mihdan-index-now' ),
 			)
 		);
 
@@ -295,17 +295,15 @@ class Settings {
 				'id'       => 'search_engine',
 				'type'     => 'radio',
 				'name'     => __( 'Search Engine', 'mihdan-index-now' ),
-				'default'  => 'yandex-index-now',
+				'default'  => 'bing-index-now',
 				'help_tab' => 'search_engine_support',
+				'desc'    => __( 'You only need to select one search engine because with the IndexNow protocol, the selected one will notify the others.', 'mihdan-index-now' ),
 				'options'  => [
-					'bing-index-now'       => __( 'Bing', 'mihdan-index-now' ),
-					'index-now'            => __( 'IndexNow', 'mihdan-index-now' ),
-					'yandex-index-now'     => __( 'Yandex', 'mihdan-index-now' ),
-					'seznam-index-now'     => __( 'Seznam', 'mihdan-index-now' ),
-					'naver-index-now'      => __( 'Naver', 'mihdan-index-now' ),
-					//'duckduckgo' => __( 'DuckDuckGo', 'mihdan-index-now' ),
-					//'google'     => __( 'Google', 'mihdan-index-now' ),
-					//'baidu'      => __( 'Baidu', 'mihdan-index-now' ),
+					'bing-index-now'   => __( 'Bing', 'mihdan-index-now' ),
+					'index-now'        => __( 'IndexNow', 'mihdan-index-now' ),
+					'yandex-index-now' => __( 'Yandex', 'mihdan-index-now' ),
+					'seznam-index-now' => __( 'Seznam', 'mihdan-index-now' ),
+					'naver-index-now'  => __( 'Naver', 'mihdan-index-now' )
 				],
 			)
 		);
@@ -314,7 +312,7 @@ class Settings {
 			array(
 				'id'    => 'bing_webmaster',
 				'title' => __( 'Bing API', 'mihdan-index-now' ),
-				'desc'  => __( 'Easy to plug-in API solution that websites can call to notify Bing whenever website contents is updated or created allowing instant crawling, indexing and discovery of your site content.', 'mihdan-index-now' ),
+				'desc'  => sprintf(__( 'Easy to plug-in API solution that websites can call to notify Bing whenever website contents is updated or created allowing instant crawling, indexing and discovery of your site content. %sBing supports the IndexNow protocol. You do not need to enable this if IndexNow is active.%s', 'mihdan-index-now' ), '<strong>', '</strong>'),
 			)
 		);
 
@@ -342,7 +340,7 @@ class Settings {
 			array(
 				'id'    => 'google_webmaster',
 				'title' => __( 'Google API', 'mihdan-index-now' ),
-				'desc'  => __( 'Google Instant Indexing API Settings. Submit posts from these post types automatically to the Google Instant Indexing API when a post is published, edited, or deleted.', 'mihdan-index-now' ),
+				'desc'  => __( 'Google Instant Indexing API Settings. For notifying Google via the Instant Indexing API when a post is published, edited, or deleted.', 'mihdan-index-now' ),
 			)
 		);
 
@@ -369,9 +367,9 @@ class Settings {
 
 		$this->wposa->add_section(
 			array(
-				'id'       => 'yandex_webmaster',
-				'title'    => __( 'Yandex API', 'mihdan-index-now' ),
-				'desc'     => __( 'Sending a page for reindexing', 'mihdan-index-now' ),
+				'id'    => 'yandex_webmaster',
+				'title' => __( 'Yandex API', 'mihdan-index-now' ),
+				'desc'  => __( 'Sending a page for reindexing. Yandex supports the IndexNow protocol, so you might not need this if IndexNow is active', 'mihdan-index-now' ),
 			)
 		);
 
@@ -433,7 +431,7 @@ class Settings {
 					'placeholder' => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
 						? __( 'Update Token', 'mihdan-index-now' )
 						: __( 'Get Token', 'mihdan-index-now' ),
-					'desc' => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
+					'desc'        => $this->wposa->get_option( 'access_token', 'yandex_webmaster' )
 						? __( 'Expires In', 'mihdan-index-now' ) . ': ' . date( 'd.m.Y', $this->wposa->get_option( 'expires_in', 'yandex_webmaster' ) )
 						: '',
 				)
@@ -443,36 +441,36 @@ class Settings {
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
-				'id'          => 'access_token',
-				'type'        => 'hidden',
-				'name'        => '',
+				'id'   => 'access_token',
+				'type' => 'hidden',
+				'name' => '',
 			)
 		);
 
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
-				'id'          => 'expires_in',
-				'type'        => 'hidden',
-				'name'        => '',
+				'id'   => 'expires_in',
+				'type' => 'hidden',
+				'name' => '',
 			)
 		);
 
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
-				'id'          => 'refresh_token',
-				'type'        => 'hidden',
-				'name'        => '',
+				'id'   => 'refresh_token',
+				'type' => 'hidden',
+				'name' => '',
 			)
 		);
 
 		$this->wposa->add_field(
 			'yandex_webmaster',
 			array(
-				'id'          => 'user_id',
-				'type'        => 'hidden',
-				'name'        => '',
+				'id'   => 'user_id',
+				'type' => 'hidden',
+				'name' => '',
 			)
 		);
 
@@ -572,7 +570,8 @@ class Settings {
 				'desc' => function () {
 
 					$transient = Utils::get_plugin_slug() . '-plugins';
-					$cached    = get_transient( $transient );
+					delete_transient( $transient );
+					$cached = get_transient( $transient );
 
 					if ( false !== $cached ) {
 						return $cached;
@@ -580,10 +579,10 @@ class Settings {
 
 					require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 
-					$args      = array(
+					$args = array(
 						'per_page' => 100,
 						'page'     => 1,
-						'author'   => 'mihdan',
+						'author'   => 'properfraction',
 						'fields'   => array(
 							'downloaded'        => true,
 							'rating'            => true,
@@ -622,7 +621,11 @@ class Settings {
 
 							$plugin = (array) $plugin;
 
-							$info_url = add_query_arg(
+							if ( $plugin['slug'] == 'one-user-avatar' ) {
+								continue;
+							}
+
+							$info_url    = add_query_arg(
 								[
 									'tab'       => 'plugin-information',
 									'plugin'    => $plugin['slug'],
@@ -644,8 +647,11 @@ class Settings {
 							<div class="wposa-plugins__item wposa-plugin">
 								<div class="wposa-plugin__content">
 									<div class="wposa-plugin__icon">
-										<a href="<?php echo esc_url( $info_url ); ?>" class="thickbox open-plugin-details-modal">
-											<img src="<?php echo esc_url( $plugin['icons']['1x'] ?? $plugin['icons']['default'] ); ?>" width="100" height="100">
+										<a href="<?php echo esc_url( $info_url ); ?>"
+										   class="thickbox open-plugin-details-modal">
+											<img
+												src="<?php echo esc_url( $plugin['icons']['1x'] ?? $plugin['icons']['default'] ); ?>"
+												width="100" height="100">
 										</a>
 										<?php
 										wp_star_rating(
@@ -659,7 +665,8 @@ class Settings {
 									</div>
 									<div class="wposa-plugin__data">
 										<div class="wposa-plugin__name">
-											<a href="<?php echo esc_url( $info_url ); ?>" class="thickbox open-plugin-details-modal"><?php echo esc_html( $plugin['name'] ); ?></a>
+											<a href="<?php echo esc_url( $info_url ); ?>"
+											   class="thickbox open-plugin-details-modal"><?php echo esc_html( $plugin['name'] ); ?></a>
 										</div>
 										<div class="wposa-plugin__description">
 											<?php echo esc_html( $plugin['short_description'] ); ?>
@@ -668,12 +675,18 @@ class Settings {
 								</div>
 								<div class="wposa-plugin__footer">
 									<ul class="wposa-plugin__meta">
-										<li><b><?php esc_html_e( 'Version', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( $plugin['version'] ); ?></li>
-										<li><b><?php esc_html_e( 'Installations', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( number_format( $plugin['active_installs'], 0, '', ' ' ) ); ?></li>
-										<li><b><?php esc_html_e( 'Downloaded', 'mihdan-index-now' ); ?>:</b> <?php echo esc_html( number_format( $plugin['downloaded'], 0, '', ' ' ) ); ?></li>
+										<li><b><?php esc_html_e( 'Version', 'mihdan-index-now' ); ?>
+												:</b> <?php echo esc_html( $plugin['version'] ); ?></li>
+										<li><b><?php esc_html_e( 'Installations', 'mihdan-index-now' ); ?>
+												:</b> <?php echo esc_html( number_format( $plugin['active_installs'], 0, '', ' ' ) ); ?>
+										</li>
+										<li><b><?php esc_html_e( 'Downloaded', 'mihdan-index-now' ); ?>
+												:</b> <?php echo esc_html( number_format( $plugin['downloaded'], 0, '', ' ' ) ); ?>
+										</li>
 									</ul>
 									<div class="wposa-plugin__install">
-										<a href="<?php echo esc_url( $install_url ); ?>" class="install-now button"><?php esc_html_e( 'Install', 'mihdan-index-now' ); ?></a>
+										<a href="<?php echo esc_url( $install_url ); ?>"
+										   class="install-now button"><?php esc_html_e( 'Install', 'mihdan-index-now' ); ?></a>
 									</div>
 								</div>
 							</div>

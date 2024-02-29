@@ -35,3 +35,7 @@ node_modules/
 !/tests/_output/.keep
 /tests/_support/_generated/*
 !/tests/_support/_generated/.keep
+
+php-scoper/vendor/*
+build/*
+vendor-prefixed/*

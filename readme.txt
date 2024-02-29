@@ -1,10 +1,10 @@
 === Index Now ===
-Contributors: mihdan
-Donate link: https://www.kobzarev.com/donate/
+Contributors: collizo4sky, properfraction
+Donate link: https://w3guy.com/
 Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
 Requires at least: 5.9
 Tested up to: 6.4
-Stable tag: 2.6.4
+Stable tag: 2.6.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -34,21 +34,10 @@ IndexNow is offered under the terms of the Attribution-ShareAlike Creative Commo
 Search Engines adopting the IndexNow protocol agree that submitted URLs will be automatically shared with all other participating Search Engines. To participate, search engines must have a noticeable presence in at least one market.
 
 ### ⛑️ Documentation and support ###
-If you have some questions or suggestions, welcome to our [GitHub repository](https://github.com/mihdan/mihdan-index-now/issues).
+If you have some questions or suggestions, welcome to our [GitHub repository](https://github.com/crawlwp/mihdan-index-now/issues).
 
 ### 💙 Love Index Now for WordPress? ###
 If the plugin was useful, rate it with a [5 star rating](https://wordpress.org/support/plugin/mihdan-index-now/reviews/) and write a few nice words.
-
-### 🏳️ Translations ###
-[Help translate Index Now](https://translate.wordpress.org/projects/wp-plugins/mihdan-index-now/)
-
-- 🇺🇸 English (en_US) - [Mikhail kobzarev](https://profiles.wordpress.org/mihdan)
-- 🇷🇺 Русский (ru_RU) - [Mikhail kobzarev](https://profiles.wordpress.org/mihdan)
-- 🇺🇦 Українська (uk_UA) - [Eugen Kalinsky](https://profiles.wordpress.org/seojacky)
-- 🇳🇱 Dutch (nl_NL) - [Peter Smits](https://profiles.wordpress.org/psmits1567)
-- [You could be next](https://translate.wordpress.org/projects/wp-plugins/mihdan-index-now/)...
-
-Can you help with plugin translation? Please feel free to contribute!
 
 == Frequently Asked Questions ==
 
@@ -136,6 +125,10 @@ Yes, when sitemaps are an easy way for webmasters to inform search engines about
 See the documentation available from each search engine for more details about IndexNow.
 
 == Changelog ==
+
+= 2.6.5 =
+* Made Bing IndexNow default.
+* Change many of the plugin text to English.
 
 = 2.6.4 (12.01.2024) =
 * Fixed security issue
