@@ -555,13 +555,16 @@ class WPOSA {
 	 * @since 1.0.0
 	 */
 	public function sanitize_fields( $fields ) {
-		foreach ( $fields as $field_slug => $field_value ) {
-			$sanitize_callback = $this->get_sanitize_callback( $field_slug );
 
-			// If callback is set, call it.
-			if ( $sanitize_callback ) {
-				$fields[ $field_slug ] = call_user_func( $sanitize_callback, $field_value );
-				continue;
+		if(is_array( $fields )) {
+			foreach ( $fields as $field_slug => $field_value ) {
+				$sanitize_callback = $this->get_sanitize_callback( $field_slug );
+
+				// If callback is set, call it.
+				if ( $sanitize_callback ) {
+					$fields[ $field_slug ] = call_user_func( $sanitize_callback, $field_value );
+					continue;
+				}
 			}
 		}
 
