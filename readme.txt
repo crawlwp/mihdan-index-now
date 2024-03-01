@@ -1,7 +1,7 @@
 === Index Now ===
 Contributors: collizo4sky, properfraction
 Donate link: https://w3guy.com/
-Tags: indexnow, index-now, yandex, bing, google, seo, cloudflare, duck-duck-go
+Tags: indexnow, yandex, bing, google, seo
 Requires at least: 5.9
 Tested up to: 6.4
 Stable tag: 2.6.5
