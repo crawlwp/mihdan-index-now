@@ -1,7 +1,7 @@
-=== Index Now ===
+=== Index Now SEO - Instant Indexing for Google, Bing, Yandex ===
 Contributors: collizo4sky, properfraction
 Donate link: https://w3guy.com/
-Tags: indexnow, yandex, bing, google, seo
+Tags: SEO, indexnow, yandex, bing, google
 Requires at least: 5.9
 Tested up to: 6.4
 Stable tag: 2.6.5
@@ -9,13 +9,13 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
+IndexNow is a small SEO WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
 
 == Description ==
 
-IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
+IndexNow is a small SEO WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
 
-Improve your rankings by taking control of the crawling and indexing process, so search engines know what to focus on!
+Improve your SEO rankings by taking control of the crawling and indexing process, so search engines know what to focus on!
 
 Once installed, it detects pages/terms creation/update/deletion in WordPress and automatically submits the URLs in the background via IndexNow, Google API, Bing API, and Yandex API protocols.
 
@@ -36,7 +36,7 @@ Search Engines adopting the IndexNow protocol agree that submitted URLs will be 
 ### ⛑️ Documentation and support ###
 If you have some questions or suggestions, welcome to our [GitHub repository](https://github.com/crawlwp/mihdan-index-now/issues).
 
-### 💙 Love Index Now for WordPress? ###
+### 💙 Love Index Now SEO for WordPress? ###
 If the plugin was useful, rate it with a [5 star rating](https://wordpress.org/support/plugin/mihdan-index-now/reviews/) and write a few nice words.
 
 == Frequently Asked Questions ==
