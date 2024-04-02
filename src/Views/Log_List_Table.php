@@ -213,7 +213,7 @@ class Log_List_Table extends WP_List_Table {
 
 	}
 
-	// заполнение колонки cb
+
 	function column_cb( $item ){
 		echo '<input type="checkbox" name="log_rows[]" id="cb-select-'. $item->log_id .'" value="'. $item->log_id .'" />';
 	}

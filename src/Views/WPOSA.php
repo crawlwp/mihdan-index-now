@@ -91,6 +91,12 @@ class WPOSA {
 		'table'    => [
 			'class' => true,
 		],
+		'thead'    => [
+			'class' => true,
+		],
+		'tfoot'    => [
+			'class' => true,
+		],
 		'tbody'    => [
 			'class' => true,
 		],
@@ -149,6 +155,20 @@ class WPOSA {
 	private $plugin_slug;
 
 	/**
+	 * Submenu slug.
+	 *
+	 * @var string
+	 */
+	private $sub_menu_slug;
+
+	/**
+	 * Submenu page title.
+	 *
+	 * @var string
+	 */
+	private $sub_page_title;
+
+	/**
 	 * Plugin prefix.
 	 *
 	 * @var string
@@ -178,6 +198,8 @@ class WPOSA {
 	 */
 	private $sidebar_cards = [];
 
+	private $enable_blank_mode = false;
+
 	/**
 	 * Constructor.
 	 *
@@ -187,11 +209,20 @@ class WPOSA {
 	 *
 	 * @since  1.0.0
 	 */
-	public function __construct( string $plugin_name = 'WPOSA', string $plugin_version = '0.1', string $plugin_slug = 'WPOSA', string $plugin_prefix = 'WPOSA' ) {
+	public function __construct( string $plugin_name = 'WPOSA', string $plugin_version = '0.1', string $plugin_slug = 'WPOSA', string $plugin_prefix = 'WPOSA', $sub_menu_slug = '', $sub_page_title = '' ) {
 		$this->plugin_name    = $plugin_name;
 		$this->plugin_version = $plugin_version;
 		$this->plugin_slug    = $plugin_slug;
 		$this->plugin_prefix  = $plugin_prefix;
+		$this->sub_page_title = $sub_page_title;
+		$this->sub_menu_slug = $sub_menu_slug;
+	}
+
+	public function enable_blank_mode()
+	{
+		$this->enable_blank_mode = true;
+
+		return $this;
 	}
 
 	public function get_prefix(): string {
@@ -809,10 +840,9 @@ class WPOSA {
 	 * Displays a textarea for a settings field
 	 *
 	 * @param array $args settings field args.
-	 * @return string
 	 */
 	function callback_html( $args ) {
-		echo wp_kses( $this->get_field_description( $args ), self::ALLOWED_HTML );
+		echo is_callable( $args['desc'] ) ? call_user_func( $args['desc'] ) : $args['desc'];
 	}
 
 	/**
@@ -975,24 +1005,44 @@ class WPOSA {
 
 	/**
 	 * Add submenu page to the Settings main menu.
-	 *
-	 * @param string $page_title
-	 * @param string $menu_title
-	 * @param string $capability
-	 * @param string $menu_slug
-	 * @param callable $function = ''
-	 * @author Ahmad Awais
-	 * @since  [version]
 	 */
 	public function admin_menu() {
-		add_menu_page(
-			$this->plugin_name,
-			$this->plugin_name,
-			'manage_options',
-			$this->plugin_slug,
-			array( $this, 'plugin_page' ),
-			'dashicons-rest-api'
-		);
+
+		if(!empty($this->sub_menu_slug)) {
+
+			$hook = add_submenu_page(
+				$this->plugin_slug,
+				$this->sub_page_title,
+				$this->sub_page_title,
+				'manage_options',
+				$this->sub_menu_slug,
+				array( $this, 'plugin_page' )
+			);
+
+		} else {
+
+			$hook = add_menu_page(
+				$this->plugin_name,
+				$this->plugin_name,
+				'manage_options',
+				$this->plugin_slug,
+				array( $this, 'plugin_page' ),
+				'dashicons-rest-api'
+			);
+
+			add_submenu_page(
+				$this->plugin_slug,
+				$this->plugin_name,
+				esc_html__('Settings', 'mihdan-index-now'),
+				'manage_options',
+				$this->plugin_slug,
+				array( $this, 'plugin_page' )
+			);
+		}
+
+		add_action("load-" . $hook, function() {
+			do_action('wpposa_load_menu_hook', $this->sub_menu_slug, $this->plugin_slug);
+		});
 	}
 
 	public function plugin_page() {
@@ -1010,13 +1060,13 @@ class WPOSA {
 					<p><?php esc_html_e( 'IndexNow is a small WordPress Plugin for quickly notifying search engines whenever your website content is created, updated, or deleted.', 'mihdan-index-now' ); ?></p>
 				</div>
 			</div>
-			<?php $this->show_navigation(); ?>
+			<?php !$this->enable_blank_mode && $this->show_navigation(); ?>
 			<div class="wposa__grid">
 				<div class="wposa__column">
 					<?php $this->show_forms(); ?>
 				</div>
 				<?php if ( $this->get_sidebar_cards_total() ) : ?>
-					<div class="wposa__column">
+					<div class="wposa__column" style="padding-right: 10px">
 						<?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
 							<div class="card wposa-card wposa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
 								<?php if ( ! empty( $card['title'] ) ) : ?>
@@ -1062,6 +1112,33 @@ class WPOSA {
 		echo wp_kses( $html, self::ALLOWED_HTML );
 	}
 
+	public function blank_mode_do_settings_sections( $page ) {
+
+		global $wp_settings_sections, $wp_settings_fields;
+
+		foreach ( (array) $wp_settings_sections[ $page ] as $section ) {
+
+			$section = $section['id'];
+
+			foreach ( (array) $wp_settings_fields[ $page ][ $section ] as $field ) {
+
+				call_user_func( $field['callback'], $field['args'] );
+			}
+		}
+	}
+
+	public function enable_blank_mode_show_forms($default)
+	{
+		?>
+		<div class="wrap">
+			<?php foreach ($this->sections_array as $form) :
+				$form = wp_parse_args($form, $default);
+				$this->blank_mode_do_settings_sections($form['id']);
+			endforeach; ?>
+		</div>
+		<?php
+	}
+
 	/**
 	 * Show the section settings forms
 	 *
@@ -1075,6 +1152,10 @@ class WPOSA {
 			'attributes'   => null,
 			'reset_button' => true,
 		);
+
+		if($this->enable_blank_mode):
+			$this->enable_blank_mode_show_forms($default);
+		else:
 		?>
 		<div class="metabox-holder">
 			<?php foreach ( $this->sections_array as $form ) : ?>
@@ -1110,6 +1191,7 @@ class WPOSA {
 			<?php endforeach; ?>
 		</div>
 		<?php
+		endif;
 		$this->script();
 	}
 

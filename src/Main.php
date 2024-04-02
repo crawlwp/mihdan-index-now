@@ -125,7 +125,7 @@ class Main {
 	 */
 	public function setup_hooks() {
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
-		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ] );
+		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ], 99 );
 		add_action( 'template_redirect', [ $this, 'parse_incoming_request' ] );
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );

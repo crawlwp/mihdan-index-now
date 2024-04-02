@@ -417,7 +417,6 @@ class Settings {
 			);
 		}
 
-		// Показать кнопку только если заполнены доступы к API.
 		if (
 			$this->wposa->get_option( 'client_id', 'yandex_webmaster' ) &&
 			$this->wposa->get_option( 'client_secret', 'yandex_webmaster' )
