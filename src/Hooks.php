@@ -150,6 +150,8 @@ class Hooks {
 			Utils::get_plugin_prefix() . '_last_update',
 			current_time( 'timestamp' )
 		);
+
+		do_action('mihdan_index_now/index_pinged', $post->ID, $post);
 	}
 
 	/**

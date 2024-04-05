@@ -48,7 +48,7 @@ return array(
 		      ->path( '#^paragonie/#' )
 		      ->path( '#^phpseclib/#' )
 		      ->path( '#^rdlowrey/#' )
-		      ->path( '#^whichbrowser/#' )
+		      ->path( '#^deliciousbrains/#' )
 		      ->in( 'vendor' ),
 
 		// Google API service infrastructure classes.

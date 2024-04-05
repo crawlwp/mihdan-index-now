@@ -51,6 +51,9 @@ class BingWebmaster extends WebmasterAbstract {
 	 */
 	public function ping( int $post_id ) {
 		$url  = sprintf( $this->get_ping_endpoint(), $this->get_token() );
+
+		$post_url = $this->normalize_url(get_permalink( $post_id ));
+
 		$args = array(
 			'timeout' => 30,
 			'headers' => array(
@@ -60,7 +63,7 @@ class BingWebmaster extends WebmasterAbstract {
 				[
 					'siteUrl' => get_home_url(),
 					'urlList' => [
-						get_permalink( $post_id ),
+						$post_url,
 					],
 				]
 			),
@@ -76,7 +79,7 @@ class BingWebmaster extends WebmasterAbstract {
 		];
 
 		if ( Utils::is_response_code_success( $status_code ) ) {
-			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post_id ), get_the_title( $post_id ) );
+			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title( $post_id ) );
 			$this->logger->info( $message, $data );
 		} else {
 			$this->logger->error( $body['Message'], $data );

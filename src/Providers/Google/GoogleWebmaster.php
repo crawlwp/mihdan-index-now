@@ -18,7 +18,7 @@ use Exception;
 
 class GoogleWebmaster extends WebmasterAbstract {
 	private const URL_UPDATED      = 'URL_UPDATED';
-	private const RECRAWL_ENDPOINT = 'https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlbatch?apikey=%s';
+	private const RECRAWL_ENDPOINT = '';
 
 	public function get_ping_endpoint(): string {
 		return self::RECRAWL_ENDPOINT;
@@ -57,6 +57,7 @@ class GoogleWebmaster extends WebmasterAbstract {
 	 * throws \Google\Exception
 	 */
 	public function ping( int $post_id ) {
+
 		try {
 			/** @var \Mihdan\IndexNow\Dependencies\Google\Client $client */
 			$client = new Client();
@@ -65,11 +66,10 @@ class GoogleWebmaster extends WebmasterAbstract {
 			$client->addScope( Indexing::INDEXING );
 			$client->setUseBatch( true );
 
+			$post_url = $this->normalize_url(get_permalink( $post_id ));
 
 			$body = new UrlNotification();
-			$urls = [
-				get_permalink( $post_id ),
-			];
+			$urls = [$post_url];
 
 			$service = new Indexing( $client );
 			$batch = $service->createBatch();
@@ -90,7 +90,7 @@ class GoogleWebmaster extends WebmasterAbstract {
 					break;
 				} else {
 					$status_code = 200;
-					$message     = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post_id ), get_the_title( $post_id ) );
+					$message     = sprintf( '<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title( $post_id ) );
 					break;
 				}
 			}
