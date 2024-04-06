@@ -89,6 +89,8 @@ class Main {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		}
 
+		BackgroundProcess\Dispatch::get_instance();
+
 		$this->logger = $this->make( Logger::class );
 
 		$wposa = $this->make(

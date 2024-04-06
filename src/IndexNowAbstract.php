@@ -144,6 +144,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 
 		if ( $this->get_current_search_engine() === $this->get_slug() ) {
 			$this->push( [ get_permalink( $post_id ) ] );
+
+			do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 		}
 	}
 
@@ -155,6 +157,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 
 		if ( $this->get_current_search_engine() === $this->get_slug() ) {
 			$this->push( [ get_term_link( $term_id, $taxonomy ) ] );
+
+			do_action('mihdan_index_now/index_pinged', 'taxonomy', $term_id);
 		}
 	}
 

@@ -47,6 +47,15 @@ class GoogleWebmaster extends WebmasterAbstract {
 
 		add_action( 'mihdan_index_now/post_added', [ $this, 'ping' ] );
 		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
+
+		/** @todo similar to IndexNowAbstract, add support for the below trigger */
+//		if ( $this->is_ping_on_comment() ) {
+//			add_action( 'mihdan_index_now/comment_updated', [ $this, 'ping_on_insert_comment' ], 10, 2 );
+//		}
+//
+//		if ( $this->is_ping_on_term() ) {
+//			add_action( 'mihdan_index_now/term_updated', [ $this, 'ping_on_insert_term' ], 10, 2 );
+//		}
 	}
 
 	/**
@@ -110,6 +119,8 @@ class GoogleWebmaster extends WebmasterAbstract {
 		} else {
 			$this->logger->error( $message, $data );
 		}
+
+		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 	}
 
 	public function get_quota(): array {
