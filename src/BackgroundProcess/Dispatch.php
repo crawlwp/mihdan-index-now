@@ -22,7 +22,10 @@ class Dispatch
 	public function add_bg_task($task)
 	{
 		$this->bgProcess->push_to_queue($task);
+	}
 
+	public function run()
+	{
 		$this->bgProcess->save()->dispatch();
 	}
 
