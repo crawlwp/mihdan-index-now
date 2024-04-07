@@ -196,7 +196,7 @@ class YandexWebmaster extends WebmasterAbstract {
 
 		$url = sprintf( $this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id() );
 
-		$post_url = $this->normalize_url(get_permalink( $post_id ));
+		$post_url = Utils::normalize_url(get_permalink( $post_id ));
 
 		$args = array(
 			'timeout' => 30,

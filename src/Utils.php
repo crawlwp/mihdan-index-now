@@ -208,4 +208,8 @@ class Utils
 
 		return isset($bucket->$key) ? $bucket->$key : $default;
 	}
+
+	public static function normalize_url($url) {
+		return str_replace(home_url('/'), CRAWLWP_URL, $url);
+	}
 }

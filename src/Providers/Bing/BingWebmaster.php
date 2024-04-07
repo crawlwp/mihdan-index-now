@@ -61,7 +61,7 @@ class BingWebmaster extends WebmasterAbstract {
 	public function ping( int $post_id ) {
 		$url  = sprintf( $this->get_ping_endpoint(), $this->get_token() );
 
-		$post_url = $this->normalize_url(get_permalink( $post_id ));
+		$post_url = Utils::normalize_url(get_permalink( $post_id ));
 
 		$args = array(
 			'timeout' => 30,

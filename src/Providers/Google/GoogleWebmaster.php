@@ -75,7 +75,7 @@ class GoogleWebmaster extends WebmasterAbstract {
 			$client->addScope( Indexing::INDEXING );
 			$client->setUseBatch( true );
 
-			$post_url = $this->normalize_url(get_permalink( $post_id ));
+			$post_url = Utils::normalize_url(get_permalink( $post_id ));
 
 			$body = new UrlNotification();
 			$urls = [$post_url];

@@ -39,8 +39,4 @@ abstract class WebmasterAbstract implements SearchEngineInterface {
 		$this->logger = $logger;
 		$this->wposa  = $wposa;
 	}
-
-	public function normalize_url($url) {
-		return str_replace(home_url('/'), CRAWLWP_URL, $url);
-	}
 }

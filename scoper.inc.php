@@ -12,6 +12,7 @@ $google_services = implode(
 	'|',
 	array(
 		'Indexing',
+		'SearchConsole',
 		'Foo',
 	)
 );
