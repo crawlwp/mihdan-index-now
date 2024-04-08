@@ -123,7 +123,7 @@ class HelpTab {
 							</tr>
 							<tr>
 								<th>Redirect URI:</th>
-								<td>Enter the following URL:<br/><code><?php echo esc_url( admin_url( 'admin.php?page=' . MIHDAN_INDEX_NOW_SLUG ) ); ?></code>.
+								<td>Enter the following URL:<br/><code><?php echo esc_url( MIHDAN_INDEX_NOW_SETTINGS_URL ); ?></code>.
 								</td>
 							</tr>
 							<tr>
@@ -201,7 +201,7 @@ class HelpTab {
 
 					<h3 id="go-to-the-google-api-console-and-create-a-new-project">1.1 Go to the Google API Console and create a new project</h3>
 					<p>Ensure that you’re creating a new <i>Indexing API</i> project which you can do automatically by
-						<a href="https://console.developers.google.com/flows/enableapi?apiid=indexing.googleapis.com&credential=client_key"
+						<a href="https://console.cloud.google.com/apis/enableflow?apiid=indexing.googleapis.com,searchconsole.googleapis.com&credential=client_key"
 						   target="_blank">clicking here</a>. And then click <b>continue</b>.</p>
 					<p><img class="wposa-img"
 							src="<?php echo esc_url( Utils::get_plugin_asset_url( 'images/create-google-api-project.jpg' ) ); ?>"

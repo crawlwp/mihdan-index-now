@@ -182,6 +182,13 @@ class Utils
 		return false;
 	}
 
+	public static function _POST_var($key, $default = false, $empty = false)
+	{
+		if ($empty) return ! empty($_POST[$key]) ? $_POST[$key] : $default;
+
+		return isset($_POST[$key]) ? $_POST[$key] : $default;
+	}
+
 	public static function _GET_var($key, $default = false, $empty = false)
 	{
 		$bucket = $_GET;

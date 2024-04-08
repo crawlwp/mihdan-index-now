@@ -86,7 +86,6 @@ class Settings {
 	public function setup_hooks(): void {
 		add_action( 'init', [ $this, 'setup_vars' ], 100 );
 		add_action( 'init', [ $this, 'setup_fields' ], 101 );
-		//register_activation_hook( Utils::get_plugin_file(), [ $this, 'set_default_setting' ] );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 	}
 
@@ -95,29 +94,6 @@ class Settings {
 		wp_enqueue_script( 'updates' );
 		//wp_enqueue_style( 'list-tables' );
 		add_thickbox();
-	}
-
-	public function set_default_setting(): void {
-		$sections = [
-			'general'          => [
-				'post_types'   => [ 'post' => 'post' ],
-				'ping_on_post' => 'on',
-			],
-			'index_now'        => [
-				'enable'  => 'on',
-				'api_key' => Utils::generate_key(),
-			],
-			'bing_webmaster'   => [],
-			'yandex_webmaster' => [],
-			'google_webmaster' => [],
-			'logs'             => [],
-		];
-
-		foreach ( $sections as $section => $fields ) {
-			foreach ( $fields as $key => $value ) {
-				//$this->wposa->set_option( $key, $value, $section );
-			}
-		}
 	}
 
 	/**

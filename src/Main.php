@@ -128,7 +128,6 @@ class Main {
 	public function setup_hooks() {
 		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
 		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ], 99 );
-		add_action( 'template_redirect', [ $this, 'parse_incoming_request' ] );
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
 
@@ -372,28 +371,6 @@ class Main {
 
 	private function is_logging_enabled(): bool {
 		return $this->wposa->get_option( 'enable', 'logs', 'on' ) === 'on';
-	}
-
-	/**
-	 * Parse incoming request.
-	 */
-	public function parse_incoming_request() { return;
-
-		$actual_link = ( is_ssl() ? "https" : "http" ) . "://{$_SERVER['HTTP_HOST']}{$_SERVER['REQUEST_URI']}";
-		$post_id     = url_to_postid( $actual_link );
-
-		if ( $post_id === 0 ) {
-			return;
-		}
-
-		$data = [
-			'post_id'       => $post_id,
-			'status_code'   => 200,
-			'search_engine' => 'yandex',
-			'direction'     => 'incoming',
-		];
-
-		$this->logger->debug( 'Бот запросил страницу<br>' . Utils::get_user_agent(), $data );
 	}
 
 	/**

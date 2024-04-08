@@ -1131,6 +1131,7 @@ class WPOSA {
 	{
 		?>
 		<div class="wrap">
+			<h2><?php echo $this->sub_page_title ?></h2>
 			<?php foreach ($this->sections_array as $form) :
 				$form = wp_parse_args($form, $default);
 				$this->blank_mode_do_settings_sections($form['id']);
