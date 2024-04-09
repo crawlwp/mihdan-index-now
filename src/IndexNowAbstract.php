@@ -100,10 +100,12 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		return $this->wposa->get_option( 'ping_on_comment', 'general', 'off' ) === 'on';
 	}
 
+	/** @todo not implemented anywhere. implement */
 	private function is_ping_on_post_added(): bool {
 		return $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on';
 	}
 
+	/** @todo not implemented anywhere. implement */
 	private function is_ping_on_post_updated(): bool {
 		return $this->wposa->get_option( 'ping_on_post_updated', 'general', 'on' ) === 'on';
 	}
