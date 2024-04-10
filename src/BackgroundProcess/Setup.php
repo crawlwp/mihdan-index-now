@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\BackgroundProcess;
 
 use Mihdan\IndexNow\BackgroundProcess\Libs\WP_Background_Process;
+use Mihdan\IndexNow\Utils;
 
 class Setup extends WP_Background_Process
 {
@@ -24,7 +25,9 @@ class Setup extends WP_Background_Process
 	{
 		define('CRAWLWP_BACKGROUND_PROCESS_TASK', 'true');
 
-		do_action('mihdan_index_now/bg_process_task', $item, $this);
+		$action = Utils::_var($item, 'action', '');
+
+		do_action('mihdan_index_now/bg_process_task', $action, $item, $this);
 
 		return false;
 	}

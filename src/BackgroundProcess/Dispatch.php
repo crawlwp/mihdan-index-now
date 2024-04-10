@@ -24,7 +24,7 @@ class Dispatch
 		$this->bgProcess->push_to_queue($task);
 	}
 
-	public function run()
+	public function save_and_run()
 	{
 		$this->bgProcess->save()->dispatch();
 	}
