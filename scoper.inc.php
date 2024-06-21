@@ -50,6 +50,7 @@ return array(
 		      ->path( '#^phpseclib/#' )
 		      ->path( '#^rdlowrey/#' )
 		      ->path( '#^deliciousbrains/#' )
+		      ->path( '#^collizo4sky/persist-admin-notices-dismissal/#' )
 		      ->in( 'vendor' ),
 
 		// Google API service infrastructure classes.

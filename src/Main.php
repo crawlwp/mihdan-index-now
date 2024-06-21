@@ -72,7 +72,7 @@ class Main {
 	 * Make a class from DIC.
 	 *
 	 * @param string $class_name Full class name.
-	 * @param array  $args List of arguments.
+	 * @param array $args List of arguments.
 	 *
 	 * @return mixed
 	 *
@@ -131,6 +131,12 @@ class Main {
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
 
+		if ( class_exists( '\PAnD' ) ) {
+			// persist admin notice dismissal initialization
+			add_action( 'admin_init', [ '\PAnD', 'init' ] );
+			add_action( 'wp_ajax_dismiss_admin_notice', [ '\PAnD', 'dismiss_admin_notice' ] );
+		}
+
 		/** @todo */
 		//add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
 		//add_filter( 'page_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
@@ -139,7 +145,10 @@ class Main {
 		if ( $this->wposa->get_option( 'show_last_update_column', 'general', 'on' ) === 'on' ) {
 			foreach ( (array) $this->wposa->get_option( 'post_types', 'general', [] ) as $post_type ) {
 				add_filter( "manage_{$post_type}_posts_columns", [ $this, 'add_last_update_column' ] );
-				add_action( "manage_{$post_type}_posts_custom_column", [ $this, 'add_last_update_column_content' ], 10, 2 );
+				add_action( "manage_{$post_type}_posts_custom_column", [
+					$this,
+					'add_last_update_column_content'
+				], 10, 2 );
 			}
 
 			add_action( 'admin_head', [ $this, 'add_css_for_column' ] );
@@ -156,6 +165,7 @@ class Main {
 	 * Delete site tables when deleting a site.
 	 *
 	 * @param WP_Site $old_site Site ID.
+	 *
 	 * @return void
 	 */
 	public function delete_site_tables( WP_Site $old_site ): void {
@@ -168,6 +178,7 @@ class Main {
 	 * Add site tables when creating a site.
 	 *
 	 * @param WP_Site $new_site Site ID.
+	 *
 	 * @return void
 	 */
 	public function add_site_tables( WP_Site $new_site ): void {
@@ -182,6 +193,7 @@ class Main {
 			.column-index-now {
 				width: 8em;
 			}
+
 			.column-index-now img {
 				vertical-align: bottom;
 			}
@@ -235,7 +247,7 @@ class Main {
 	 *
 	 * @param string $status Status.
 	 * @param string $option Option name.
-	 * @param string $value  Option value.
+	 * @param string $value Option value.
 	 *
 	 * @return int
 	 */
@@ -286,7 +298,7 @@ class Main {
     			PRIMARY KEY (log_id)
 				) {$charset_collate};";
 
-			dbDelta($sql);
+			dbDelta( $sql );
 
 			Utils::set_db_version( Utils::get_plugin_version() );
 		}
@@ -352,7 +364,7 @@ class Main {
 	/**
 	 * Add plugin action links
 	 *
-	 * @param array  $actions Default actions.
+	 * @param array $actions Default actions.
 	 * @param string $plugin_file Plugin file.
 	 *
 	 * @return array

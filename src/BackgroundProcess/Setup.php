@@ -23,7 +23,9 @@ class Setup extends WP_Background_Process
 
 	protected function task($item)
 	{
-		define('CRAWLWP_BACKGROUND_PROCESS_TASK', 'true');
+		if ( ! defined('CRAWLWP_BACKGROUND_PROCESS_TASK')) {
+			define('CRAWLWP_BACKGROUND_PROCESS_TASK', 'true');
+		}
 
 		$action = Utils::_var($item, 'action', '');
 
