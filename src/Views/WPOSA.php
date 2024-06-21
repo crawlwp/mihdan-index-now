@@ -1060,25 +1060,27 @@ class WPOSA {
 					<p><?php esc_html_e( 'IndexNow is a small WordPress Plugin for quickly notifying search engines whenever your website content is created, updated, or deleted.', 'mihdan-index-now' ); ?></p>
 				</div>
 			</div>
-			<?php !$this->enable_blank_mode && $this->show_navigation(); ?>
-			<div class="wposa__grid">
-				<div class="wposa__column">
-					<?php $this->show_forms(); ?>
-				</div>
-				<?php if ( $this->get_sidebar_cards_total() ) : ?>
-					<div class="wposa__column" style="padding-right: 10px">
-						<?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
-							<div class="card wposa-card wposa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
-								<?php if ( ! empty( $card['title'] ) ) : ?>
-									<h2 class="title wposa__title wposa__title--h2 wposa-card__title"><?php echo esc_html( $card['title'] )?></h2>
-								<?php endif; ?>
-								<div class="wposa-card__content">
-									<?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
-								</div>
-							</div>
-						<?php endforeach; ?>
-					</div>
-				<?php endif; ?>
+			<div class="wrap">
+                <?php !$this->enable_blank_mode && $this->show_navigation(); ?>
+                <div class="wposa__grid">
+                    <div class="wposa__column">
+                        <?php $this->show_forms(); ?>
+                    </div>
+                    <?php if ( $this->get_sidebar_cards_total() ) : ?>
+                        <div class="wposa__column" style="padding-right: 10px">
+                            <?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
+                                <div class="card wposa-card wposa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
+                                    <?php if ( ! empty( $card['title'] ) ) : ?>
+                                        <h2 class="title wposa__title wposa__title--h2 wposa-card__title"><?php echo esc_html( $card['title'] )?></h2>
+                                    <?php endif; ?>
+                                    <div class="wposa-card__content">
+                                        <?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
 			</div>
 		</div>
 		<?php
