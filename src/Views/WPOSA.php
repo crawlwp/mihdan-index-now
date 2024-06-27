@@ -1061,26 +1061,30 @@ class WPOSA {
 				</div>
 			</div>
 			<div class="wrap">
-                <?php !$this->enable_blank_mode && $this->show_navigation(); ?>
-                <div class="wposa__grid">
-                    <div class="wposa__column">
-                        <?php $this->show_forms(); ?>
-                    </div>
-                    <?php if ( $this->get_sidebar_cards_total() ) : ?>
-                        <div class="wposa__column" style="padding-right: 10px">
-                            <?php foreach ( $this->get_sidebar_cards() as $card ) : ?>
-                                <div class="card wposa-card wposa-card--<?php echo esc_attr( $this->get_prefix() )?>_<?php echo esc_attr( $card['id'] )?>">
-                                    <?php if ( ! empty( $card['title'] ) ) : ?>
-                                        <h2 class="title wposa__title wposa__title--h2 wposa-card__title"><?php echo esc_html( $card['title'] )?></h2>
-                                    <?php endif; ?>
-                                    <div class="wposa-card__content">
-                                        <?php echo wp_kses( $card['desc'], self::ALLOWED_HTML ); ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+				<?php ! $this->enable_blank_mode && $this->show_navigation(); ?>
+				<?php if ($this->get_sidebar_cards_total() === 0) : ?>
+					<?php $this->show_forms(); ?>
+				<?php else : ?>
+					<div class="wposa__grid">
+						<div class="wposa__column">
+							<?php $this->show_forms(); ?>
+						</div>
+						<?php if ($this->get_sidebar_cards_total()) : ?>
+							<div class="wposa__column" style="padding-right: 10px">
+								<?php foreach ($this->get_sidebar_cards() as $card) : ?>
+									<div class="card wposa-card wposa-card--<?php echo esc_attr($this->get_prefix()) ?>_<?php echo esc_attr($card['id']) ?>">
+										<?php if ( ! empty($card['title'])) : ?>
+											<h2 class="title wposa__title wposa__title--h2 wposa-card__title"><?php echo esc_html($card['title']) ?></h2>
+										<?php endif; ?>
+										<div class="wposa-card__content">
+											<?php echo wp_kses($card['desc'], self::ALLOWED_HTML); ?>
+										</div>
+									</div>
+								<?php endforeach; ?>
+							</div>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php
@@ -1132,7 +1136,7 @@ class WPOSA {
 	public function enable_blank_mode_show_forms($default)
 	{
 		?>
-		<div class="wrap">
+		<div>
 			<h2><?php echo $this->sub_page_title ?></h2>
 			<?php foreach ($this->sections_array as $form) :
 				$form = wp_parse_args($form, $default);
