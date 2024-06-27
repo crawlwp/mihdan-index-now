@@ -22,6 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MIHDAN_INDEX_NOW_VERSION', '3.0.0' );
 define( 'MIHDAN_INDEX_NOW_SLUG', 'mihdan-index-now' );
+define( 'MIHDAN_INDEX_NOW_LOG_SLUG', 'mihdan-index-now-log' );
 define( 'MIHDAN_INDEX_NOW_SETTINGS_URL', admin_url( 'admin.php?page=' . MIHDAN_INDEX_NOW_SLUG ) );
 define( 'MIHDAN_INDEX_NOW_PREFIX', 'mihdan_index_now' );
 define( 'MIHDAN_INDEX_NOW_NAME', 'CrawlWP' );
@@ -29,6 +30,9 @@ define( 'MIHDAN_INDEX_NOW_FILE', __FILE__ );
 define( 'MIHDAN_INDEX_NOW_DIR', __DIR__ );
 define( 'MIHDAN_INDEX_NOW_BASENAME', plugin_basename( __FILE__ ) );
 define( 'MIHDAN_INDEX_NOW_URL', plugin_dir_url( __FILE__ ) );
+
+define('CRAWLWP_PRO_AUTO_INDEX_SLUG', 'mihdan-auto-index');
+define('CRAWLWP_PRO_AUTO_INDEX_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_AUTO_INDEX_SLUG));
 
 require_once __DIR__ . '/vendor-prefixed/autoload.php';
 

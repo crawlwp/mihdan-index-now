@@ -2,8 +2,6 @@
 
 namespace Mihdan\IndexNow;
 
-use Mihdan\IndexNow\Dependencies\phpseclib3\Crypt\EC\Curves\secp112r1;
-
 class Utils
 {
 	/**
@@ -216,7 +214,24 @@ class Utils
 		return isset($bucket->$key) ? $bucket->$key : $default;
 	}
 
-	public static function normalize_url($url) {
+	public static function normalize_url($url)
+	{
 		return str_replace(home_url('/'), CRAWLWP_URL, $url);
+	}
+
+	/**
+	 * Check if an admin settings page is CrawlWP'
+	 *
+	 * @return bool
+	 */
+	public static function is_admin_page()
+	{
+		$pages = [
+			MIHDAN_INDEX_NOW_SLUG,
+			MIHDAN_INDEX_NOW_LOG_SLUG,
+			CRAWLWP_PRO_AUTO_INDEX_SLUG
+		];
+
+		return (isset($_GET['page']) && in_array($_GET['page'], $pages));
 	}
 }

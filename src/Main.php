@@ -327,7 +327,7 @@ class Main {
 			'Log',
 			'Log',
 			'manage_options',
-			MIHDAN_INDEX_NOW_SLUG . '-log',
+			MIHDAN_INDEX_NOW_LOG_SLUG,
 			[ $this, 'render_log_page' ]
 		);
 
