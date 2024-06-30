@@ -1397,7 +1397,6 @@ class WPOSA {
 				display: flex;
 				gap: 10px;
 			}
-			.wposa .button {}
 			.wposa .button-danger {
 				color: #d63638;
 				border-color: #d63638;
