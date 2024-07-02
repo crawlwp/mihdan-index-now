@@ -234,4 +234,26 @@ class Utils
 
 		return (isset($_GET['page']) && in_array($_GET['page'], $pages));
 	}
+
+	/**
+	 * Return currently viewed page url with query string.
+	 *
+	 * @return string
+	 */
+	public static function get_current_url_query_string()
+	{
+		$protocol = 'http://';
+
+		if ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1))
+		    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+		) {
+			$protocol = 'https://';
+		}
+
+		$url = $protocol . $_SERVER['HTTP_HOST'];
+
+		$url .= $_SERVER['REQUEST_URI'];
+
+		return esc_url_raw($url);
+	}
 }
