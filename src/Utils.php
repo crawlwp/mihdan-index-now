@@ -229,7 +229,8 @@ class Utils
 		$pages = [
 			MIHDAN_INDEX_NOW_SLUG,
 			MIHDAN_INDEX_NOW_LOG_SLUG,
-			CRAWLWP_PRO_AUTO_INDEX_SLUG
+			CRAWLWP_PRO_AUTO_INDEX_SLUG,
+			CRAWLWP_PRO_SEO_STAT_SLUG
 		];
 
 		return (isset($_GET['page']) && in_array($_GET['page'], $pages));
