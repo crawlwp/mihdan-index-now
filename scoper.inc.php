@@ -20,6 +20,7 @@ $google_services = implode(
 return array(
 	'prefix'                     => 'Mihdan\\IndexNow\\Dependencies',
 	'finders'                    => array(
+		Finder::create()->files()->in('vendor/writecrow/country_code_converter/src'),
 
 		// General dependencies, except Google API services.
 		Finder::create()

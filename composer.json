@@ -34,7 +34,8 @@
     "rdlowrey/auryn": "^1.4",
     "psr/log": "^1.1",
     "google/apiclient": "^2.12.1",
-    "collizo4sky/persist-admin-notices-dismissal": "^1.4"
+    "collizo4sky/persist-admin-notices-dismissal": "^1.4",
+    "writecrow/country_code_converter": "^1.2"
   },
   "scripts": {
     "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
@@ -45,7 +46,7 @@
     ],
     "prefix-dependencies": [
       "@composer --working-dir=php-scoper install",
-      "php-scoper/vendor/bin/php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet",
+      "php-scoper/vendor/bin/php-scoper add-prefix --output-dir=./vendor-prefixed",
       "@remove-vendor",
       "@composer dump-autoload",
       "cp -R vendor/* vendor-prefixed/",
