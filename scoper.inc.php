@@ -50,6 +50,8 @@ return array(
 		      ->path( '#^paragonie/#' )
 		      ->path( '#^phpseclib/#' )
 		      ->path( '#^rdlowrey/#' )
+		      ->path( '#^carbonphp/#' )
+		      ->path( '#^nesbot/#' )
 		      ->path( '#^deliciousbrains/#' )
 		      ->path( '#^collizo4sky/persist-admin-notices-dismissal/#' )
 		      ->in( 'vendor' ),

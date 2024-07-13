@@ -35,7 +35,8 @@
     "psr/log": "^1.1",
     "google/apiclient": "^2.12.1",
     "collizo4sky/persist-admin-notices-dismissal": "^1.4",
-    "writecrow/country_code_converter": "^1.2"
+    "writecrow/country_code_converter": "^1.2",
+    "nesbot/carbon": "^2.72"
   },
   "scripts": {
     "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
@@ -46,7 +47,7 @@
     ],
     "prefix-dependencies": [
       "@composer --working-dir=php-scoper install",
-      "php-scoper/vendor/bin/php-scoper add-prefix --output-dir=./vendor-prefixed",
+      "php-scoper/vendor/bin/php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet",
       "@remove-vendor",
       "@composer dump-autoload",
       "cp -R vendor/* vendor-prefixed/",
@@ -63,7 +64,10 @@
       "rm -fr ./vendor/phpseclib",
       "rm -fr ./vendor/rdlowrey",
       "rm -fr ./vendor/symfony",
-      "rm -fr ./vendor/deliciousbrains"
+      "rm -fr ./vendor/deliciousbrains",
+      "rm -fr ./vendor/collizo4sky",
+      "rm -fr ./vendor/carbonphp",
+      "rm -fr ./vendor/nesbot"
     ]
   },
   "extra": {
