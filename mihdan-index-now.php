@@ -32,7 +32,7 @@ define( 'MIHDAN_INDEX_NOW_BASENAME', plugin_basename( __FILE__ ) );
 define( 'MIHDAN_INDEX_NOW_URL', plugin_dir_url( __FILE__ ) );
 
 define('CRAWLWP_PRO_AUTO_INDEX_SLUG', 'mihdan-auto-index');
-define('CRAWLWP_PRO_SEO_STAT_SLUG', 'mihdan-seo-stat');
+define('CRAWLWP_PRO_SEO_STAT_SLUG', 'mihdan-seo-stats');
 define('CRAWLWP_PRO_AUTO_INDEX_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_AUTO_INDEX_SLUG));
 define('CRAWLWP_PRO_SEO_STAT_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_SEO_STAT_SLUG));
 
