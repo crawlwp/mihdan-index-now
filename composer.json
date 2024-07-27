@@ -75,5 +75,8 @@
       "Indexing",
       "SearchConsole"
     ]
+  },
+  "require-dev": {
+    "sniccowp/php-scoper-wordpress-excludes": "^6.5"
   }
 }

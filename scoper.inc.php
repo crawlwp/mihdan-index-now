@@ -7,6 +7,11 @@
 
 use Isolated\Symfony\Component\Finder\Finder;
 
+$wp_classes   = json_decode(file_get_contents(__DIR__ .'/vendor/sniccowp/php-scoper-wordpress-excludes/generated/exclude-wordpress-classes.json'), true);
+$wp_functions = json_decode(file_get_contents(__DIR__ .'/vendor/sniccowp/php-scoper-wordpress-excludes/generated/exclude-wordpress-functions.json'), true);
+$wp_constants = json_decode(file_get_contents(__DIR__ .'/vendor/sniccowp/php-scoper-wordpress-excludes/generated/exclude-wordpress-constants.json'), true);
+
+
 // Google API services to include classes for.
 $google_services = implode(
 	'|',
@@ -118,6 +123,9 @@ return array(
 			return $contents;
 		},
 	),
+	'exclude-classes'         => $wp_classes,
+	'exclude-functions'       => $wp_functions,
+	'exclude-constants'       => $wp_constants,
 	'expose-global-constants' => false,
 	'expose-global-classes'   => false,
 	'expose-global-functions' => false,
