@@ -1132,12 +1132,12 @@ class WPOSA
 				</div>
 			</div>
 			<div class="wrap">
-				<?php ! $this->enable_blank_mode && $this->show_navigation(); ?>
 				<?php if ($this->get_sidebar_cards_total() === 0) : ?>
 					<?php $this->show_forms(); ?>
 				<?php else : ?>
 					<div class="wposa__grid">
-						<div class="wposa__column">
+						<div class="wposa__column wposa__content">
+							<?php ! $this->enable_blank_mode && $this->show_navigation(); ?>
 							<?php $this->show_forms(); ?>
 						</div>
 						<?php if ($this->get_sidebar_cards_total()) : ?>
@@ -1169,19 +1169,19 @@ class WPOSA
 	function show_navigation()
 	{
 		$html = sprintf(
-			'<nav class="nav-tab-wrapper" aria-label="%s">',
+			'<nav class="wposa-nav-tab-wrapper" aria-label="%s">',
 			esc_html__('Secondary Navigation', 'wposa')
 		);
 
 		foreach ($this->sections_array as $tab) {
 			if (isset($tab['disabled']) && $tab['disabled'] === true) {
 				if (isset($tab['badge'])) {
-					$html .= sprintf('<span class="nav-tab wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s <span class="wposa-badge">%3$s</span></span>', $tab['id'], $tab['title'], $tab['badge']);
+					$html .= sprintf('<span class="wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s <span class="wposa-badge">%3$s</span></span>', $tab['id'], $tab['title'], $tab['badge']);
 				} else {
-					$html .= sprintf('<span class="nav-tab wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s</span>', $tab['id'], $tab['title']);
+					$html .= sprintf('<span class="wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s</span>', $tab['id'], $tab['title']);
 				}
 			} else {
-				$html .= sprintf('<a href="#%1$s" class="nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title']);
+				$html .= sprintf('<a href="#%1$s" class="wposa-nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title']);
 			}
 		}
 
@@ -1300,158 +1300,161 @@ class WPOSA
 	{
 		?>
 		<script>
-			jQuery(document).ready(function ($) {
+			(function ($) {
 
-				const
-					$show_settings_toggler = $('.show-settings'),
-					$help = $('.wpsa-help-tab-toggle'),
-					wp = window.wp;
+				$(document).on('ready', function () {
 
-				$help.on(
-					'click',
-					function () {
-						const $this = $(this);
-						const tab = '#tab-link-<?php echo esc_js(MIHDAN_INDEX_NOW_PREFIX); ?>_' + $this.data('tab');
+					const
+						$show_settings_toggler = $('.show-settings'),
+						$help = $('.wpsa-help-tab-toggle'),
+						wp = window.wp;
 
-						if ($show_settings_toggler.attr('aria-expanded') === 'false') {
-							$show_settings_toggler.trigger('click');
-						}
+					$help.on(
+						'click',
+						function () {
+							var $this = $(this);
+							var tab = '#tab-link-<?php echo esc_js(MIHDAN_INDEX_NOW_PREFIX); ?>_' + $this.data('tab');
 
-						$(tab).find('a').trigger('click');
-					}
-				);
-
-				//Initiate Color Picker.
-				$('.color-picker').iris();
-
-				// Switches option sections
-				$('.group').hide();
-				var activetab = '';
-				if ('undefined' != typeof localStorage) {
-					activetab = localStorage.getItem('activetab');
-				}
-				if ('' != activetab && $(activetab).length) {
-					$(activetab).fadeIn();
-				} else {
-					$('.group:first').fadeIn();
-				}
-				$('.group .collapsed').each(function () {
-					$(this)
-						.find('input:checked')
-						.parent()
-						.parent()
-						.parent()
-						.nextAll()
-						.each(function () {
-							if ($(this).hasClass('last')) {
-								$(this).removeClass('hidden');
-								return false;
+							if ($show_settings_toggler.attr('aria-expanded') === 'false') {
+								$show_settings_toggler.trigger('click');
 							}
-							$(this)
-								.filter('.hidden')
-								.removeClass('hidden');
-						});
-				});
 
-				if ('' != activetab && $(activetab + '-tab').length) {
-					$(activetab + '-tab').addClass('nav-tab-active');
-				} else {
-					$('.nav-tab-wrapper a:first').addClass('nav-tab-active');
-				}
-				$('.nav-tab-wrapper a').click(function (evt) {
-					$('.nav-tab-wrapper a').removeClass('nav-tab-active');
-					$(this)
-						.addClass('nav-tab-active')
-						.blur();
-					var clicked_group = $(this).attr('href');
-					if ('undefined' != typeof localStorage) {
-						localStorage.setItem('activetab', $(this).attr('href'));
-					}
+							$(tab).find('a').trigger('click');
+						}
+					);
+
+					//Initiate Color Picker.
+					$('.color-picker').iris();
+
+					// Switches option sections
 					$('.group').hide();
-					$(clicked_group).fadeIn();
-					evt.preventDefault();
-				});
-
-				$('.wpsa-browse').on('click', function (event) {
-					event.preventDefault();
-
-					var self = $(this);
-
-					// Create the media frame.
-					var file_frame = (wp.media.frames.file_frame = wp.media({
-						title: self.data('uploader_title'),
-						button: {
-							text: self.data('uploader_button_text')
-						},
-						multiple: false
-					}));
-
-					file_frame.on('select', function () {
-						attachment = file_frame
-							.state()
-							.get('selection')
-							.first()
-							.toJSON();
-
-						self
-							.prev('.wpsa-url')
-							.val(attachment.url)
-							.change();
+					var activetab = '';
+					if ('undefined' != typeof localStorage) {
+						activetab = localStorage.getItem('activetab');
+					}
+					if ('' != activetab && $(activetab).length) {
+						$(activetab).fadeIn();
+					} else {
+						$('.group:first').fadeIn();
+					}
+					$('.group .collapsed').each(function () {
+						$(this)
+							.find('input:checked')
+							.parent()
+							.parent()
+							.parent()
+							.nextAll()
+							.each(function () {
+								if ($(this).hasClass('last')) {
+									$(this).removeClass('hidden');
+									return false;
+								}
+								$(this)
+									.filter('.hidden')
+									.removeClass('hidden');
+							});
 					});
 
-					// Finally, open the modal
-					file_frame.open();
+					if ('' != activetab && $(activetab + '-tab').length) {
+						$(activetab + '-tab').addClass('wposa-nav-tab-active');
+					} else {
+						$('.wposa-nav-tab-wrapper a:first').addClass('wposa-nav-tab-active');
+					}
+					$('.wposa-nav-tab-wrapper a').click(function (evt) {
+						$('.wposa-nav-tab-wrapper a').removeClass('wposa-nav-tab-active');
+						$(this)
+							.addClass('wposa-nav-tab-active')
+							.blur();
+						var clicked_group = $(this).attr('href');
+						if ('undefined' != typeof localStorage) {
+							localStorage.setItem('activetab', $(this).attr('href'));
+						}
+						$('.group').hide();
+						$(clicked_group).fadeIn();
+						evt.preventDefault();
+					});
+
+					$('.wpsa-browse').on('click', function (event) {
+						event.preventDefault();
+
+						var self = $(this);
+
+						// Create the media frame.
+						var file_frame = (wp.media.frames.file_frame = wp.media({
+							title: self.data('uploader_title'),
+							button: {
+								text: self.data('uploader_button_text')
+							},
+							multiple: false
+						}));
+
+						file_frame.on('select', function () {
+							attachment = file_frame
+								.state()
+								.get('selection')
+								.first()
+								.toJSON();
+
+							self
+								.prev('.wpsa-url')
+								.val(attachment.url)
+								.change();
+						});
+
+						// Finally, open the modal
+						file_frame.open();
+					});
+
+					$('input.wpsa-url')
+						.on('change keyup paste input', function () {
+							var self = $(this);
+							self
+								.next()
+								.parent()
+								.children('.wpsa-image-preview')
+								.children('img')
+								.attr('src', self.val());
+						})
+						.change();
+
+					var REDIRECT_URL = '<?php echo esc_url(admin_url('admin.php?page=' . Utils::get_plugin_slug())); ?>';
+					var CODE_ENDPOINT = 'https://oauth.yandex.com/authorize?state=yandex-webmaster&response_type=code&force_confirm=yes&redirect_uri=' + REDIRECT_URL + '&client_id=';
+
+					$('#button_get_token').on(
+						'click',
+						function () {
+							var CLIENT_ID = document.getElementById('mihdan_index_now_yandex_webmaster[client_id]').value;
+
+							window.location.href = CODE_ENDPOINT + CLIENT_ID;
+						}
+					);
+
+					$('input:button[id$="_reset_form"]').on(
+						'click',
+						function () {
+							var $button = $(this),
+								$nonce = $(this).parents('form').find('#_wpnonce');
+
+							if (confirm('<?php echo esc_attr(__('Are you sure?', 'mihdan-index-now')); ?>')) {
+								wp.ajax.post(
+									'<?php echo esc_html(Utils::get_plugin_prefix()); ?>_reset_form',
+									{
+										section: $button.data('section'),
+										nonce: $nonce.val(),
+									}
+								).always(function (response) {
+									if (response === 'ok') {
+										document.location.reload();
+									} else {
+										console.log(response);
+									}
+								});
+							}
+						}
+					);
 				});
 
-				$('input.wpsa-url')
-					.on('change keyup paste input', function () {
-						var self = $(this);
-						self
-							.next()
-							.parent()
-							.children('.wpsa-image-preview')
-							.children('img')
-							.attr('src', self.val());
-					})
-					.change();
-
-				const REDIRECT_URL = '<?php echo esc_url(admin_url('admin.php?page=' . Utils::get_plugin_slug())); ?>';
-				const CODE_ENDPOINT = 'https://oauth.yandex.com/authorize?state=yandex-webmaster&response_type=code&force_confirm=yes&redirect_uri=' + REDIRECT_URL + '&client_id=';
-
-				$('#button_get_token').on(
-					'click',
-					function () {
-						const CLIENT_ID = document.getElementById('mihdan_index_now_yandex_webmaster[client_id]').value;
-
-						window.location.href = CODE_ENDPOINT + CLIENT_ID;
-					}
-				);
-
-				$('input:button[id$="_reset_form"]').on(
-					'click',
-					function () {
-						const
-							$button = $(this),
-							$nonce = $(this).parents('form').find('#_wpnonce');
-
-						if (confirm('<?php echo esc_attr(__('Are you sure?', 'mihdan-index-now')); ?>')) {
-							wp.ajax.post(
-								'<?php echo esc_html(Utils::get_plugin_prefix()); ?>_reset_form',
-								{
-									section: $button.data('section'),
-									nonce: $nonce.val(),
-								}
-							).always(function (response) {
-								if (response === 'ok') {
-									document.location.reload();
-								} else {
-									console.log(response);
-								}
-							});
-						}
-					}
-				);
-			});
+			})(jQuery);
 
 		</script>
 
@@ -1527,7 +1530,7 @@ class WPOSA
 			}
 
 			#wpbody-content .metabox-holder {
-				padding-top: 5px;
+				padding-top: 0px;
 			}
 
 			.wpsa-image-preview img {
@@ -1849,17 +1852,14 @@ class WPOSA
 				text-align: right;
 			}
 
-		/*	new header */
+			/*	new header */
 			.wposa-new-header {
-				position: sticky;
-				top: 32px;
-				z-index: 9;
 				display: flex;
 				justify-content: space-between;
 				flex-wrap: wrap;
 				gap: 24px;
 				border-bottom: 1px solid #e0e0e0;
-				padding: 12px 24px;
+				padding: 16px 24px 12px;
 				background: #fff;
 				margin-left: -20px;
 			}
@@ -1938,6 +1938,50 @@ class WPOSA
 				min-height: 40px;
 				line-height: 40px;
 				padding: 0 15px;
+			}
+
+			/*	new body design */
+			.wposa-nav-tab-wrapper {
+				border-bottom: 1px solid #e0e0e0;
+				padding-inline: 24px;
+				display: flex;
+				align-items: center;
+				gap: 24px;
+			}
+
+			.wposa-nav-tab {
+				display: inline-block;
+				padding-block: 18px;
+				font-weight: 500;
+				transition: box-shadow .1s linear;
+				text-decoration: none;
+				color: inherit;
+				white-space: nowrap;
+			}
+
+
+			.wposa__content {
+				background: #fff;
+				border: 1px solid #c3c4c7;
+				border-radius: 6px;
+				box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+				margin-top: 20px;
+			}
+
+			.wposa-nav-tab.wposa-nav-tab-active {
+				box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, 0), inset 0 -3.5px 0 0 currentColor;
+				color: #007cba;
+			}
+
+			.metabox-holder .group {
+				padding: 24px;
+			}
+
+			#screen-meta-links .show-settings {
+				padding-top: 2px !important;
+				padding-bottom: 2px !important;
+				font-size: 10px;
+				min-height: 25px;
 			}
 		</style>
 		<?php
