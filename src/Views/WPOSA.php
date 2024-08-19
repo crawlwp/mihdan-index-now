@@ -184,6 +184,14 @@ class WPOSA
 	private $sections_array = array();
 
 	/**
+	 * Sections array.
+	 *
+	 * @var   array
+	 * @since 1.0.0
+	 */
+	private $header_menu_array = array();
+
+	/**
 	 * Fields array.
 	 *
 	 * @var   array
@@ -293,6 +301,29 @@ class WPOSA
 	/**
 	 * Add a single section.
 	 *
+	 * @param array $menu
+	 *
+	 * @return false|WPOSA
+	 */
+	public function add_header_menu($menu)
+	{
+		// Bail if not array.
+		if ( ! is_array($menu)) {
+			return false;
+		}
+
+		$menu['id'] = $this->get_prefix() . '_' . $menu['id'];
+
+		// Assign the section to sections array.
+		$this->header_menu_array[] = $menu;
+
+		return $this;
+	}
+
+
+	/**
+	 * Add a single section.
+	 *
 	 * @param array $section
 	 *
 	 * @since 1.0.0
@@ -305,7 +336,9 @@ class WPOSA
 		}
 
 		$section['id'] = $this->get_prefix() . '_' . $section['id'];
-
+		if (isset($section['header_menu_id'])) {
+			$section['header_menu_id'] = $this->get_prefix() . '_' . $section['header_menu_id'];
+		}
 		// Assign the section to sections array.
 		$this->sections_array[] = $section;
 
@@ -404,6 +437,16 @@ class WPOSA
 	}
 
 	/**
+	 * @return string
+	 */
+	public function get_active_header_menu()
+	{
+		return ! empty($_GET['wposa-menu']) ?
+			sanitize_text_field($_GET['wposa-menu']) :
+			($this->header_menu_array[0]['id'] ?? '');
+	}
+
+	/**
 	 * Initialize API.
 	 *
 	 * Initializes and registers the settings sections and fields.
@@ -434,6 +477,7 @@ class WPOSA
 		 * @since 1.0.0
 		 */
 		foreach ($this->sections_array as $section) {
+
 			if (get_option($section['id']) === false) {
 				// Add a new field as section ID.
 				add_option($section['id'], '', '', false);
@@ -467,7 +511,6 @@ class WPOSA
 			 */
 			add_settings_section($section['id'], $section['title'], $callback, $section['id']);
 		} // foreach ended.
-
 		/**
 		 * Register settings fields.
 		 *
@@ -1090,25 +1133,42 @@ class WPOSA
 
 	public function plugin_page()
 	{
-		$support_url = 'https://wordpress.org/support/plugin/mihdan-index-now/';
+		$this->css();
+
 		$review_url  = 'https://wordpress.org/support/plugin/mihdan-index-now/reviews/?filter=5#new-post';
 		$upgrade_url = 'https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-header-top';
 
-		if (class_exists('\CrawlWP\Libsodium\Base')) {
-			$support_url = 'https://feedbackwp.com/support/';
+		$active_header_menu_id = $this->get_active_header_menu();
+
+		$flag = false;
+
+		foreach ($this->sections_array as $section) {
+
+			if ( ! empty($active_header_menu_id)) {
+				$header_menu_id = $section['header_menu_id'] ?? '';
+				if ($header_menu_id != $active_header_menu_id) continue;
+			}
+
+			$flag = true;
 		}
+
+		if ( ! $flag) return;
 
 		?>
 		<div class="wposa">
 			<div class="wposa-new-header">
 				<div class="wposa-branding">
 					<img class="wposa-logo" src="<?php echo esc_url(Utils::get_plugin_asset_url('images/icons/index-now-logo--gradient.svg')); ?>" width="80" alt=""/>
-					<h1>CrawlWP</h1>
+					<h1><?php echo $this->sub_page_title ?></h1>
 				</div>
 
 				<nav class="wposa-tabs">
-					<a href="#" class="wposa-tab wposa-tab-active">General</a> <a href="#" class="wposa-tab">Header</a>
-					<a href="#" class="wposa-tab">Email</a>
+					<?php foreach ($this->header_menu_array as $menu) :
+						$url = esc_url(add_query_arg(['wposa-menu' => $menu['id']]));
+						$active_class = $this->get_active_header_menu() == $menu['id'] ? ' wposa-tab-active' : '';
+						?>
+						<a href="<?php echo $url ?>" class="wposa-tab<?php echo $active_class; ?>"><?php echo $menu['title'] ?></a>
+					<?php endforeach; ?>
 				</nav>
 
 				<div class="wposa-header-right">
@@ -1137,7 +1197,6 @@ class WPOSA
 				<?php else : ?>
 					<div class="wposa__grid">
 						<div class="wposa__column wposa__content">
-							<?php ! $this->enable_blank_mode && $this->show_navigation(); ?>
 							<?php $this->show_forms(); ?>
 						</div>
 						<?php if ($this->get_sidebar_cards_total()) : ?>
@@ -1237,6 +1296,7 @@ class WPOSA
 		if ($this->enable_blank_mode):
 			$this->enable_blank_mode_show_forms($default);
 		else:
+			$this->show_navigation();
 			?>
 			<div class="metabox-holder">
 				<?php foreach ($this->sections_array as $form) : ?>
@@ -1457,7 +1517,12 @@ class WPOSA
 			})(jQuery);
 
 		</script>
+		<?php
+	}
 
+	public function css()
+	{
+		?>
 		<style>
 			#wpbody-content .wposa .metabox-holder {
 				padding-left: 0;
@@ -1475,58 +1540,13 @@ class WPOSA
 				top: -30px;
 			}
 
-			.wposa .buttons-group {
-				display: flex;
-				gap: 10px;
-			}
-
 			.wposa .button-danger {
 				color: #d63638;
 				border-color: #d63638;
 			}
 
-			.wposa-header {
-				display: grid;
-				grid-template-columns: 80px 120px auto;
-				grid-gap: 15px;
-				align-items: center;
-				margin-bottom: 20px;
-				background-color: #fff;
-				padding: 14px 20px;
-				position: relative;
-				margin-left: -20px;
-				border-top: 1px solid #c3c4c7;
-				border-bottom: 1px solid #c3c4c7;
-			}
-
-			.wposa-header--left {
-
-			}
-
-			.wposa-header--center {
-
-			}
-
-			.wposa-header--right {
-				color: #909090;
-			}
-
-			.wposa-header--right > p {
-				max-width: 600px;
-			}
-
 			.wposa-logo {
 				display: block;
-			}
-
-			.wposa-heading {
-				font-size: 24px;
-				font-weight: 400;
-				line-height: 1.3;
-			}
-
-			.wposa-version {
-				font-size: 13px;
 			}
 
 			#wpbody-content .metabox-holder {
@@ -1570,6 +1590,8 @@ class WPOSA
 				display: grid;
 				grid-gap: 20px;
 				grid-template-columns: auto 300px;
+				min-height: 0;
+				min-width: 0;
 			}
 
 			.wposa .description {
@@ -1620,9 +1642,6 @@ class WPOSA
 
 			input.wposa-field--switch:hover:after {
 				/*box-shadow: 0 0 3px rgba(0,0,0,0.3);*/
-			}
-
-			.wposa-nav-tab {
 			}
 
 			.wposa-nav-tab--disabled {
@@ -1809,10 +1828,6 @@ class WPOSA
 					top: -60px;
 				}
 
-				.wposa-header--right {
-					display: none
-				}
-
 				.form-table th {
 					padding: 10px 0;
 				}
@@ -1966,6 +1981,8 @@ class WPOSA
 				border-radius: 6px;
 				box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
 				margin-top: 20px;
+				overflow: scroll;
+				min-width: 0;
 			}
 
 			.wposa-nav-tab.wposa-nav-tab-active {
@@ -1977,11 +1994,10 @@ class WPOSA
 				padding: 24px;
 			}
 
-			#screen-meta-links .show-settings {
-				padding-top: 2px !important;
-				padding-bottom: 2px !important;
-				font-size: 10px;
-				min-height: 25px;
+			#screen-meta-links {
+				position: relative;
+				top: 70px;
+				z-index: 99999;
 			}
 		</style>
 		<?php
