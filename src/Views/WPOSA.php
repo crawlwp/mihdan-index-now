@@ -1192,6 +1192,8 @@ class WPOSA
 				</div>
 			</div>
 			<div class="wrap">
+				<?php // useful to keep admin notices at the top ?>
+				<h2 style="display:none">CrawlWP</h2>
 				<?php if ($this->get_sidebar_cards_total() === 0) : ?>
 					<?php $this->show_forms(); ?>
 				<?php else : ?>
@@ -1269,7 +1271,7 @@ class WPOSA
 	{
 		?>
 		<div>
-			<h2><?php echo $this->sub_page_title ?></h2>
+			<h2 style="display:none"><?php echo $this->sub_page_title ?></h2>
 			<?php foreach ($this->sections_array as $form) :
 				$form = wp_parse_args($form, $default);
 				$this->blank_mode_do_settings_sections($form['id']);
