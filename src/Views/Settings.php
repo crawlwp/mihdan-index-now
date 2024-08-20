@@ -7,6 +7,7 @@
 
 namespace Mihdan\IndexNow\Views;
 
+use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\Utils;
 
 /**
@@ -14,6 +15,12 @@ use Mihdan\IndexNow\Utils;
  */
 class Settings
 {
+	/**
+	 * Logger instance.
+	 *
+	 * @var Logger $logger
+	 */
+	private $logger;
 	/**
 	 * WP_OSA instance.
 	 *
@@ -46,8 +53,9 @@ class Settings
 	 * @param WPOSA $wposa WPOSA instance.
 	 * @param HelpTab $help_tab HelpTab instance.
 	 */
-	public function __construct(WPOSA $wposa, HelpTab $help_tab)
+	public function __construct(Logger $logger, WPOSA $wposa, HelpTab $help_tab)
 	{
+		$this->logger   = $logger;
 		$this->wposa    = $wposa;
 		$this->help_tab = $help_tab;
 	}
@@ -88,11 +96,18 @@ class Settings
 	/**
 	 * Setup hooks.
 	 */
-	public function setup_hooks(): void
+	public function setup_hooks()
 	{
 		add_action('init', [$this, 'setup_vars'], 100);
 		add_action('init', [$this, 'setup_fields'], 101);
 		add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
+
+		add_action('wpposa_load_menu_hook', function ($sub_menu_slug, $plugin_slug) {
+			if ($plugin_slug == MIHDAN_INDEX_NOW_SLUG) {
+				$GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'] = new Log_List_Table($this->logger, $this->wposa);
+			}
+		}, 10, 2);
+
 	}
 
 	public function admin_enqueue_scripts()
@@ -110,7 +125,6 @@ class Settings
 	 */
 	public function setup_fields()
 	{
-
 		$this->wposa->add_header_menu([
 			'id'    => 'index_settings',
 			'title' => __('Indexing', 'mihdan-index-now'),
@@ -119,6 +133,11 @@ class Settings
 		$this->wposa->add_header_menu([
 			'id'    => 'api_settings',
 			'title' => __('API Settings', 'mihdan-index-now'),
+		]);
+
+		$this->wposa->add_header_menu([
+			'id'    => 'log',
+			'title' => __('Log', 'mihdan-index-now'),
 		]);
 
 		$this->wposa
@@ -579,7 +598,6 @@ class Settings
 					},
 				)
 			);
-
 		}
 
 		if ($this->wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_api_settings') {
@@ -730,8 +748,51 @@ class Settings
 				array(
 					'id'   => 'host_ids',
 					'type' => 'hidden',
-					'name' => '',
+					'name' => ''
 				)
+			);
+		}
+
+
+		if ($this->wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_log') {
+
+			$this->wposa->enable_blank_mode();
+
+			$this->wposa->remove_all_sidebar_cards();
+
+			$this->wposa->add_section(
+				array(
+					'header_menu_id' => 'log',
+					'id'             => 'log',
+					'title'          => __('Indexing Log', 'mihdan-index-now'),
+					'desc'           => __('Sending a page for reindexing. Yandex supports the IndexNow protocol, so you might not need this if IndexNow is active', 'mihdan-index-now'),
+				)
+			);
+
+			$this->wposa->add_field(
+				'log',
+				[
+					'id'   => 'pages',
+					'type' => 'html',
+					'name' => 'name',
+					'desc' => function () {
+
+						ob_start();
+						echo '<h2>' . get_admin_page_title() . '</h2>';
+						echo '<form action="" method="post">';
+						/**
+						 * WP_List_table.
+						 *
+						 * @var \WP_List_Table $table
+						 */
+						$table = $GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'];
+						$table->display();
+
+						echo '</form>';
+
+						return ob_get_clean();
+					}
+				]
 			);
 		}
 	}

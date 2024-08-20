@@ -322,22 +322,6 @@ class Main {
 		if ( ! $this->is_logging_enabled() ) {
 			return;
 		}
-
-		$hook = add_submenu_page(
-			MIHDAN_INDEX_NOW_SLUG,
-			'Log',
-			'Log',
-			'manage_options',
-			MIHDAN_INDEX_NOW_LOG_SLUG,
-			[ $this, 'render_log_page' ]
-		);
-
-		add_action(
-			"load-$hook",
-			function () {
-				$GLOBALS[ MIHDAN_INDEX_NOW_PREFIX . '_log' ] = $this->make( Log_List_Table::class );
-			}
-		);
 	}
 
 	/**

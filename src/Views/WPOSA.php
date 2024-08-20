@@ -403,6 +403,18 @@ class WPOSA
 		return $this;
 	}
 
+	/**
+	 * Remove or empty out all sidebar cards.
+	 *
+	 * @return $this
+	 */
+	public function remove_all_sidebar_cards(): WPOSA
+	{
+		$this->sidebar_cards = [];
+
+		return $this;
+	}
+
 	public function get_sidebar_cards()
 	{
 		return $this->sidebar_cards;

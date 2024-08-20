@@ -22,7 +22,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MIHDAN_INDEX_NOW_VERSION', '3.0.0' );
 define( 'MIHDAN_INDEX_NOW_SLUG', 'mihdan-index-now' );
-define( 'MIHDAN_INDEX_NOW_LOG_SLUG', 'mihdan-index-now-log' );
 define( 'MIHDAN_INDEX_NOW_SETTINGS_URL', admin_url( 'admin.php?page=' . MIHDAN_INDEX_NOW_SLUG ) );
 define( 'MIHDAN_INDEX_NOW_PREFIX', 'mihdan_index_now' );
 define( 'MIHDAN_INDEX_NOW_NAME', 'CrawlWP' );
