@@ -123,7 +123,7 @@ class HelpTab {
 							</tr>
 							<tr>
 								<th>Redirect URI:</th>
-								<td>Enter the following URL:<br/><code><?php echo esc_url( MIHDAN_INDEX_NOW_SETTINGS_URL ); ?></code>.
+								<td>Enter the following URL:<br/><code><?php echo esc_url( add_query_arg(['wposa-menu' =>Utils::get_plugin_prefix() . '_api_settings'], MIHDAN_INDEX_NOW_SETTINGS_URL) ); ?></code>
 								</td>
 							</tr>
 							<tr>

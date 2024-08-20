@@ -100,6 +100,7 @@ class Main {
 				':plugin_version' => Utils::get_plugin_version(),
 				':plugin_slug'    => Utils::get_plugin_slug(),
 				':plugin_prefix'  => Utils::get_plugin_prefix(),
+				':sub_page_title'  => esc_html__('Settings', 'mihdan-index-now-pro'),
 			]
 		);
 
