@@ -452,10 +452,11 @@ class Settings
 
 			$this->wposa->add_section(
 				array(
-					'id'           => 'plugins',
-					'reset_button' => false,
-					'title'        => '',
-					'desc'         => __('You can also install our other useful plugins.', 'mihdan-index-now'),
+					'header_menu_id' => 'index_settings',
+					'id'             => 'plugins',
+					'reset_button'   => false,
+					'title'          => __('Other Plugins', 'mihdan-index-now'),
+					'desc'           => __('You can also install our other useful plugins.', 'mihdan-index-now'),
 				)
 			);
 
