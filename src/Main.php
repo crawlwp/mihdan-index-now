@@ -17,7 +17,6 @@ use Mihdan\IndexNow\Providers\Naver\NaverIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
 use Mihdan\IndexNow\Views\HelpTab;
-use Mihdan\IndexNow\Views\Log_List_Table;
 use Mihdan\IndexNow\Views\Settings;
 use Mihdan\IndexNow\Views\WPOSA;
 use WP_Post;
@@ -132,10 +131,10 @@ class Main {
 		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
 		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
 
-		if ( class_exists( '\PAnD' ) ) {
+		if ( class_exists( '\Mihdan\IndexNow\Dependencies\PAnD' ) ) {
 			// persist admin notice dismissal initialization
-			add_action( 'admin_init', [ '\PAnD', 'init' ] );
-			add_action( 'wp_ajax_dismiss_admin_notice', [ '\PAnD', 'dismiss_admin_notice' ] );
+			add_action( 'admin_init', [ '\Mihdan\IndexNow\Dependencies\PAnD', 'init' ] );
+			add_action( 'wp_ajax_dismiss_admin_notice', [ '\Mihdan\IndexNow\Dependencies\PAnD', 'dismiss_admin_notice' ] );
 		}
 
 		/** @todo */

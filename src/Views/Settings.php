@@ -103,7 +103,7 @@ class Settings
 		add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
 
 		add_action('wpposa_load_menu_hook', function ($sub_menu_slug, $plugin_slug) {
-			if ($plugin_slug == MIHDAN_INDEX_NOW_SLUG) {
+			if ($plugin_slug == MIHDAN_INDEX_NOW_SLUG && Utils::_GET_var('wposa-menu') == MIHDAN_INDEX_NOW_PREFIX . '_log') {
 				$GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'] = new Log_List_Table($this->logger, $this->wposa);
 			}
 		}, 10, 2);
