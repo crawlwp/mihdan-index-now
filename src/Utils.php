@@ -216,7 +216,11 @@ class Utils
 
 	public static function normalize_url($url)
 	{
-		return str_replace(home_url('/'), CRAWLWP_URL, $url);
+		if (defined('CRAWLWP_URL')) {
+			return str_replace(trailingslashit(home_url()), CRAWLWP_URL, $url);
+		}
+
+		return $url;
 	}
 
 	/**
