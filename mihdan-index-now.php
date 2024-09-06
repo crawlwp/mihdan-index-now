@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: CrawlWP - Index Now SEO
- * Description: IndexNow is a small WordPress Plugin for quickly notifying search engines whenever their website content is created, updated, or deleted.
+ * Plugin Name: CrawlWP - Index Now & SEO Stats
+ * Description: SEO plugin for indexing WordPress content and monitoring search engine performance.
  * Version: 3.0.0
  * Author: CrawlWP
  * Author URI: https://crawlwp.com/
