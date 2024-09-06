@@ -54,7 +54,7 @@ return array(
 		      ->path( '#^symfony/#' )
 		      ->path( '#^paragonie/#' )
 		      ->path( '#^phpseclib/#' )
-		      ->path( '#^rdlowrey/#' )
+		      ->path( '#^martin-hughes/#' )
 		      ->path( '#^carbonphp/#' )
 		      ->path( '#^nesbot/#' )
 		      ->path( '#^deliciousbrains/#' )

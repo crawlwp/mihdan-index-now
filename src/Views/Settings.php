@@ -422,6 +422,7 @@ class Settings
 			);
 
 			$this->wposa->add_section(
+
 				array(
 					'header_menu_id' => 'index_settings',
 					'id'             => 'logs',

@@ -31,12 +31,12 @@
   "require": {
     "php": ">=7.4",
     "ext-json": "*",
-    "rdlowrey/auryn": "^1.4",
     "psr/log": "^1.1",
     "google/apiclient": "^2.12.1",
     "collizo4sky/persist-admin-notices-dismissal": "^1.4",
     "writecrow/country_code_converter": "^1.2",
-    "nesbot/carbon": "^2.72"
+    "nesbot/carbon": "^2.72",
+    "martin-hughes/auryn": "^1.4"
   },
   "scripts": {
     "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
@@ -62,7 +62,7 @@
       "rm -fr ./vendor/ralouphie",
       "rm -fr ./vendor/paragonie",
       "rm -fr ./vendor/phpseclib",
-      "rm -fr ./vendor/rdlowrey",
+      "rm -fr ./vendor/martin-hughes",
       "rm -fr ./vendor/symfony",
       "rm -fr ./vendor/deliciousbrains",
       "rm -fr ./vendor/collizo4sky",
