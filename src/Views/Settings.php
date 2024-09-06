@@ -232,15 +232,6 @@ class Settings
 			$this->wposa->add_field(
 				'general',
 				array(
-					'id'   => 'ping_on_comment',
-					'type' => 'switch',
-					'name' => __('Comment added', 'mihdan-index-now'),
-				)
-			);
-
-			$this->wposa->add_field(
-				'general',
-				array(
 					'id'      => 'disable_for_bulk_edit',
 					'type'    => 'switch',
 					'name'    => __('Disable for Bulk Edit', 'mihdan-index-now'),

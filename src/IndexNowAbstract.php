@@ -80,10 +80,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		add_action( 'mihdan_index_now/post_added', [ $this, 'ping_on_post_update' ], 10, 2 );
 		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping_on_post_update' ], 10, 2 );
 
-		if ( $this->is_ping_on_comment() ) {
-			add_action( 'mihdan_index_now/comment_updated', [ $this, 'ping_on_insert_comment' ], 10, 2 );
-		}
-
 		if ( $this->is_ping_on_term() ) {
 			add_action( 'mihdan_index_now/term_updated', [ $this, 'ping_on_insert_term' ], 10, 2 );
 		}
@@ -94,20 +90,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 
 	public function is_enabled(): bool {
 		return $this->wposa->get_option( 'enable', 'index_now', 'on' ) === 'on';
-	}
-
-	private function is_ping_on_comment(): bool {
-		return $this->wposa->get_option( 'ping_on_comment', 'general', 'off' ) === 'on';
-	}
-
-	/** @todo not implemented anywhere. implement */
-	private function is_ping_on_post_added(): bool {
-		return $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on';
-	}
-
-	/** @todo not implemented anywhere. implement */
-	private function is_ping_on_post_updated(): bool {
-		return $this->wposa->get_option( 'ping_on_post_updated', 'general', 'on' ) === 'on';
 	}
 
 	private function is_ping_on_term(): bool {
@@ -131,10 +113,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
 	public function ping_on_post_update( int $post_id, WP_Post $post ) {
-		$this->maybe_do_ping_post( $post_id );
-	}
-
-	public function ping_on_insert_comment( int $post_id, WP_Comment $comment ) {
 		$this->maybe_do_ping_post( $post_id );
 	}
 
