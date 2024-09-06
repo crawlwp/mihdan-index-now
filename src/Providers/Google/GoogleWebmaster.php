@@ -68,7 +68,7 @@ class GoogleWebmaster extends WebmasterAbstract {
 	public function ping( int $post_id ) {
 
 		try {
-			/** @var \Mihdan\IndexNow\Dependencies\Google\Client $client */
+			/** @var Client $client */
 			$client = new Client();
 			$client->setApplicationName( Utils::get_plugin_name() );
 			$client->setAuthConfig( json_decode( $this->get_token(), true ) );

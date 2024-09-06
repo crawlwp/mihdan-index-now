@@ -29,7 +29,8 @@ use WP_Site;
 /**
  * Class Main.
  */
-class Main {
+class Main
+{
 	/**
 	 * DIC container.
 	 *
@@ -56,15 +57,17 @@ class Main {
 	 *
 	 * @param Injector $injector Injector instnace.
 	 */
-	public function __construct( Injector $injector ) {
+	public function __construct(Injector $injector)
+	{
 		$this->injector = $injector;
 	}
 
-	public function init() {
+	public function init()
+	{
 		$this->load_requirements();
 		$this->setup_hooks();
 
-		do_action( 'mihdan_index_now/init', $this );
+		do_action('mihdan_index_now/init', $this);
 	}
 
 	/**
@@ -78,19 +81,21 @@ class Main {
 	 * @throws InjectionException If a cyclic gets detected when provisioning.
 	 * @throws ConfigException If $nameOrInstance is not a string or an object.
 	 */
-	public function make( string $class_name, array $args = [] ) {
-		return $this->injector->share( $class_name )->make( $class_name, $args );
+	public function make(string $class_name, array $args = [])
+	{
+		return $this->injector->share($class_name)->make($class_name, $args);
 	}
 
-	private function load_requirements() {
+	private function load_requirements()
+	{
 
-		if ( ! function_exists( 'dbDelta' ) ) {
+		if ( ! function_exists('dbDelta')) {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		}
 
 		BackgroundProcess\Dispatch::get_instance();
 
-		$this->logger = $this->make( Logger::class );
+		$this->logger = $this->make(Logger::class);
 
 		$wposa = $this->make(
 			WPOSA::class,
@@ -99,42 +104,47 @@ class Main {
 				':plugin_version' => Utils::get_plugin_version(),
 				':plugin_slug'    => Utils::get_plugin_slug(),
 				':plugin_prefix'  => Utils::get_plugin_prefix(),
-				':sub_page_title'  => esc_html__('Settings', 'mihdan-index-now-pro'),
+				':sub_page_title' => esc_html__('Settings', 'mihdan-index-now-pro'),
 			]
 		);
 
 		$this->wposa = $wposa;
 		$this->wposa->setup_hooks();
 
-		( $this->make( Hooks::class ) )->setup_hooks();
+		($this->make(Hooks::class))->setup_hooks();
 
-		( $this->make( HelpTab::class ) )->setup_hooks();
-		( $this->make( Settings::class ) )->setup_hooks();
-		( $this->make( Cron::class ) )->setup_hooks();
-		( $this->make( YandexIndexNow::class ) )->setup_hooks();
-		( $this->make( BingIndexNow::class ) )->setup_hooks();
-		( $this->make( SeznamIndexNow::class ) )->setup_hooks();
-		( $this->make( NaverIndexNow::class ) )->setup_hooks();
-		( $this->make( IndexNow::class ) )->setup_hooks();
+		($this->make(HelpTab::class))->setup_hooks();
+		($this->make(Settings::class))->setup_hooks();
+		($this->make(Cron::class))->setup_hooks();
+		($this->make(YandexIndexNow::class))->setup_hooks();
+		($this->make(BingIndexNow::class))->setup_hooks();
+		($this->make(SeznamIndexNow::class))->setup_hooks();
+		($this->make(NaverIndexNow::class))->setup_hooks();
+		($this->make(IndexNow::class))->setup_hooks();
 
-		( $this->make( YandexWebmaster::class ) )->setup_hooks();
-		( $this->make( BingWebmaster::class ) )->setup_hooks();
-		( $this->make( GoogleWebmaster::class ) )->setup_hooks();
+		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER'] = $this->make(YandexWebmaster::class);
+		$GLOBALS['CRAWLWP_BING_WEBMASTER']   = $this->make(BingWebmaster::class);
+		$GLOBALS['CRAWLWP_GOOGLE_WEBMASTER'] = $this->make(GoogleWebmaster::class);
+
+		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER']->setup_hooks();
+		$GLOBALS['CRAWLWP_BING_WEBMASTER']->setup_hooks();
+		$GLOBALS['CRAWLWP_GOOGLE_WEBMASTER']->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	public function setup_hooks() {
-		add_filter( 'plugin_action_links', [ $this, 'add_settings_link' ], 10, 2 );
-		add_action( 'admin_menu', [ $this, 'add_log_menu_page' ], 99 );
-		add_filter( 'set_screen_option_logs_per_page', [ $this, 'set_screen_option' ], 10, 3 );
-		add_action( 'admin_init', [ $this, 'maybe_upgrade' ] );
+	public function setup_hooks()
+	{
+		add_filter('plugin_action_links', [$this, 'add_settings_link'], 10, 2);
+		add_action('admin_menu', [$this, 'add_log_menu_page'], 99);
+		add_filter('set_screen_option_logs_per_page', [$this, 'set_screen_option'], 10, 3);
+		add_action('admin_init', [$this, 'maybe_upgrade']);
 
-		if ( class_exists( '\Mihdan\IndexNow\Dependencies\PAnD' ) ) {
+		if (class_exists('\Mihdan\IndexNow\Dependencies\PAnD')) {
 			// persist admin notice dismissal initialization
-			add_action( 'admin_init', [ '\Mihdan\IndexNow\Dependencies\PAnD', 'init' ] );
-			add_action( 'wp_ajax_dismiss_admin_notice', [ '\Mihdan\IndexNow\Dependencies\PAnD', 'dismiss_admin_notice' ] );
+			add_action('admin_init', ['\Mihdan\IndexNow\Dependencies\PAnD', 'init']);
+			add_action('wp_ajax_dismiss_admin_notice', ['\Mihdan\IndexNow\Dependencies\PAnD', 'dismiss_admin_notice']);
 		}
 
 		/** @todo */
@@ -142,23 +152,23 @@ class Main {
 		//add_filter( 'page_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
 
 		// Add last update column.
-		if ( $this->wposa->get_option( 'show_last_update_column', 'general', 'on' ) === 'on' ) {
-			foreach ( (array) $this->wposa->get_option( 'post_types', 'general', [] ) as $post_type ) {
-				add_filter( "manage_{$post_type}_posts_columns", [ $this, 'add_last_update_column' ] );
-				add_action( "manage_{$post_type}_posts_custom_column", [
+		if ($this->wposa->get_option('show_last_update_column', 'general', 'on') === 'on') {
+			foreach ((array)$this->wposa->get_option('post_types', 'general', []) as $post_type) {
+				add_filter("manage_{$post_type}_posts_columns", [$this, 'add_last_update_column']);
+				add_action("manage_{$post_type}_posts_custom_column", [
 					$this,
 					'add_last_update_column_content'
-				], 10, 2 );
+				], 10, 2);
 			}
 
-			add_action( 'admin_head', [ $this, 'add_css_for_column' ] );
+			add_action('admin_head', [$this, 'add_css_for_column']);
 		}
 
-		register_activation_hook( MIHDAN_INDEX_NOW_FILE, [ $this, 'activate_plugin' ] );
+		register_activation_hook(MIHDAN_INDEX_NOW_FILE, [$this, 'activate_plugin']);
 
 		// Multisite.
-		add_action( 'wp_delete_site', [ $this, 'delete_site_tables' ] );
-		add_action( 'wp_insert_site', [ $this, 'add_site_tables' ] );
+		add_action('wp_delete_site', [$this, 'delete_site_tables']);
+		add_action('wp_insert_site', [$this, 'add_site_tables']);
 	}
 
 	/**
@@ -168,8 +178,9 @@ class Main {
 	 *
 	 * @return void
 	 */
-	public function delete_site_tables( WP_Site $old_site ): void {
-		switch_to_blog( $old_site->id );
+	public function delete_site_tables(WP_Site $old_site): void
+	{
+		switch_to_blog($old_site->id);
 		$this->drop_tables();
 		restore_current_blog();
 	}
@@ -181,13 +192,15 @@ class Main {
 	 *
 	 * @return void
 	 */
-	public function add_site_tables( WP_Site $new_site ): void {
-		switch_to_blog( $new_site->id );
+	public function add_site_tables(WP_Site $new_site): void
+	{
+		switch_to_blog($new_site->id);
 		$this->create_tables();
 		restore_current_blog();
 	}
 
-	public function add_css_for_column(): void {
+	public function add_css_for_column(): void
+	{
 		?>
 		<style>
 			.column-index-now {
@@ -201,41 +214,44 @@ class Main {
 		<?php
 	}
 
-	public function add_last_update_column( array $columns ): array {
+	public function add_last_update_column(array $columns): array
+	{
 		$columns['index-now'] = sprintf(
 			'<span class="dashicons dashicons-share" title="%s"></span>',
-			__( 'IndexNow: Last Update', 'mihdan-index-now' )
+			__('IndexNow: Last Update', 'mihdan-index-now')
 		);
 
 		return $columns;
 	}
 
-	public function add_last_update_column_content( string $column_name, int $post_id ): void {
-		if ( $column_name !== 'index-now' ) {
+	public function add_last_update_column_content(string $column_name, int $post_id): void
+	{
+		if ($column_name !== 'index-now') {
 			return;
 		}
 
-		$last_update = (int) get_post_meta( $post_id, Utils::get_plugin_prefix() . '_last_update', true );
+		$last_update = (int)get_post_meta($post_id, Utils::get_plugin_prefix() . '_last_update', true);
 
-		if ( $last_update === 0 ) {
+		if ($last_update === 0) {
 			return;
 		}
 
-		echo esc_html( date( 'd.m.Y H:i', $last_update ) );
+		echo esc_html(date('d.m.Y H:i', $last_update));
 	}
 
-	public function post_row_actions( array $actions, WP_Post $post ): array {
-		if ( ! in_array( $post->post_type, (array) $this->wposa->get_option( 'post_types', 'general', [] ), true ) ) {
+	public function post_row_actions(array $actions, WP_Post $post): array
+	{
+		if ( ! in_array($post->post_type, (array)$this->wposa->get_option('post_types', 'general', []), true)) {
 			return $actions;
 		}
 
-		if ( ! is_post_publicly_viewable( $post ) ) {
+		if ( ! is_post_publicly_viewable($post)) {
 			return $actions;
 		}
 
 		$actions['index_now'] = sprintf(
 			'<a title="%s" href="%s">IndexNow</a>',
-			esc_attr( __( 'Notify the search engine', 'mihdan-index-now' ) ),
+			esc_attr(__('Notify the search engine', 'mihdan-index-now')),
 			1
 		);
 
@@ -251,20 +267,22 @@ class Main {
 	 *
 	 * @return int
 	 */
-	public function set_screen_option( $status, $option, $value ): int {
-		return (int) $value;
+	public function set_screen_option($status, $option, $value): int
+	{
+		return (int)$value;
 	}
 
 	/**
 	 * Fired on plugin activate.
 	 */
-	public function activate_plugin( $network_wide ) {
+	public function activate_plugin($network_wide)
+	{
 		global $wpdb;
 
-		if ( is_multisite() && $network_wide ) {
-			$sites = get_sites( [ 'fields' => 'ids' ] );
-			foreach ( $sites as $site_id ) {
-				switch_to_blog( $site_id );
+		if (is_multisite() && $network_wide) {
+			$sites = get_sites(['fields' => 'ids']);
+			foreach ($sites as $site_id) {
+				switch_to_blog($site_id);
 				$this->create_tables();
 				restore_current_blog();
 			}
@@ -273,20 +291,22 @@ class Main {
 		}
 	}
 
-	private function drop_tables() {
+	private function drop_tables()
+	{
 		global $wpdb;
 
 		$sql = "DROP TABLE IF EXISTS {$wpdb->prefix}index_now_log";
-		$wpdb->query( $sql );
+		$wpdb->query($sql);
 	}
 
-	private function create_tables( bool $upgrade = false ) {
+	private function create_tables(bool $upgrade = false)
+	{
 		global $wpdb;
 
 		$table_name      = $wpdb->prefix . 'index_now_log';
 		$charset_collate = $wpdb->get_charset_collate();
 
-		if ( $upgrade || $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) {
+		if ($upgrade || $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") !== $table_name) {
 			$sql = "CREATE TABLE {$wpdb->prefix}index_now_log (
     			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -298,27 +318,29 @@ class Main {
     			PRIMARY KEY (log_id)
 				) {$charset_collate};";
 
-			dbDelta( $sql );
+			dbDelta($sql);
 
-			Utils::set_db_version( Utils::get_plugin_version() );
+			Utils::set_db_version(Utils::get_plugin_version());
 		}
 	}
 
-	public function maybe_upgrade() {
+	public function maybe_upgrade()
+	{
 		$db_version     = Utils::get_db_version();
 		$plugin_version = Utils::get_plugin_version();
 
-		if ( version_compare( $db_version, $plugin_version, '<' ) ) {
-			$this->create_tables( true );
+		if (version_compare($db_version, $plugin_version, '<')) {
+			$this->create_tables(true);
 		}
 	}
 
 	/**
 	 * Add log menu page for dashboard.
 	 */
-	public function add_log_menu_page() {
+	public function add_log_menu_page()
+	{
 
-		if ( ! $this->is_logging_enabled() ) {
+		if ( ! $this->is_logging_enabled()) {
 			return;
 		}
 	}
@@ -326,10 +348,11 @@ class Main {
 	/**
 	 * Render log menu page for dashboard.
 	 */
-	public function render_log_page() {
+	public function render_log_page()
+	{
 		?>
 		<div class="wrap">
-			<h2><?php esc_html_e( get_admin_page_title(), 'mihdan-index-now' ); ?></h2>
+			<h2><?php esc_html_e(get_admin_page_title(), 'mihdan-index-now'); ?></h2>
 			<form action="" method="post">
 				<?php
 				/**
@@ -337,7 +360,7 @@ class Main {
 				 *
 				 * @var WP_List_Table $table
 				 */
-				$table = $GLOBALS[ MIHDAN_INDEX_NOW_PREFIX . '_log' ];
+				$table = $GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'];
 				$table->display();
 				?>
 			</form>
@@ -353,20 +376,22 @@ class Main {
 	 *
 	 * @return array
 	 */
-	public function add_settings_link( $actions, $plugin_file ) {
-		if ( Utils::get_plugin_basename() === $plugin_file ) {
+	public function add_settings_link($actions, $plugin_file)
+	{
+		if (Utils::get_plugin_basename() === $plugin_file) {
 			$actions[] = sprintf(
 				'<a href="%s">%s</a>',
-				admin_url( 'admin.php?page=' . Utils::get_plugin_slug() ),
-				esc_html__( 'Settings', 'mihdan-index-now' )
+				admin_url('admin.php?page=' . Utils::get_plugin_slug()),
+				esc_html__('Settings', 'mihdan-index-now')
 			);
 		}
 
 		return $actions;
 	}
 
-	private function is_logging_enabled(): bool {
-		return $this->wposa->get_option( 'enable', 'logs', 'on' ) === 'on';
+	private function is_logging_enabled(): bool
+	{
+		return $this->wposa->get_option('enable', 'logs', 'on') === 'on';
 	}
 
 	/**
@@ -374,12 +399,13 @@ class Main {
 	 *
 	 * @param WP_Post $post WP_Post unstance.
 	 */
-	public function google_webmaster_ping( WP_Post $post ) {
+	public function google_webmaster_ping(WP_Post $post)
+	{
 		$url = 'https://www.google.com/webmasters/sitemaps/ping?sitemap=%s';
-		$url = sprintf( $url, site_url( 'sitemap_index.xml' ) );
-		wp_remote_get( $url );
+		$url = sprintf($url, site_url('sitemap_index.xml'));
+		wp_remote_get($url);
 
-		$url = sprintf( $url, site_url( 'sitemap.xml' ) );
-		wp_remote_get( $url );
+		$url = sprintf($url, site_url('sitemap.xml'));
+		wp_remote_get($url);
 	}
 }

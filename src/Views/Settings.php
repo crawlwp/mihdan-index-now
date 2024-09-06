@@ -125,6 +125,8 @@ class Settings
 	 */
 	public function setup_fields()
 	{
+		if (wp_doing_ajax()) return;
+
 		$this->wposa->add_header_menu([
 			'id'    => 'index_settings',
 			'title' => __('Indexing', 'mihdan-index-now'),
@@ -335,6 +337,19 @@ class Settings
 				)
 			);
 
+			if ( ! $GLOBALS['CRAWLWP_BING_WEBMASTER']->is_connected()) {
+				$this->wposa->add_field(
+					'bing_webmaster',
+					array(
+						'type' => 'html',
+						'desc' => sprintf(
+							'<div class="notice notice-warning inline"><p>' . __('This setting will not work  because Bing API is not configured. Go to %sAPI Settings%s to set it up.', 'mihdan-index-now') . '</p></div>',
+							'<a target="_blank" href="' . MIHDAN_INDEX_NOW_API_SETTINGS_URL . '">', '</a>'
+						),
+					)
+				);
+			}
+
 			$this->wposa->add_field(
 				'bing_webmaster',
 				array(
@@ -353,6 +368,19 @@ class Settings
 				)
 			);
 
+			if ( ! $GLOBALS['CRAWLWP_GOOGLE_WEBMASTER']->is_connected()) {
+				$this->wposa->add_field(
+					'google_webmaster',
+					array(
+						'type' => 'html',
+						'desc' => sprintf(
+							'<div class="notice notice-warning inline"><p>' . __('This setting will not work  because Google API is not configured. Go to %sAPI Settings%s to set it up.', 'mihdan-index-now') . '</p></div>',
+							'<a target="_blank" href="' . MIHDAN_INDEX_NOW_API_SETTINGS_URL . '">', '</a>'
+						),
+					)
+				);
+			}
+
 			$this->wposa->add_field(
 				'google_webmaster',
 				array(
@@ -370,6 +398,19 @@ class Settings
 					'desc'           => sprintf(__('Enable to use Yandex API to request indexing. %sYandex supports the IndexNow protocol. You might not need to enable this if IndexNow is active.%s', 'mihdan-index-now'), '<strong>', '</strong>'),
 				)
 			);
+
+			if ( ! $GLOBALS['CRAWLWP_YANDEX_WEBMASTER']->is_connected()) {
+				$this->wposa->add_field(
+					'yandex_webmaster',
+					array(
+						'type' => 'html',
+						'desc' => sprintf(
+							'<div class="notice notice-warning inline"><p>' . __('This setting will not work  because Yandex API is not configured. Go to %sAPI Settings%s to set it up.', 'mihdan-index-now') . '</p></div>',
+							'<a target="_blank" href="' . MIHDAN_INDEX_NOW_API_SETTINGS_URL . '">', '</a>'
+						),
+					)
+				);
+			}
 
 			$this->wposa->add_field(
 				'yandex_webmaster',
