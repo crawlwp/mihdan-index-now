@@ -1542,13 +1542,6 @@ class WPOSA
 				z-index: 10;
 			}
 
-			.wposa {
-				position: relative;
-				clear: both;
-				z-index: 9;
-				top: -30px;
-			}
-
 			.wposa .button-danger {
 				color: #d63638;
 				border-color: #d63638;
