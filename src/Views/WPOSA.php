@@ -468,6 +468,29 @@ class WPOSA
 	 */
 	function admin_init()
 	{
+		if (isset($_REQUEST['action'], $_REQUEST['mihdan_index_now_options_save']) && $_REQUEST['action'] == 'update' && current_user_can('manage_options')) {
+
+			$option_page = ! empty($_REQUEST['option_page']) ? sanitize_text_field($_REQUEST['option_page']) : '';
+
+			check_admin_referer($option_page . '-options');
+
+			foreach ($_POST as $k => $v) {
+
+				if (strstr($k, 'submit_') !== false) {
+					$name = str_replace('submit_', '', $k);
+
+					$db_options = get_option($name, []);
+
+					$value = array_replace($db_options, $_POST[$name]);
+
+					update_option($name, wp_unslash($value));
+
+					wp_safe_redirect(Utils::get_current_url_query_string());
+					exit;
+				}
+			}
+
+		}
 		/**
 		 * Register the sections.
 		 *
@@ -1314,7 +1337,7 @@ class WPOSA
 					?>
 					<!-- style="display: none;" -->
 					<div id="<?php echo esc_attr($form['id']); ?>" class="group">
-						<form class="wposa__form" method="post" action="<?php echo esc_url(admin_url('options.php')); ?>">
+						<form class="wposa__form" method="post">
 							<?php
 							do_action('wsa_form_top_' . $form['id'], $form);
 							settings_fields($form['id']);
@@ -1323,6 +1346,7 @@ class WPOSA
 							?>
 							<div class="wposa-footer">
 								<div class="wposa-footer__column wposa-footer__column--left">
+									<input type="hidden" name="mihdan_index_now_options_save" value="true">
 									<?php submit_button($form['label_submit'], $form['submit_type'], 'submit_' . $form['id'], $form['wrap'], $form['attributes']); ?>
 								</div>
 								<div class="wposa-footer__column wposa-footer__column--right">
