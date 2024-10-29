@@ -1758,7 +1758,7 @@ class WPOSA
 			.wposa-plugins {
 				display: grid;
 				grid-gap: 20px;
-				grid-template-columns: repeat(3, 1fr);
+				grid-template-columns: repeat(2, 1fr);
 			}
 
 			.wposa-plugins a {
@@ -2024,6 +2024,49 @@ class WPOSA
 				position: relative;
 				top: 70px;
 				z-index: 99999;
+			}
+
+			/* CSS to relocate settings page top nav to sidebar	*/
+			.wposa__column.wposa__content {
+				display: flex;
+			}
+
+			.wposa-nav-tab-wrapper {
+				display: flex;
+				flex-direction: column;
+				width: 25%;
+				overflow: hidden;
+				gap: 8px;
+				padding-inline: 0;
+				align-items: normal;
+				background: #fafafa;
+				border: 0;
+				border-right: 1px solid #ccd0d4;
+			}
+
+			.wposa-nav-tab-wrapper a {
+				display: block;
+				overflow: hidden;
+				padding: 16px 24px;
+			}
+
+			.wposa-nav-tab.wposa-nav-tab-active {
+				box-shadow: none;
+				border-left: 2px solid #007cba;
+			}
+
+			#wpbody-content .wposa__content .metabox-holder {
+				padding: 24px;
+				padding-top: 6px;
+				width: 75%;
+			}
+
+			.wposa-nav-tab-wrapper .wposa-nav-tab:first-child {
+				padding-top: 24px;
+			}
+
+			.wposa-nav-tab-wrapper .wposa-nav-tab:last-child {
+				padding-bottom: 24px;
 			}
 		</style>
 		<?php

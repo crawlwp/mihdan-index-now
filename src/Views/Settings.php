@@ -553,7 +553,7 @@ class Settings
 
 								$plugin = (array)$plugin;
 
-								if ($plugin['slug'] == 'one-user-avatar') {
+								if (in_array($plugin['slug'], ['one-user-avatar', 'mihdan-index-now'])) {
 									continue;
 								}
 
