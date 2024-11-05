@@ -142,6 +142,8 @@ class Settings
 			'title' => __('Log', 'mihdan-index-now'),
 		]);
 
+		do_action('crawlwp_setup_fields', $this->wposa, $this);
+
 		$this->wposa
 			->add_sidebar_card(
 				[
@@ -154,7 +156,7 @@ class Settings
 				[
 					'id'    => 'rtfm',
 					'title' => __('Do you need help?', 'mihdan-index-now'),
-					'desc'  => __('<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://wordpress.org/plugins/mihdan-index-now/" target="_blank">Plugin home page</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/crawlwp/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now'),
+					'desc'  => __('<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://crawlwp.com" target="_blank">Plugin home page</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/crawlwp/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now'),
 				]
 			);
 
@@ -799,7 +801,6 @@ class Settings
 					'header_menu_id' => 'log',
 					'id'             => 'log',
 					'title'          => __('Indexing Log', 'mihdan-index-now'),
-					'desc'           => __('Sending a page for reindexing. Yandex supports the IndexNow protocol, so you might not need this if IndexNow is active', 'mihdan-index-now'),
 				)
 			);
 
@@ -812,7 +813,6 @@ class Settings
 					'desc' => function () {
 
 						ob_start();
-						echo '<h2>' . get_admin_page_title() . '</h2>';
 						echo '<form action="" method="post">';
 						/**
 						 * WP_List_table.

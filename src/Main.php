@@ -141,6 +141,8 @@ class Main
 		add_filter('set_screen_option_logs_per_page', [$this, 'set_screen_option'], 10, 3);
 		add_action('admin_init', [$this, 'maybe_upgrade']);
 
+		add_filter('removable_query_args', [$this, 'removable_query_args']);
+
 		if (class_exists('\Mihdan\IndexNow\Dependencies\PAnD')) {
 			// persist admin notice dismissal initialization
 			add_action('admin_init', ['\Mihdan\IndexNow\Dependencies\PAnD', 'init']);
@@ -169,6 +171,15 @@ class Main
 		// Multisite.
 		add_action('wp_delete_site', [$this, 'delete_site_tables']);
 		add_action('wp_insert_site', [$this, 'add_site_tables']);
+	}
+
+	public function removable_query_args($args = [])
+	{
+		$args[] = 'settings-updated';
+		$args[] = 'settings-added';
+		$args[] = 'license';
+
+		return $args;
 	}
 
 	/**
