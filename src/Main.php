@@ -18,6 +18,7 @@ use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
 use Mihdan\IndexNow\Views\HelpTab;
 use Mihdan\IndexNow\Views\Settings;
+use Mihdan\IndexNow\Views\UpsellAdminPages;
 use Mihdan\IndexNow\Views\WPOSA;
 use WP_Post;
 use WP_List_Table;
@@ -121,6 +122,7 @@ class Main
 		($this->make(SeznamIndexNow::class))->setup_hooks();
 		($this->make(NaverIndexNow::class))->setup_hooks();
 		($this->make(IndexNow::class))->setup_hooks();
+		($this->make(UpsellAdminPages::class));
 
 		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER'] = $this->make(YandexWebmaster::class);
 		$GLOBALS['CRAWLWP_BING_WEBMASTER']   = $this->make(BingWebmaster::class);

@@ -576,7 +576,7 @@ class WPOSA
 			 *
 			 * @since 1.0.0
 			 */
-			add_settings_section($section['id'], $section['title'], $callback, $section['id']);
+			add_settings_section($section['id'], $section['title'] ?? '', $callback, $section['id']);
 		} // foreach ended.
 		/**
 		 * Register settings fields.
@@ -1160,7 +1160,6 @@ class WPOSA
 	 */
 	public function admin_menu()
 	{
-
 		if ( ! empty($this->sub_menu_slug)) {
 
 			$hook = add_submenu_page(
@@ -2153,6 +2152,10 @@ class WPOSA
 			.card.wposa-card.wposa-card--mihdan_index_now_upsell_card {
 				border-radius: 0.375rem;
 				border-color: #2271b1;
+				padding: 1.5rem;
+			}
+			.wposa-card.wposa-card--mihdan_index_now_upsell_card h2 {
+				margin: 0;
 			}
 
 			.cwp-premium-sidebar-upsell-cta .button-primary {
