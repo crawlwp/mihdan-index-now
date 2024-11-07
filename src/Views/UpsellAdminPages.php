@@ -56,26 +56,26 @@ class UpsellAdminPages
 	{
 		if (wp_doing_ajax()) return;
 
-		$content = <<<CONTENT
-<div class="crawlwp-full-feature-upsell-page-wrap">
-<div class="crawlwp-upsell-top">
-<h2>See All Your Important Store Metrics in One Place</h2>
-<h4>Get an Answer to All Your Top Ecommerce Questions From a Single Report</h4>
-<div class="crawlwp-upsell-featured-image">
-<img src="https://upsell-design-inspo.instawp.xyz/wp-content/plugins/google-analytics-for-wordpress/lite/assets/vue/img/monsterinsights-report-ecommerce.png">
-</div>
-</div>
-<div class="crawlwp-upsell-bottom">
-<a target="_blank" href="#" class="btn-higher-up">Upgrade to MonsterInsights Pro</a>
-<div class="crawlwp-upsell-featured-image">
-<img src="https://upsell-design-inspo.instawp.xyz/wp-content/plugins/google-analytics-for-wordpress/lite/assets/vue/img/monsterinsights-report-ecommerce.png">
-</div>
-<h3>Enable Ecommerce Tracking and Grow Your Business with Confidence</h3>
-<p>MonsterInsights Ecommerce Addon makes it easy to setup enhanced eCommerce tracking, so you can see all your important eCommerce metrics like total revenue, conversion rate, average order value, top products, top referral sources, and more in a single report right inside your WordPress dashboard.</p>
-<a target="_blank" href="#">Upgrade to MonsterInsights Pro</a>
-</div>
-</div>
-CONTENT;
+		$upgrade_url = 'https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-seo-index-upsell-page';
+
+		$html = '<div class="crawlwp-full-feature-upsell-page-wrap">';
+		$html .= '<div class="crawlwp-upsell-top">';
+		$html .= sprintf('<h2>%s</h2>', esc_html__('Improve Your Website Indexing by Search Engines', 'mihdan-index-now'));
+		$html .= sprintf('<p>%s</p>', esc_html__('CrawlWP Premium regularly scan your WordPress site and submit pages and content for indexing that are not indexed by search engines.', 'mihdan-index-now'));
+		$html .= '<div class="crawlwp-upsell-featured-image">';
+		$html .= '<img src="'.MIHDAN_INDEX_NOW_ASSETS_URL.'img/crawlwp-content-indexing-stat-list.png">';
+		$html .= '</div>';
+		$html .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
+		$html .= '</div>';
+		$html .= '<div class="crawlwp-upsell-bottom">';
+		$html .= '<div class="crawlwp-upsell-featured-image">';
+		$html .= '<img src="https://crawlwp.com/wp-content/uploads/2024/10/crawlwp-indexing-stat.png">';
+		$html .= '</div>';
+		$html .= sprintf('<h3>%s</h3>', esc_html__('Search Engine Index History', 'mihdan-index-now'));
+		$html .= sprintf('<p>%s</p>', esc_html__('View records of every indexing done, last submitted date, and progress over time to understand better how search engines recognize your site.', 'mihdan-index-now'));
+		$html .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
+		$html .= '</div>';
+		$html .= '</div>';
 
 		$this->wposa->add_section([
 			'id' => 'seo_index_upsell',
@@ -87,7 +87,7 @@ CONTENT;
 				'id'   => 'pages',
 				'type' => 'html',
 				'name' => 'name',
-				'desc' => $content
+				'desc' => $html
 			]
 		);
 

@@ -2199,8 +2199,11 @@ class WPOSA
 			}
 
 			.crawlwp-upsell-top {
-				padding-left: 10px;
-				padding-right: 10px;
+				padding: 20px;
+			}
+
+			.crawlwp-upsell-featured-image {
+				padding: 10px 0;
 			}
 
 			.crawlwp-full-feature-upsell-page-wrap h2 {
@@ -2224,9 +2227,9 @@ class WPOSA
 			}
 
 			.crawlwp-upsell-bottom {
-				background: #f7f9fd;
+				background: rgb(250 250 250 / 63%);
 				border-top: 1px solid #d6e2ed;
-				padding: 36px 50px 30px;
+				padding: 36px 50px 60px;
 				position: relative;
 			}
 
@@ -2238,6 +2241,7 @@ class WPOSA
 			.crawlwp-full-feature-upsell-page-wrap p {
 				font-size: 14px;
 				color: #4c6577;
+				padding: 6px 0;
 			}
 		</style>
 		<?php
