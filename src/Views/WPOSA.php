@@ -71,6 +71,12 @@ class WPOSA
 			'width'  => true,
 			'height' => true,
 		],
+		'ul'    => [
+			'class' => true,
+		],
+		'li'    => [
+			'class' => true,
+		],
 		'p'        => [
 			'class' => true,
 		],
@@ -130,7 +136,33 @@ class WPOSA
 		'script'   => [
 			'src'   => true,
 			'async' => true,
-		]
+		],
+		'svg'      => array(
+			'class'   => true,
+			'xmlns'   => true,
+			'width'   => true,
+			'height'  => true,
+			'viewBox' => true,
+			'fill'    => true,
+		),
+		'g'        => array(
+			'clip-path' => true,
+		),
+		'path'     => array(
+			'd'            => true,
+			'stroke'       => true,
+			'stroke-width' => true,
+		),
+		'defs'     => true,
+		'clipPath' => array(
+			'id' => true,
+		),
+		'rect'     => array(
+			'width'  => true,
+			'height' => true,
+			'rx'     => true,
+			'fill'   => true,
+		),
 	];
 
 	/**
@@ -1211,16 +1243,16 @@ class WPOSA
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
 							<path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.5" d="m12 2l3.104 6.728l7.358.873l-5.44 5.03l1.444 7.268L12 18.28L5.534 21.9l1.444-7.268L1.538 9.6l7.359-.873L12 2Z"></path>
 						</svg>
-						<?php esc_html_e('Review', 'mihdan-index-now-pro'); ?>
+						<?php esc_html_e('Review', 'mihdan-index-now'); ?>
 					</a> <a href="https://feedbackwp.com/docs/" target="_blank" class="wposa-header-action translate">
 						<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 56 56">
 							<path fill="currentColor" d="M15.555 53.125h24.89c4.852 0 7.266-2.461 7.266-7.336V24.508c0-3.024-.328-4.336-2.203-6.258L32.57 5.102c-1.78-1.829-3.234-2.227-5.882-2.227H15.555c-4.828 0-7.266 2.484-7.266 7.36v35.554c0 4.898 2.438 7.336 7.266 7.336m.187-3.773c-2.414 0-3.68-1.29-3.68-3.633V10.305c0-2.32 1.266-3.657 3.704-3.657h10.406v13.618c0 2.953 1.5 4.406 4.406 4.406h13.36v21.047c0 2.343-1.243 3.633-3.68 3.633ZM31 21.132c-.914 0-1.29-.374-1.29-1.312V7.375l13.5 13.758Z"/>
 						</svg>
-						<?php esc_html_e('Documentation', 'mihdan-index-now-pro'); ?>
+						<?php esc_html_e('Documentation', 'mihdan-index-now'); ?>
 					</a>
 					<?php if ( ! defined('CRAWLWP_DETACH_LIBSODIUM')) { ?>
 						<a href="<?php echo $upgrade_url; ?>" target="_blank" class="button-primary plugin-upgrade">
-							<?php esc_html_e('CrawlWP Premium', 'mihdan-index-now-pro'); ?>
+							<?php esc_html_e('CrawlWP Premium', 'mihdan-index-now'); ?>
 						</a>
 					<?php } ?>
 				</div>
@@ -2093,6 +2125,41 @@ class WPOSA
 				color: #ffffff;
 				background: #2271b1;
 				border-radius: 4px;
+			}
+
+			/* upsell sidebar */
+			.cwp-premium-sidebar-upsell-ul {
+				margin-top: 1rem;
+				margin-bottom: 1.5rem;
+				list-style-type: none;
+				color: #374151;
+			}
+
+			.cwp-premium-sidebar-upsell-li {
+				display: flex;
+				margin-bottom: 0.75rem;
+				align-items: center;
+			}
+
+			.cwp-premium-sidebar-upsell-li svg {
+				width: 1.25rem;
+				height: 1.25rem;
+				color: #2271b1;
+			}
+
+			.cwp-premium-sidebar-upsell-li span {
+				margin-left: 0.5rem;
+			}
+			.card.wposa-card.wposa-card--mihdan_index_now_upsell_card {
+				border-radius: 0.375rem;
+				border-color: #2271b1;
+			}
+
+			.cwp-premium-sidebar-upsell-cta .button-primary {
+				padding-top: 6px;
+				padding-bottom: 6px;
+				line-height: inherit;
+				margin-right: 6px;
 			}
 		</style>
 		<?php

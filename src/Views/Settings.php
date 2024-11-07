@@ -144,21 +144,58 @@ class Settings
 
 		do_action('crawlwp_setup_fields', $this->wposa, $this);
 
-		$this->wposa
-			->add_sidebar_card(
+		if (!defined('CRAWLWP_DETACH_LIBSODIUM')) {
+
+			$this->wposa->add_sidebar_card(
 				[
-					'id'    => 'donate',
-					'title' => __('Enjoyed IndexNow?', 'mihdan-index-now'),
-					'desc'  => __('<p>Please leave us a <a href="https://wordpress.org/support/plugin/mihdan-index-now/reviews/#new-post" target="_blank" title="Rate &amp; review it">★★★★★</a> rating. We really appreciate your support</p>', 'mihdan-index-now'),
-				]
-			)
-			->add_sidebar_card(
-				[
-					'id'    => 'rtfm',
-					'title' => __('Do you need help?', 'mihdan-index-now'),
-					'desc'  => __('<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://crawlwp.com" target="_blank">Plugin home page</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/crawlwp/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now'),
+					'id'    => 'upsell_card',
+					'title' => __('Get CrawlWP Premium', 'mihdan-index-now'),
+					'desc'  => (function () {
+
+						$upgrade_url    = 'https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-settings-page-sidebar-card';
+						$learn_more_url = 'https://crawlwp.com/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-settings-page-sidebar-card';
+
+						$pro_features = [
+							esc_html__('Google Search Insights', 'mihdan-index-now'),
+							esc_html__('Auto Indexing', 'mihdan-index-now'),
+							esc_html__('Index Status Insights', 'mihdan-index-now'),
+							esc_html__('Index History', 'mihdan-index-now'),
+							esc_html__('Keyword Tracking', 'mihdan-index-now'),
+						];
+
+						$svg = '<svg class="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none"><g clip-path="url(#clip0_6404_1763)"><path d="M12.9955 5.64817L7.93251 12.4574L4.99665 10.2744" stroke="#5A03EF" stroke-width="1.5"></path></g><defs><clipPath id="clip0_6404_1763"><rect width="18" height="18" rx="9" fill="white"></rect></clipPath></defs></svg>';
+
+						$html = sprintf(
+							'<p>%s</p>',
+							esc_html__('Boost and monitor the visibility of your WordPress website on search engines with CrawlWP Premium.', 'mihdan-index-now')
+						);
+
+						$html .= '<ul class="cwp-premium-sidebar-upsell-ul">';
+						foreach ($pro_features as $feature) {
+							$html .= sprintf('<li class="cwp-premium-sidebar-upsell-li">%s <span>%s</span></li>', $svg, $feature);
+						}
+						$html .= '</ul>';
+
+						$html .= sprintf(
+							'<div class="cwp-premium-sidebar-upsell-cta"><a target="_blank" href="%s" class="button-primary">%s</a> <a target="_blank" href="%s">%s</a></div>',
+							$upgrade_url, esc_html__('Upgrade Now', 'mihdan-index-now'),
+							$learn_more_url, esc_html__('Learn more', 'mihdan-index-now')
+						);
+
+						return $html;
+
+					})(),
 				]
 			);
+		}
+
+		$this->wposa->add_sidebar_card(
+			[
+				'id'    => 'rtfm',
+				'title' => __('Do you need help?', 'mihdan-index-now'),
+				'desc'  => __('<p>Here are some available options to help solve your problems.</p><ol><li><a href="https://crawlwp.com" target="_blank">Plugin home page</a></li><li><a href="https://wordpress.org/support/plugin/mihdan-index-now/" target="_blank">Support forums</a></li><li><a href="https://github.com/crawlwp/mihdan-index-now/" target="_blank">Issue tracker</a></li></ol>', 'mihdan-index-now'),
+			]
+		);
 
 
 		if ($this->wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_index_settings') {
