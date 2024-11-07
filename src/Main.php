@@ -122,7 +122,11 @@ class Main
 		($this->make(SeznamIndexNow::class))->setup_hooks();
 		($this->make(NaverIndexNow::class))->setup_hooks();
 		($this->make(IndexNow::class))->setup_hooks();
-		($this->make(UpsellAdminPages::class));
+		add_action('plugins_loaded', function () {
+			if ( ! defined('CRAWLWP_DETACH_LIBSODIUM')) {
+				($this->make(UpsellAdminPages::class));
+			}
+		});
 
 		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER'] = $this->make(YandexWebmaster::class);
 		$GLOBALS['CRAWLWP_BING_WEBMASTER']   = $this->make(BingWebmaster::class);

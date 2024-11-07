@@ -2164,6 +2164,81 @@ class WPOSA
 				line-height: inherit;
 				margin-right: 6px;
 			}
+
+		  /* upsell page */
+			.crawlwp-full-feature-upsell-page-wrap {
+				background: #fff;
+				border: 1px solid #d6e2ed;
+				text-align: center;
+				margin-top: 25px;
+				margin-left: auto;
+				margin-right: auto;
+				max-width: 750px;
+			}
+
+			.crawlwp-full-feature-upsell-page-wrap a {
+				border-style: solid;
+				border-width: 1px 1px 2px 1px;
+				border-radius: 3px;
+				cursor: pointer;
+				display: inline-block;
+				font-weight: 400;
+				text-decoration: none;
+				background: #2271b1;
+				border-color: #2271b1;
+				color: #fff;
+				font-size: 16px;
+				padding: 14px 27px;
+			}
+
+			.btn-higher-up {
+				position: absolute;
+				top: 0;
+				left: 50%;
+				transform: translate(-50%, -50%);
+			}
+
+			.crawlwp-upsell-top {
+				padding-left: 10px;
+				padding-right: 10px;
+			}
+
+			.crawlwp-full-feature-upsell-page-wrap h2 {
+				font-size: 20px;
+				color: #000;
+				margin: 36px 0 14px;
+			}
+
+			.crawlwp-full-feature-upsell-page-wrap h4 {
+				font-size: 18px;
+				color: #4c6577;
+				font-weight: 400;
+				margin: 0;
+				line-height: 2;
+			}
+
+			.crawlwp-full-feature-upsell-page-wrap h3 {
+				font-size: 18px;
+				color: #000;
+				margin: 0 0 14px;
+			}
+
+			.crawlwp-upsell-bottom {
+				background: #f7f9fd;
+				border-top: 1px solid #d6e2ed;
+				padding: 36px 50px 30px;
+				position: relative;
+			}
+
+			.crawlwp-upsell-featured-image img {
+				width: 100%;
+				height: auto;
+			}
+
+			.crawlwp-full-feature-upsell-page-wrap p {
+				font-size: 14px;
+				color: #4c6577;
+			}
 		</style>
 		<?php
 	}
