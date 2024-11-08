@@ -1,6 +1,6 @@
 {
   "name": "mihdan/index-now",
-  "description": "Плагин уведомлений поисковых систем Яндекс/Google/Bing/Cloudflare о появлении новых страниц на сайте по протоколу IndexNow.",
+  "description": "SEO plugin for indexing WordPress content and monitoring search engine performance.",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "autoload": {
@@ -36,7 +36,8 @@
     "collizo4sky/persist-admin-notices-dismissal": "^1.4",
     "writecrow/country_code_converter": "^1.2",
     "nesbot/carbon": "^2.72",
-    "martin-hughes/auryn": "^1.4"
+    "martin-hughes/auryn": "^1.4",
+    "sniccowp/php-scoper-wordpress-excludes": "^6.5"
   },
   "scripts": {
     "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
@@ -67,7 +68,8 @@
       "rm -fr ./vendor/deliciousbrains",
       "rm -fr ./vendor/collizo4sky",
       "rm -fr ./vendor/carbonphp",
-      "rm -fr ./vendor/nesbot"
+      "rm -fr ./vendor/nesbot",
+      "rm -fr ./vendor/sniccowp"
     ]
   },
   "extra": {
@@ -75,8 +77,5 @@
       "Indexing",
       "SearchConsole"
     ]
-  },
-  "require-dev": {
-    "sniccowp/php-scoper-wordpress-excludes": "^6.5"
   }
 }
