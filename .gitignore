@@ -39,3 +39,4 @@ node_modules/
 php-scoper/vendor/*
 build/*
 vendor-prefixed/*
+composer.lock
