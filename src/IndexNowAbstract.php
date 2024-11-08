@@ -80,10 +80,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		add_action( 'mihdan_index_now/post_added', [ $this, 'ping_on_post_update' ], 10, 2 );
 		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping_on_post_update' ], 10, 2 );
 
-		if ( $this->is_ping_on_comment() ) {
-			add_action( 'mihdan_index_now/comment_updated', [ $this, 'ping_on_insert_comment' ], 10, 2 );
-		}
-
 		if ( $this->is_ping_on_term() ) {
 			add_action( 'mihdan_index_now/term_updated', [ $this, 'ping_on_insert_term' ], 10, 2 );
 		}
@@ -94,18 +90,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 
 	public function is_enabled(): bool {
 		return $this->wposa->get_option( 'enable', 'index_now', 'on' ) === 'on';
-	}
-
-	private function is_ping_on_comment(): bool {
-		return $this->wposa->get_option( 'ping_on_comment', 'general', 'off' ) === 'on';
-	}
-
-	private function is_ping_on_post_added(): bool {
-		return $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on';
-	}
-
-	private function is_ping_on_post_updated(): bool {
-		return $this->wposa->get_option( 'ping_on_post_updated', 'general', 'on' ) === 'on';
 	}
 
 	private function is_ping_on_term(): bool {
@@ -132,10 +116,6 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 		$this->maybe_do_ping_post( $post_id );
 	}
 
-	public function ping_on_insert_comment( int $post_id, WP_Comment $comment ) {
-		$this->maybe_do_ping_post( $post_id );
-	}
-
 	public function ping_on_insert_term( int $term_id, string $taxonomy ) {
 		$this->maybe_do_ping_term( $term_id, $taxonomy );
 	}
@@ -144,6 +124,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 
 		if ( $this->get_current_search_engine() === $this->get_slug() ) {
 			$this->push( [ get_permalink( $post_id ) ] );
+
+			do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 		}
 	}
 
@@ -155,6 +137,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface {
 
 		if ( $this->get_current_search_engine() === $this->get_slug() ) {
 			$this->push( [ get_term_link( $term_id, $taxonomy ) ] );
+
+			do_action('mihdan_index_now/index_pinged', 'taxonomy', $term_id);
 		}
 	}
 

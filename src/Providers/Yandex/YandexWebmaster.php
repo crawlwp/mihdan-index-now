@@ -187,6 +187,8 @@ class YandexWebmaster extends WebmasterAbstract {
 
 		$url = sprintf( $this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id() );
 
+		$post_url = Utils::normalize_url(get_permalink( $post_id ));
+
 		$args = array(
 			'timeout' => 30,
 			'headers' => array(
@@ -195,7 +197,7 @@ class YandexWebmaster extends WebmasterAbstract {
 			),
 			'body'    => wp_json_encode(
 				array(
-					'url' => get_permalink( $post_id ),
+					'url' => $post_url,
 				)
 			),
 		);
@@ -210,11 +212,13 @@ class YandexWebmaster extends WebmasterAbstract {
 		];
 
 		if ( Utils::is_response_code_success( $status_code ) ) {
-			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', get_permalink( $post_id ), get_the_title( $post_id ) );
+			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title( $post_id ) );
 			$this->logger->info( $message, $data );
 		} else {
 			$this->logger->error( $body['error_message'], $data );
 		}
+
+		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 	}
 
 	public function get_quota(): array {
