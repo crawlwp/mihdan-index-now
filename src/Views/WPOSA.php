@@ -1224,7 +1224,7 @@ class WPOSA
 		<div class="wposa">
 			<div class="wposa-new-header">
 				<div class="wposa-branding">
-					<img class="wposa-logo" src="<?php echo esc_url(Utils::get_plugin_asset_url('images/icons/index-now-logo--gradient.svg')); ?>" width="80" alt=""/>
+					<img class="wposa-logo" src="<?php echo esc_url(Utils::get_plugin_asset_url('images/icons/crawlwp-favicon.svg')); ?>" width="80" alt=""/>
 					<h1><?php echo $this->sub_page_title ?></h1>
 				</div>
 

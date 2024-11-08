@@ -27,8 +27,6 @@ use Mihdan\IndexNow\Dependencies\Auryn\InjectionException;
 use Mihdan\IndexNow\Dependencies\Auryn\ConfigException;
 use WP_Site;
 
-define('MIHDAN_INDEX_NOW_ASSETS_URL', plugins_url('assets/',__FILE__));
-
 class Main
 {
 	/**
