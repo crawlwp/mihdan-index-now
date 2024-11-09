@@ -71,10 +71,10 @@ class WPOSA
 			'width'  => true,
 			'height' => true,
 		],
-		'ul'    => [
+		'ul'       => [
 			'class' => true,
 		],
-		'li'    => [
+		'li'       => [
 			'class' => true,
 		],
 		'p'        => [
@@ -512,6 +512,8 @@ class WPOSA
 					$name = str_replace('submit_', '', $k);
 
 					$db_options = get_option($name, []);
+
+					$db_options = ! is_array($db_options) ? [] : $db_options;
 
 					$value = array_replace($db_options, $_POST[$name]);
 
@@ -2149,11 +2151,13 @@ class WPOSA
 			.cwp-premium-sidebar-upsell-li span {
 				margin-left: 0.5rem;
 			}
+
 			.card.wposa-card.wposa-card--mihdan_index_now_upsell_card {
 				border-radius: 0.375rem;
 				border-color: #2271b1;
 				padding: 1.5rem;
 			}
+
 			.wposa-card.wposa-card--mihdan_index_now_upsell_card h2 {
 				margin: 0;
 			}
@@ -2165,7 +2169,7 @@ class WPOSA
 				margin-right: 6px;
 			}
 
-		  /* upsell page */
+			/* upsell page */
 			.crawlwp-full-feature-upsell-page-wrap {
 				background: #fff;
 				border: 1px solid #d6e2ed;

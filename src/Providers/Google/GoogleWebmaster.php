@@ -58,11 +58,15 @@ class GoogleWebmaster extends WebmasterAbstract {
 	 */
 	public function ping( int $post_id ) {
 
+		$token = $this->get_token();
+
+		if(empty($token)) return;
+
 		try {
 			/** @var Client $client */
 			$client = new Client();
 			$client->setApplicationName( Utils::get_plugin_name() );
-			$client->setAuthConfig( json_decode( $this->get_token(), true ) );
+			$client->setAuthConfig( json_decode( $token, true ) );
 			$client->addScope( Indexing::INDEXING );
 			$client->setUseBatch( true );
 
