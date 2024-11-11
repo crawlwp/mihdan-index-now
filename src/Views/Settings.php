@@ -711,7 +711,7 @@ class Settings
 					'type'        => 'textarea',
 					'name'        => __('Google JSON Key', 'mihdan-index-now'),
 					'placeholder' => __('Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now'),
-					'desc'        => __('Paste the Service Account JSON key file contents you obtained from Google API Console in the field.', 'mihdan-index-now'),
+					'desc'        => __('Paste the Service Account JSON key file contents you obtained from Google Cloud Console in the field.', 'mihdan-index-now'),
 					'help_tab'    => 'google_webmaster_json_key',
 				)
 			);

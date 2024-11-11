@@ -179,7 +179,7 @@ class HelpTab {
 							<a href="#steps-to-create-an-indexing-api-project">1. Steps to Create an Indexing API Project</a>
 							<ul>
 								<li>
-									<a href="#go-to-the-google-api-console-and-create-a-new-project">1.1 Go to the Google API Console and create a new project</a>
+									<a href="#go-to-the-google-api-console-and-create-a-new-project">1.1 Go to the Google Cloud Console and create a new project</a>
 								</li>
 								<li><a href="#now-create-a-service-account">1.2 Now create a Service Account</a></li>
 								<li>
@@ -199,7 +199,7 @@ class HelpTab {
 
 					<h2 id="steps-to-create-an-indexing-api-project">1. Steps to Create an Indexing API Project</h2>
 
-					<h3 id="go-to-the-google-api-console-and-create-a-new-project">1.1 Go to the Google API Console and create a new project</h3>
+					<h3 id="go-to-the-google-api-console-and-create-a-new-project">1.1 Go to the Google Cloud Console and create a new project</h3>
 					<p>Ensure that you’re creating a new <i>Indexing API</i> project which you can do automatically by
 						<a href="https://console.cloud.google.com/apis/enableflow?apiid=indexing.googleapis.com,searchconsole.googleapis.com&credential=client_key"
 						   target="_blank">clicking here</a>. And then click <b>continue</b>.</p>
