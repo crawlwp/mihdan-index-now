@@ -260,4 +260,13 @@ class Utils
 
 		return esc_url_raw($url);
 	}
+
+	public static function clean_data($var, $callback = 'sanitize_textarea_field')
+	{
+		if (is_array($var)) {
+			return array_map([__CLASS__, 'clean_data'], $var);
+		} else {
+			return is_scalar($var) ? call_user_func($callback, $var) : $var;
+		}
+	}
 }

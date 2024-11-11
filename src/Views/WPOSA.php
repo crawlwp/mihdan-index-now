@@ -515,9 +515,9 @@ class WPOSA
 
 					$db_options = ! is_array($db_options) ? [] : $db_options;
 
-					$value = array_replace($db_options, $_POST[$name]);
+					$value = array_replace($db_options, wp_unslash(Utils::clean_data($_POST[$name])));
 
-					update_option($name, wp_unslash($value));
+					update_option($name, $value);
 
 					wp_safe_redirect(Utils::get_current_url_query_string());
 					exit;
