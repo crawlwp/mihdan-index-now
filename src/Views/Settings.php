@@ -679,8 +679,7 @@ class Settings
 				array(
 					'header_menu_id' => 'api_settings',
 					'id'             => 'bing_webmaster',
-					'title'          => __('Bing API', 'mihdan-index-now'),
-					'desc'           => sprintf(__('Easy to plug-in API solution that websites can call to notify Bing whenever website contents is updated or created allowing instant crawling, indexing and discovery of your site content. %sBing supports the IndexNow protocol. You do not need to enable this if IndexNow is active.%s', 'mihdan-index-now'), '<strong>', '</strong>'),
+					'title'          => __('Bing API', 'mihdan-index-now')
 				)
 			);
 
@@ -699,8 +698,7 @@ class Settings
 				array(
 					'header_menu_id' => 'api_settings',
 					'id'             => 'google_webmaster',
-					'title'          => __('Google API', 'mihdan-index-now'),
-					'desc'           => __('Google Instant Indexing API Settings. For notifying Google via the Instant Indexing API when a post is published, edited, or deleted.', 'mihdan-index-now'),
+					'title'          => __('Google API', 'mihdan-index-now')
 				)
 			);
 
@@ -720,8 +718,7 @@ class Settings
 				array(
 					'header_menu_id' => 'api_settings',
 					'id'             => 'yandex_webmaster',
-					'title'          => __('Yandex API', 'mihdan-index-now'),
-					'desc'           => __('Sending a page for reindexing. Yandex supports the IndexNow protocol, so you might not need this if IndexNow is active', 'mihdan-index-now'),
+					'title'          => __('Yandex API', 'mihdan-index-now')
 				)
 			);
 
