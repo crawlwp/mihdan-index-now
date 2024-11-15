@@ -658,6 +658,14 @@ class WPOSA
 					'class'             => $class,
 				);
 
+				if (isset($field['value'])) {
+					$args['value'] = $field['value'];
+				}
+
+				if (isset($field['attributes'])) {
+					$args['attributes'] = array_merge($args['attributes'], $field['attributes']);
+				}
+
 				if ( ! empty($field['button_class'])) {
 					$args['button_class'] = $field['button_class'];
 				}
@@ -805,8 +813,7 @@ class WPOSA
 	 */
 	function callback_text($args)
 	{
-
-		$value = esc_attr($this->get_option($args['id'], $args['section'], $args['std']));
+		$value = isset($args['value']) ? esc_attr($args['value']) : esc_attr($this->get_option($args['id'], $args['section'], $args['std']));
 		$size  = isset($args['size']) && ! is_null($args['size']) ? $args['size'] : 'regular';
 		$type  = isset($args['type']) ? $args['type'] : 'text';
 
@@ -1433,7 +1440,7 @@ class WPOSA
 		<script>
 			(function ($) {
 
-				$(document).on('ready', function () {
+				$(document).ready(function () {
 
 					const
 						$show_settings_toggler = $('.show-settings'),

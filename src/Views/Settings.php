@@ -144,7 +144,7 @@ class Settings
 
 		do_action('crawlwp_setup_fields', $this->wposa, $this);
 
-		if (!defined('CRAWLWP_DETACH_LIBSODIUM')) {
+		if ( ! defined('CRAWLWP_DETACH_LIBSODIUM')) {
 
 			$this->wposa->add_sidebar_card(
 				[
@@ -725,22 +725,32 @@ class Settings
 			$this->wposa->add_field(
 				'yandex_webmaster',
 				array(
-					'id'          => 'client_id',
-					'type'        => 'text',
-					'help_tab'    => 'yandex_webmaster_authorization',
-					'name'        => __('ClientID', 'mihdan-index-now'),
-					'placeholder' => __('Example 12c41fd597854d47b2911716d7f71e2f', 'mihdan-index-now'),
+					'id'       => 'client_id',
+					'type'     => 'text',
+					'help_tab' => 'yandex_webmaster_authorization',
+					'name'     => __('ClientID', 'mihdan-index-now')
 				)
 			);
 
 			$this->wposa->add_field(
 				'yandex_webmaster',
 				array(
-					'id'          => 'client_secret',
-					'type'        => 'text',
-					'help_tab'    => 'yandex_webmaster_authorization',
-					'name'        => __('Client secret', 'mihdan-index-now'),
-					'placeholder' => __('Example 1a4c5831b44e469f8a86c36fd88101f5', 'mihdan-index-now'),
+					'id'       => 'client_secret',
+					'type'     => 'text',
+					'help_tab' => 'yandex_webmaster_authorization',
+					'name'     => __('Client secret', 'mihdan-index-now')
+				)
+			);
+
+			$this->wposa->add_field(
+				'yandex_webmaster',
+				array(
+					'id'       => '',
+					'type'     => 'text',
+					'readonly' => true,
+					'help_tab' => 'yandex_webmaster_authorization',
+					'name'     => __('Redirect URI', 'mihdan-index-now'),
+					'value'    => MIHDAN_INDEX_NOW_API_SETTINGS_URL
 				)
 			);
 
