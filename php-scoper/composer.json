@@ -1,0 +1,14 @@
+{
+  "require": {
+    "humbug/php-scoper": "^0.18.0"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "preferred-install": "dist",
+    "sort-packages": true,
+    "platform": {
+      "php": "8.1"
+    }
+  }
+}
