@@ -29,13 +29,6 @@ class Settings
 	public $wposa;
 
 	/**
-	 * HelpTab instance.
-	 *
-	 * @var HelpTab $help_tab
-	 */
-	public $help_tab;
-
-	/**
 	 * Array of post types.
 	 *
 	 * @var array $post_types
@@ -51,13 +44,11 @@ class Settings
 	 * Constructor.
 	 *
 	 * @param WPOSA $wposa WPOSA instance.
-	 * @param HelpTab $help_tab HelpTab instance.
 	 */
-	public function __construct(Logger $logger, WPOSA $wposa, HelpTab $help_tab)
+	public function __construct(Logger $logger, WPOSA $wposa)
 	{
 		$this->logger   = $logger;
 		$this->wposa    = $wposa;
-		$this->help_tab = $help_tab;
 	}
 
 	/**
@@ -689,8 +680,7 @@ class Settings
 					'id'          => 'api_key',
 					'type'        => 'text',
 					'name'        => __('API Key', 'mihdan-index-now'),
-					'help_tab'    => 'bing_webmaster_api_key',
-					'placeholder' => __('Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now'),
+					'help_tab'    => 'https://crawlwp.com/article/integrating-wordpress-with-bing/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=bing_api',
 				)
 			);
 
@@ -708,9 +698,8 @@ class Settings
 					'id'          => 'json_key',
 					'type'        => 'textarea',
 					'name'        => __('Google JSON Key', 'mihdan-index-now'),
-					'placeholder' => __('Example AQAAAAAAWDmFAAbgvUbjwWHB8EkDoF387hLTUta', 'mihdan-index-now'),
 					'desc'        => __('Paste the Service Account JSON key file contents you obtained from Google Cloud Console in the field.', 'mihdan-index-now'),
-					'help_tab'    => 'google_webmaster_json_key',
+					'help_tab'    => 'https://crawlwp.com/article/integrating-wordpress-with-google-search/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=google_api'
 				)
 			);
 
@@ -727,7 +716,7 @@ class Settings
 				array(
 					'id'       => 'client_id',
 					'type'     => 'text',
-					'help_tab' => 'yandex_webmaster_authorization',
+					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-yandex/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=yandex_api',
 					'name'     => __('ClientID', 'mihdan-index-now')
 				)
 			);
@@ -737,7 +726,7 @@ class Settings
 				array(
 					'id'       => 'client_secret',
 					'type'     => 'text',
-					'help_tab' => 'yandex_webmaster_authorization',
+					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-yandex/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=yandex_api',
 					'name'     => __('Client secret', 'mihdan-index-now')
 				)
 			);
@@ -748,7 +737,7 @@ class Settings
 					'id'       => '',
 					'type'     => 'text',
 					'readonly' => true,
-					'help_tab' => 'yandex_webmaster_authorization',
+					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-yandex/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=yandex_api',
 					'name'     => __('Redirect URI', 'mihdan-index-now'),
 					'value'    => MIHDAN_INDEX_NOW_API_SETTINGS_URL
 				)

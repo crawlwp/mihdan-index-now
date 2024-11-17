@@ -16,7 +16,6 @@ use Mihdan\IndexNow\Providers\Seznam\SeznamIndexNow;
 use Mihdan\IndexNow\Providers\Naver\NaverIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
-use Mihdan\IndexNow\Views\HelpTab;
 use Mihdan\IndexNow\Views\Settings;
 use Mihdan\IndexNow\Views\UpsellAdminPages;
 use Mihdan\IndexNow\Views\WPOSA;
@@ -111,7 +110,6 @@ class Main
 
 		($this->make(Hooks::class))->setup_hooks();
 
-		($this->make(HelpTab::class))->setup_hooks();
 		($this->make(Settings::class))->setup_hooks();
 		($this->make(Cron::class))->setup_hooks();
 		($this->make(YandexIndexNow::class))->setup_hooks();

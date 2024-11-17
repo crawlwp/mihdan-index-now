@@ -1422,9 +1422,15 @@ class WPOSA
 	 */
 	private function show_help_tab_toggle($tab_id, $tab_icon = '?')
 	{
+		$is_url = strstr($tab_id, 'http');
+		$href = $is_url ? $tab_id : '#';
+		$title = $is_url ? esc_attr__('Click to view help guide', 'mihdan-index-now') : esc_attr__('Click to show Help tab', 'mihdan-index-now');
+
+		$class = 'wpsa-help-tab-toggle' . ($is_url ? ' is-url' : '');
+		$target = $is_url ? '_blank' : '_self';
 		ob_start();
 		?>
-		<a title="<?php echo esc_attr__('Click to show Help tab', 'mihdan-index-now'); ?>" class="wpsa-help-tab-toggle" data-tab="<?php echo esc_attr($tab_id); ?>"><?php echo esc_html($tab_icon); ?></a>
+		<a href="<?php echo $href ?>" target="<?php echo $target ?>" title="<?php echo $title ?>" class="<?php echo $class ?>" data-tab="<?php echo esc_attr($tab_id); ?>"><?php echo esc_html($tab_icon); ?></a>
 		<?php
 		return ob_get_clean();
 	}
@@ -1444,7 +1450,7 @@ class WPOSA
 
 					const
 						$show_settings_toggler = $('.show-settings'),
-						$help = $('.wpsa-help-tab-toggle'),
+						$help = $('.wpsa-help-tab-toggle').not('.is-url'),
 						wp = window.wp;
 
 					$help.on(
@@ -1655,6 +1661,11 @@ class WPOSA
 				font-size: 12px;
 				vertical-align: text-bottom;
 				user-select: none;
+				text-decoration: none;
+			}
+
+			.wpsa-help-tab-toggle.is-url {
+				cursor: pointer;
 			}
 
 			.wposa__grid {
