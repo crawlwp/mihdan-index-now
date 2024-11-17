@@ -47,8 +47,7 @@
       "mkdir -p ./vendor-prefixed"
     ],
     "prefix-dependencies": [
-      "@composer --working-dir=php-scoper install",
-      "php-scoper/vendor/bin/php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet",
+      "@php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet",
       "@remove-vendor",
       "@composer dump-autoload",
       "cp -R vendor/* vendor-prefixed/",
