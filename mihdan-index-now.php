@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: CrawlWP SEO - Index Now & SEO Insights
+ * Plugin Name: CrawlWP SEO - Instant Indexing & SEO Insights
  * Description: SEO plugin for indexing WordPress content and monitoring search engine performance.
  * Version: 3.0.0
  * Author: CrawlWP

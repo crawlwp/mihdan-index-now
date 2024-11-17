@@ -2195,7 +2195,7 @@ class WPOSA
 				margin-top: 25px;
 				margin-left: auto;
 				margin-right: auto;
-				max-width: 750px;
+				max-width: 900px;
 			}
 
 			.crawlwp-full-feature-upsell-page-wrap a {
