@@ -1,0 +1,140 @@
+﻿== Changelog ==
+
+= 3.0.0 =
+* Redesigned admin page.
+* Premium Feature: [SEO Stats](https://crawlwp.com/?ref=changelog#features)
+* Premium Feature: [SEO Indexing](https://crawlwp.com/?ref=changelog#features)
+
+= 2.6.4 (12.01.2024) =
+* Fixed security issue
+
+= 2.6.3 (21.11.2023) =
+* Added support for WordPress 6.4+
+
+= 2.6.2 (05.10.2023) =
+* Updated Bing API inline documentation
+
+= 2.6.1 (02.10.2023) =
+* Improved hook `mihdan_index_now/comment_updated`
+* Improved plugin speed
+
+= 2.6.0 (05.09.2023) =
+* Added support for naver.com provider
+* Added support for WordPress 6.3+
+* Added support for ThumbPress plugin
+
+= 2.5.5 (11.05.2023) =
+* API key excluded from caching process.
+
+= 2.5.4 (11.05.2023) =
+* Fixed API key check when enabling subdirectories in multisite mode
+
+= 2.5.3 (14.04.2023) =
+* Added button to reset the form settings
+* Code refactoring
+
+= 2.5.2 (12.04.2023) =
+* Added support for WordPress 6.2+
+* Added an option for setting the delay time of notifications per post
+* Added an option to configure detailed notifications when adding or updating post
+* Added IndexNow colum to WP List Tables
+* Added a tab for installing other plugins by the author
+* Fixed saving empty taxonomy array error
+* Code refactoring
+
+= 2.5.1 (25.03.2023) =
+* Updated the built-in documentation
+
+= 2.5.0 (23.03.2023) =
+* Added support for WordPress 6.1+
+* Added support for Multisite
+
+= 2.4.1 (06.08.2022) =
+* Added an option to disable the plugin on the Bulk Edit screen
+* Fixed integration with Seznam provider
+
+= 2.4.0 (16.06.2022) =
+* Added support for WordPress 6.0
+* Added support for Seznam.cz provider
+* Updated built-in documentation
+* Disabled integration with [Adfinity.pro](https://bit.ly/3vdOhUR)
+
+= 2.3.2 (02.03.2022) =
+* Integrated with [Adfinity.pro](https://bit.ly/3vdOhUR)
+
+= 2.3.1 (28.01.2022) =
+* Fixed a bug with the exclusion of Post Types from notifications
+
+= 2.3.0 (23.01.2022) =
+* Added Google Webmaster ping via API
+* Added more documentation
+* Updated plugin assets
+
+= 2.2.0 (14.01.2022) =
+* Added new hook `mihdan_index_now/post_updated`
+* Added new hook `mihdan_index_now/comment_updated`
+* Added new hook `mihdan_index_now/term_updated`
+* Added default settings when installing the plugin
+* Added ability to notify the search engine when terms (tags, categories, etc.) are updated
+* Added ability to disable logging cron events
+* Added ability to disable logging bulk actions
+* Added ability to disable logging outgoing request
+
+= 2.1.0 (13.01.2022) =
+* Added indexnow.org ping
+* Added plugin assets
+* Fixed bug with Bing Webmaster ping
+
+= 2.0.2 (12.01.2022) =
+* Added a contact for help via Telegram
+* Added support for AMP plugin
+* Updated flow to get Access Token for Yandex Webmaster tab.
+* Updated instruction for Yandex Webmaster tab
+* Fixed fatal error when deleting records
+
+= 2.0.1 (11.01.2022) =
+* Added Yandex Webmaster ping
+
+= 2.0.0 (09.01.2022) =
+* Added Bing Webmaster ping
+* Remove Contacts tab
+* Requests with a status code more than 200 and less than 300 are no longer considered an error
+
+= 1.2.0 (08.11.2021) =
+* Added Help tab
+* Added sidebar help links
+* Added Log for incoming request
+* Push search engine on insert comment
+
+= 1.1.5 (05.11.2021) =
+* Fixed bug with current time for Log table
+* Remove Log table on plugin uninstall
+* Set minimum requirement PHP version to 7.1
+
+= 1.1.4 (03.11.2021) =
+* Added support for WooCommerce products and other CPT
+* Fixed bug with pagination for Log table
+* Fixed bug with duplicate entries in Log table
+
+= 1.1.3 (02.11.2021) =
+* Changed database structure
+* Added bulk actions handler for log table
+
+= 1.1.2 (02.11.2021) =
+* Added support for Page post type
+
+= 1.1.1 (02.11.2021) =
+* Added FAQ
+* Fixed bug with duplicate log entries
+
+= 1.1.0 (01.11.2021) =
+* Added logger for search engines response
+* Added top-level plugin menu
+
+= 1.0.1 (31.10.2021) =
+* Updated a method for generate API key
+* Added Bing support
+* Added settings link to plugins list page
+
+= 1.0.0 (28.10.2021) =
+* Init plugin

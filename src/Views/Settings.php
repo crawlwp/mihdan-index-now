@@ -353,7 +353,7 @@ class Settings
 				array(
 					'header_menu_id' => 'index_settings',
 					'id'             => 'bing_webmaster',
-					'title'          => __('Bing API', 'mihdan-index-now'),
+					'title'          => __('Bing', 'mihdan-index-now'),
 					'desc'           => sprintf(__('Enable to use Bing API to request indexing. %sBing supports the IndexNow protocol. You might not need to enable this if IndexNow is active.%s', 'mihdan-index-now'), '<strong>', '</strong>'),
 				)
 			);
@@ -384,7 +384,7 @@ class Settings
 				array(
 					'header_menu_id' => 'index_settings',
 					'id'             => 'google_webmaster',
-					'title'          => __('Google API', 'mihdan-index-now'),
+					'title'          => __('Google', 'mihdan-index-now'),
 					'desc'           => __('Enable to use Google Instant Indexing API to request indexing', 'mihdan-index-now')
 				)
 			);
@@ -415,7 +415,7 @@ class Settings
 				array(
 					'header_menu_id' => 'index_settings',
 					'id'             => 'yandex_webmaster',
-					'title'          => __('Yandex API', 'mihdan-index-now'),
+					'title'          => __('Yandex', 'mihdan-index-now'),
 					'desc'           => sprintf(__('Enable to use Yandex API to request indexing. %sYandex supports the IndexNow protocol. You might not need to enable this if IndexNow is active.%s', 'mihdan-index-now'), '<strong>', '</strong>'),
 				)
 			);
