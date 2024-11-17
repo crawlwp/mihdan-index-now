@@ -46,8 +46,7 @@
     "create-vendor-prefix-folder": [
       "mkdir -p ./vendor-prefixed"
     ],
-    "prefix-dependencies": [
-      "@php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet",
+    "build-cleanup": [
       "@remove-vendor",
       "@composer dump-autoload",
       "cp -R vendor/* vendor-prefixed/",

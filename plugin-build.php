@@ -25,7 +25,8 @@ $chdir = chdir($plugin_git_folder);
 if ( ! $chdir) exit;
 
 exec('composer install --no-dev --no-progress --no-suggest');
-exec('composer prefix-dependencies');
+exec('php-scoper add-prefix --output-dir=./vendor-prefixed --force --quiet');
+exec('composer build-cleanup');
 
 deleteDir('.git');
 deleteDir('.github');
