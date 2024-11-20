@@ -79,9 +79,9 @@ If you like this plugin, then consider checking out our other products.
 1. Settings.
 2. API Settings
 3. (Premium) Indexing History Chart.
-4. Posts and their index status.
-5. Google Search Performance Chart
-6. SEO Insights: View keywords, top pages etc.
+4. (Premium) Posts and their index status.
+5. (Premium) Google Search Performance Chart
+6. (Premium) SEO Insights: View keywords, top pages etc.
 
 == Frequently Asked Questions ==
 
