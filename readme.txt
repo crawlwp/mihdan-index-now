@@ -4,7 +4,7 @@ Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 3.0.0
+Stable tag: 3.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -121,10 +121,15 @@ Sitemaps help webmasters inform search engines about their WordPress pages, but 
 
 == Changelog ==
 
+= 3.0.1 =
+* Fixed link to documentation.
+
 = 3.0.0 =
 * Redesigned admin page.
 * Premium Feature: [SEO Stats](https://crawlwp.com/?ref=changelog#features)
 * Premium Feature: [SEO Indexing](https://crawlwp.com/?ref=changelog#features)
+
+See the [changelog file](https://plugins.svn.wordpress.org/mihdan-index-now/trunk/changelog.txt) for complete change log information.
 
 == Installation ==
 

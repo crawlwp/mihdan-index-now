@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.1 =
+* Fixed link to documentation.
+
 = 3.0.0 =
 * Redesigned admin page.
 * Premium Feature: [SEO Stats](https://crawlwp.com/?ref=changelog#features)
