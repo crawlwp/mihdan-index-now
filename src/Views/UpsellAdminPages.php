@@ -32,7 +32,7 @@ class UpsellAdminPages
 			Utils::get_plugin_slug(),
 			'crawlwp_upsell',
 			CRAWLWP_PRO_SEO_INDEX_SLUG,
-			esc_html__('SEO Index', 'mihdan-index-now')
+			esc_html__('SEO Indexing', 'mihdan-index-now')
 		);
 
 		$this->wposa->enable_blank_mode()->setup_hooks();
