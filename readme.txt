@@ -21,6 +21,8 @@ CrawlWP is a WordPress SEO plugin for faster search engine indexing and comprehe
 
 [Website](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion) | [Documentation](https://crawlwp.com/docs/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion) | [Support](https://crawlwp.com/support/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion)
 
+https://www.youtube.com/watch?v=dKjQTtQyRyA&rel=0
+
 CrawlWP instantly notifies search engines whenever your website content is created, updated, or deleted, ensuring that search engines always have the latest updates about your WordPress site.
 
 ### How CrawlWP SEO Indexing Works ###

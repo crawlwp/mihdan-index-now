@@ -47,8 +47,8 @@ class Settings
 	 */
 	public function __construct(Logger $logger, WPOSA $wposa)
 	{
-		$this->logger   = $logger;
-		$this->wposa    = $wposa;
+		$this->logger = $logger;
+		$this->wposa  = $wposa;
 	}
 
 	/**
@@ -117,6 +117,8 @@ class Settings
 	public function setup_fields()
 	{
 		if (wp_doing_ajax()) return;
+
+		do_action('crawlwp_pre_setup_fields', $this->wposa, $this);
 
 		$this->wposa->add_header_menu([
 			'id'    => 'index_settings',
@@ -188,7 +190,6 @@ class Settings
 			]
 		);
 
-
 		if ($this->wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_index_settings') {
 
 			$this->wposa->add_section(
@@ -207,6 +208,7 @@ class Settings
 					'name'    => __('Post Types', 'mihdan-index-now'),
 					'options' => $this->get_post_types(),
 					'default' => ['post' => 'post'],
+					'desc'    => esc_html__('Select the custom post types that can be submitted to Search Engines for indexing.', 'mihdan-index-now')
 				)
 			);
 
@@ -218,6 +220,7 @@ class Settings
 					'name'    => __('Taxonomies', 'mihdan-index-now'),
 					'options' => $this->get_taxonomies(),
 					'default' => ['category' => 'category'],
+					'desc'    => esc_html__('Select the taxonomies that can be submitted to Search Engines for indexing.', 'mihdan-index-now')
 				)
 			);
 
@@ -226,7 +229,7 @@ class Settings
 				array(
 					'id'   => 'ping_when',
 					'type' => 'html',
-					'name' => __('Notify SE when', 'mihdan-index-now'),
+					'name' => __('Notify Search Engines when', 'mihdan-index-now'),
 				)
 			);
 
@@ -634,18 +637,8 @@ class Settings
 										</div>
 									</div>
 									<div class="wposa-plugin__footer">
-										<ul class="wposa-plugin__meta">
-											<li><b><?php esc_html_e('Version', 'mihdan-index-now'); ?>
-													:</b> <?php echo esc_html($plugin['version']); ?></li>
-											<li><b><?php esc_html_e('Installations', 'mihdan-index-now'); ?>
-													:</b> <?php echo esc_html(number_format($plugin['active_installs'], 0, '', ' ')); ?>
-											</li>
-											<li><b><?php esc_html_e('Downloaded', 'mihdan-index-now'); ?>
-													:</b> <?php echo esc_html(number_format($plugin['downloaded'], 0, '', ' ')); ?>
-											</li>
-										</ul>
 										<div class="wposa-plugin__install">
-											<a href="<?php echo esc_url($install_url); ?>" class="install-now button"><?php esc_html_e('Install', 'mihdan-index-now'); ?></a>
+											<a href="<?php echo esc_url($install_url); ?>" class="install-now button"><?php esc_html_e('Click to Install Now', 'mihdan-index-now'); ?></a>
 										</div>
 									</div>
 								</div>
@@ -677,10 +670,10 @@ class Settings
 			$this->wposa->add_field(
 				'bing_webmaster',
 				array(
-					'id'          => 'api_key',
-					'type'        => 'text',
-					'name'        => __('API Key', 'mihdan-index-now'),
-					'help_tab'    => 'https://crawlwp.com/article/integrating-wordpress-with-bing/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=bing_api',
+					'id'       => 'api_key',
+					'type'     => 'text',
+					'name'     => __('API Key', 'mihdan-index-now'),
+					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-bing/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=bing_api',
 				)
 			);
 
@@ -695,11 +688,11 @@ class Settings
 			$this->wposa->add_field(
 				'google_webmaster',
 				array(
-					'id'          => 'json_key',
-					'type'        => 'textarea',
-					'name'        => __('Google JSON Key', 'mihdan-index-now'),
-					'desc'        => __('Paste the Service Account JSON key file contents you obtained from Google Cloud Console in the field.', 'mihdan-index-now'),
-					'help_tab'    => 'https://crawlwp.com/article/integrating-wordpress-with-google-search/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=google_api'
+					'id'       => 'json_key',
+					'type'     => 'textarea',
+					'name'     => __('Google JSON Key', 'mihdan-index-now'),
+					'desc'     => __('Paste the Service Account JSON key file contents you obtained from Google Cloud Console in the field.', 'mihdan-index-now'),
+					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-google-search/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=google_api'
 				)
 			);
 

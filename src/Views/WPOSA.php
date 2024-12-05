@@ -1676,10 +1676,6 @@ class WPOSA
 				min-width: 0;
 			}
 
-			.wposa .description {
-				max-width: 350px;
-			}
-
 			input.wposa-field--switch {
 				position: relative;
 				-webkit-appearance: none;
