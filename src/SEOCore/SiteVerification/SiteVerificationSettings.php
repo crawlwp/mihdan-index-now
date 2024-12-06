@@ -22,19 +22,17 @@ class SiteVerificationSettings
 				'header_menu_id' => 'core_settings',
 				'id'             => 'site_verification',
 				'title'          => __('Site Verification', 'mihdan-index-now'),
-				'desc'           => sprintf(
-					esc_html__('To verify your website with tools such as Google Search Console, Bing Webmaster Tools, and Yandex Webmaster Tools, you need to add a verification meta tag to your site. These options will help you seamlessly integrate the required codes.', 'mihdan-index-now'),
-					'<a target="_blank" href="#">', '</a>'
-				)
+				'desc'           => esc_html__('To verify your website with tools such as Google Search Console, Bing Webmaster Tools, and Yandex Webmaster Tools, you need to add a verification meta tag to your site. These options will help you seamlessly integrate the required codes.', 'mihdan-index-now')
 			]);
 
 			$wposa->add_field(
 				'site_verification',
 				[
-					'id'   => 'google',
-					'type' => 'text',
-					'name' => __('Google Verification Code', 'mihdan-index-now'),
-					'desc' => '<code>' . sprintf(esc_html('<meta name="google-site-verification" content="%ssite-verification-code%s"/>'), '<span style="color:#a11">', '</strong>') . '</code>'
+					'id'       => 'google',
+					'type'     => 'text',
+					'name'     => __('Google Verification Code', 'mihdan-index-now'),
+					'desc'     => '<code>' . sprintf(esc_html('<meta name="google-site-verification" content="%ssite-verification-code%s"/>'), '<span style="color:#a11">', '</strong>') . '</code>',
+					'help_tab' => 'https://crawlwp.com/?p=763&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=google',
 				]
 			);
 		}

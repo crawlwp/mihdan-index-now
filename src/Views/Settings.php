@@ -328,7 +328,7 @@ class Settings
 					'name'        => __('API Key', 'mihdan-index-now'),
 					'placeholder' => __('Set the API key', 'mihdan-index-now'),
 					'default'     => Utils::generate_key(),
-					'help_tab'    => 'index_now_api_key',
+					'help_tab'    => 'https://crawlwp.com/article/setting-up-search-engine-indexing-for-wordpress/?utm_source=wp_dashboard&utm_medium=indexing_settings_page&utm_campaign=indexnow#wordpress-indexing-via-indexnow',
 					'desc'        => sprintf('<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'mihdan_index_now_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr(Utils::generate_key()), __('Show example', 'mihdan-index-now')),
 				)
 			);
@@ -340,7 +340,7 @@ class Settings
 					'type'     => 'radio',
 					'name'     => __('Search Engine', 'mihdan-index-now'),
 					'default'  => 'bing-index-now',
-					'help_tab' => 'search_engine_support',
+					'help_tab' => 'https://crawlwp.com/article/setting-up-search-engine-indexing-for-wordpress/?utm_source=wp_dashboard&utm_medium=indexing_settings_page&utm_campaign=indexnow#wordpress-indexing-via-indexnow',
 					'desc'     => __('You only need to select one search engine because with the IndexNow protocol, the selected one will notify the others.', 'mihdan-index-now'),
 					'options'  => [
 						'bing-index-now'   => __('Bing', 'mihdan-index-now'),
