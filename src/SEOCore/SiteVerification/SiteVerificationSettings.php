@@ -35,17 +35,27 @@ class SiteVerificationSettings
 					'help_tab' => 'https://crawlwp.com/?p=763&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=google',
 				]
 			);
+
+			$wposa->add_field(
+				'site_verification',
+				[
+					'id'       => 'bing',
+					'type'     => 'text',
+					'name'     => __('Bing Verification Code', 'mihdan-index-now'),
+					'desc'     => '<code>' . sprintf(esc_html('<meta name="msvalidate.01" content="%ssite-verification-code%s" />'), '<span style="color:#a11">', '</strong>') . '</code>',
+					'help_tab' => 'https://crawlwp.com/?p=763&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=bing',
+				]
+			);
 		}
 	}
 
 	public function sanitize_site_verification_data($submitted_data, $name)
 	{
 		if ($name == 'mihdan_index_now_site_verification' && isset($submitted_data['google'])) {
-			$submitted_data['google'] = preg_replace(
-				'/<meta.+content=(?:"|\')(.+)(?:"|\').+/',
-				'$1',
-				wp_unslash($submitted_data['google'])
-			);
+			$regex = '/<meta.+content=(?:"|\')(.+)(?:"|\').+/';
+
+			$submitted_data['google'] = preg_replace($regex, '$1', wp_unslash($submitted_data['google']));
+			$submitted_data['bing']   = preg_replace($regex, '$1', wp_unslash($submitted_data['bing']));
 		}
 
 		return $submitted_data;

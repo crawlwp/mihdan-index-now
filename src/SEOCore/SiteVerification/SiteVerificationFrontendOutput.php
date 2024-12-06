@@ -16,9 +16,14 @@ class SiteVerificationFrontendOutput
 		if (is_home() || is_front_page()) {
 
 			$google_verification_code = Utils::get_setting_data('site_verification', 'google');
+			$bing_verification_code   = Utils::get_setting_data('site_verification', 'bing');
 
 			if ( ! empty($google_verification_code)) {
 				echo sprintf('<meta name="google-site-verification" content="%s" />', esc_attr($google_verification_code));
+			}
+
+			if ( ! empty($bing_verification_code)) {
+				echo sprintf('<meta name="msvalidate.01" content="%s" />', esc_attr($google_verification_code));
 			}
 		}
 	}

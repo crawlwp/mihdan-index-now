@@ -39,4 +39,6 @@ define('CRAWLWP_PRO_SEO_STAT_SLUG', 'mihdan-seo-stats');
 define('CRAWLWP_PRO_AUTO_INDEX_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_SEO_INDEX_SLUG));
 define('CRAWLWP_PRO_SEO_STAT_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_SEO_STAT_SLUG));
 
+do_action('crawlwp_lite_pre_init');
+
 (new Main(new Injector()))->init();
