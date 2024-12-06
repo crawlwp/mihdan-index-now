@@ -143,6 +143,17 @@ class Utils
 		return str_replace('-', '', wp_generate_uuid4());
 	}
 
+	public static function get_setting_data($section, $option, $default = '')
+	{
+		$options = get_option(self::get_plugin_prefix() . '_' . $section, []);
+
+		if (isset($options[$option])) {
+			return apply_filters('wposa/get_option', $options[$option], $option, $section, $default);
+		}
+
+		return apply_filters('wposa/get_option', $default, $option, $section, $default);
+	}
+
 	/**
 	 * Check if a string is JSON.
 	 *
