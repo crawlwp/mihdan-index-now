@@ -16,6 +16,7 @@ use Mihdan\IndexNow\Providers\Seznam\SeznamIndexNow;
 use Mihdan\IndexNow\Providers\Naver\NaverIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
+use Mihdan\IndexNow\SEOCore\SEOCoreInit;
 use Mihdan\IndexNow\Views\Settings;
 use Mihdan\IndexNow\Views\UpsellAdminPages;
 use Mihdan\IndexNow\Views\WPOSA;
@@ -63,6 +64,8 @@ class Main
 	{
 		$this->load_requirements();
 		$this->setup_hooks();
+
+		SEOCoreInit::get_instance();
 
 		do_action('mihdan_index_now/init', $this);
 	}
