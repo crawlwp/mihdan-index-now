@@ -459,22 +459,19 @@ class WPOSA
 
     private function convert_array_to_attributes(array $args): string
     {
-        $result = [];
+        if (empty($args)) return '';
 
-        if (count($args)) {
-            foreach ($args as $attr_key => $attr_value) {
-                if ($attr_value === true || $attr_value === false) {
-                    if ($attr_value === true) {
-                        $result[] = esc_attr($attr_key);
-                    }
-                } else {
-                    $result[] = sprintf(
-                        '%s="%s"',
-                        esc_attr($attr_key),
-                        esc_attr($attr_value)
-                    );
-                }
+        $result = [];
+        foreach ($args as $key => $value) {
+            // Move condition check outside sprintf for better performance
+            if (is_bool($value)) {
+
+                if ($value === true) $result[] = esc_attr($key);
+
+                continue;
             }
+
+            $result[] = sprintf('%s="%s"', esc_attr($key), esc_attr($value));
         }
 
         return implode(' ', $result);
@@ -485,9 +482,15 @@ class WPOSA
      */
     public function get_active_header_menu()
     {
-        return ! empty($_GET['wposa-menu']) ?
-            sanitize_text_field($_GET['wposa-menu']) :
-            ($this->header_menu_array[0]['id'] ?? '');
+        // Cache menu ID instead of checking GET parameter each time
+        static $active_menu = null;
+        if ($active_menu === null) {
+            $active_menu = ! empty($_GET['wposa-menu'])
+                ? sanitize_text_field($_GET['wposa-menu'])
+                : ($this->header_menu_array[0]['id'] ?? '');
+        }
+
+        return $active_menu;
     }
 
     /**

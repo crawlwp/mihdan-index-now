@@ -130,6 +130,8 @@ class Settings
 			'title' => __('API Settings', 'mihdan-index-now'),
 		]);
 
+		do_action('crawlwp_setup_fields_before_log', $this->wposa, $this);
+
 		$this->wposa->add_header_menu([
 			'id'    => 'log',
 			'title' => __('Log', 'mihdan-index-now'),
