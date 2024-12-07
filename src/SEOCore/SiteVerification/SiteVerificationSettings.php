@@ -46,6 +46,11 @@ class SiteVerificationSettings
 					'meta_tag' => '<meta name="baidu-site-verification" content="%ssite-verification-code%s" />',
 					'help_tab' => 'https://crawlwp.com/?p=772&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=baidu',
 				],
+				'pinterest' => [
+					'name'     => __('Pinterest Verification Code', 'mihdan-index-now'),
+					'meta_tag' => '<meta name="p:domain_verify" content="%ssite-verification-code%s" />',
+					'help_tab' => 'https://crawlwp.com/?p=776&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=pinterest',
+				],
 			];
 
 			foreach ($providers as $id => $provider) {
@@ -68,7 +73,7 @@ class SiteVerificationSettings
 	{
 		if ($name === 'mihdan_index_now_site_verification') {
 			$regex     = '/<meta.+content=(?:"|\')(.+)(?:"|\').+/';
-			$providers = ['google', 'bing', 'yandex'];
+			$providers = ['google', 'bing', 'yandex', 'baidu', 'pinterest'];
 
 			foreach ($providers as $provider) {
 				if (isset($submitted_data[$provider])) {
