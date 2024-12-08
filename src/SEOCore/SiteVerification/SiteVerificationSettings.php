@@ -47,7 +47,7 @@ class SiteVerificationSettings
 					'help_tab' => 'https://crawlwp.com/?p=772&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=baidu',
 				],
 				'pinterest' => [
-					'name'     => __('Pinterest Verification Code', 'mihdan-index-now'),
+					'name'     => __('Pinterest Verify Code', 'mihdan-index-now'),
 					'meta_tag' => '<meta name="p:domain_verify" content="%ssite-verification-code%s" />',
 					'help_tab' => 'https://crawlwp.com/?p=776&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=pinterest',
 				],
