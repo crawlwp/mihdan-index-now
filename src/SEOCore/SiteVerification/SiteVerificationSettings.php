@@ -7,6 +7,8 @@ use Mihdan\IndexNow\Views\WPOSA;
 
 class SiteVerificationSettings
 {
+	private const META_TAG_REGEX = '/<meta.+content=(?:"|\')(.+)(?:"|\').+/';
+
 	public function __construct()
 	{
 		add_action('crawlwp_setup_fields', [$this, 'core_settings_fields'], 10, 2);
@@ -72,12 +74,11 @@ class SiteVerificationSettings
 	public function sanitize_site_verification_data($submitted_data, $name)
 	{
 		if ($name === 'mihdan_index_now_site_verification') {
-			$regex     = '/<meta.+content=(?:"|\')(.+)(?:"|\').+/';
 			$providers = ['google', 'bing', 'yandex', 'baidu', 'pinterest'];
 
 			foreach ($providers as $provider) {
 				if (isset($submitted_data[$provider])) {
-					$submitted_data[$provider] = preg_replace($regex, '$1', wp_unslash($submitted_data[$provider]));
+					$submitted_data[$provider] = preg_replace(self::META_TAG_REGEX, '$1', wp_unslash($submitted_data[$provider]));
 				}
 			}
 		}
