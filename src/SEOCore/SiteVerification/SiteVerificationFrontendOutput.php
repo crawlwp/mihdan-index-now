@@ -8,7 +8,7 @@ class SiteVerificationFrontendOutput
 {
 	public function __construct()
 	{
-		add_action('wp_head', [$this, 'output']);
+		add_action('wp_head', [$this, 'output'], 1);
 	}
 
 	public function output()
