@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.2 =
+* Added site verification feature.
+
 = 3.0.1 =
 * Fixed link to documentation.
 
