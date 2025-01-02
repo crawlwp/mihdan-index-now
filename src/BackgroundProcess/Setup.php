@@ -9,6 +9,8 @@ class Setup extends WP_Background_Process
 {
 	protected $action = 'crawlwp_bg_process';
 
+	protected $cron_interval = 1;
+
 	public function __construct()
 	{
 		// Uses unique prefix per blog so each blog has separate queue.
