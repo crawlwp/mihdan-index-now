@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.3 =
+* Set Cron interval to 1min to quicken background task processing.
+
 = 3.0.2 =
 * Added site verification feature.
 
