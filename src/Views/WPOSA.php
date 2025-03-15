@@ -521,7 +521,7 @@ class WPOSA
 
 					update_option($name, $value);
 
-					wp_safe_redirect(Utils::get_current_url_query_string());
+					wp_safe_redirect(add_query_arg(['settings-updated' => 'true'], Utils::get_current_url_query_string()));
 					exit;
 				}
 			}
@@ -1205,7 +1205,19 @@ class WPOSA
 
 		add_action("load-" . $hook, function () {
 			do_action('wpposa_load_menu_hook', $this->sub_menu_slug, $this->plugin_slug);
+			add_action('admin_notices', [$this, 'admin_notices']);
 		});
+	}
+
+	public function admin_notices()
+	{
+		if (Utils::_GET_var('settings-updated') == 'true') {
+			?>
+			<div class="notice notice-success is-dismissible">
+				<p><?php _e('Settings saved.', 'mihdan-index-now'); ?></p>
+			</div>
+			<?php
+		}
 	}
 
 	public function plugin_page()
