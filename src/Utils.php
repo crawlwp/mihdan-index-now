@@ -2,6 +2,8 @@
 
 namespace Mihdan\IndexNow;
 
+use Mihdan\IndexNow\Logger\Logger;
+
 class Utils
 {
 	/**
@@ -279,5 +281,13 @@ class Utils
 		} else {
 			return is_scalar($var) ? call_user_func($callback, $var) : $var;
 		}
+	}
+
+	/**
+	 * @return Logger
+	 */
+	public static function get_logger()
+	{
+		return new Logger();
 	}
 }
