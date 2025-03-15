@@ -1966,7 +1966,8 @@ class WPOSA
 			/*	new header */
 			[class*=mihdan-].wp-admin #screen-meta-links {
 				position: absolute;
-				right: 0
+				right: 0;
+				z-index: 9999;
 			}
 
 			.wposa-new-header {
