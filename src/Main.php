@@ -22,9 +22,6 @@ use Mihdan\IndexNow\Views\UpsellAdminPages;
 use Mihdan\IndexNow\Views\WPOSA;
 use WP_Post;
 use WP_List_Table;
-use Mihdan\IndexNow\Dependencies\Auryn\Injector;
-use Mihdan\IndexNow\Dependencies\Auryn\InjectionException;
-use Mihdan\IndexNow\Dependencies\Auryn\ConfigException;
 use WP_Site;
 
 class Main
@@ -32,9 +29,9 @@ class Main
 	/**
 	 * DIC container.
 	 *
-	 * @var Injector $injector
+	 * @var Container $container
 	 */
-	private $injector;
+	public $container;
 
 	/**
 	 * Settings instance.
@@ -50,14 +47,9 @@ class Main
 	 */
 	private $logger;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param Injector $injector Injector instnace.
-	 */
-	public function __construct(Injector $injector)
+	public function __construct(Container $container)
 	{
-		$this->injector = $injector;
+		$this->container = $container;
 	}
 
 	public function init()
@@ -71,19 +63,17 @@ class Main
 	}
 
 	/**
-	 * Make a class from DIC.
-	 *
-	 * @param string $class_name Full class name.
-	 * @param array $args List of arguments.
+	 * @param string $class_name
 	 *
 	 * @return mixed
+	 * @throws \Exception
 	 *
-	 * @throws InjectionException If a cyclic gets detected when provisioning.
-	 * @throws ConfigException If $nameOrInstance is not a string or an object.
+	 * @todo remove in future as this was a helper to prevent fatal error when upgrading
+	 *
 	 */
-	public function make(string $class_name, array $args = [])
+	public function make(string $class_name)
 	{
-		return $this->injector->share($class_name)->make($class_name, $args);
+		return $this->container->make($class_name);
 	}
 
 	private function load_requirements()
@@ -98,40 +88,44 @@ class Main
 
 		\ProperP_Shogun::get_instance();
 
-		$this->logger = $this->make(Logger::class);
+		$this->logger = $this->container->make(Logger::class);
 
-		$wposa = $this->make(
+		$this->container->set(
 			WPOSA::class,
-			[
-				':plugin_name'    => Utils::get_plugin_name(),
-				':plugin_version' => Utils::get_plugin_version(),
-				':plugin_slug'    => Utils::get_plugin_slug(),
-				':plugin_prefix'  => Utils::get_plugin_prefix(),
-				':sub_page_title' => esc_html__('Settings', 'mihdan-index-now'),
-			]
+			function (Container $c) {
+				return new WPOSA(
+					Utils::get_plugin_name(),
+					Utils::get_plugin_version(),
+					Utils::get_plugin_slug(),
+					Utils::get_plugin_prefix(),
+					'',
+					esc_html__('Settings', 'mihdan-index-now')
+				);
+			}
 		);
 
-		$this->wposa = $wposa;
+		$this->wposa = $this->container->get(WPOSA::class);
 		$this->wposa->setup_hooks();
 
-		($this->make(Hooks::class))->setup_hooks();
+		($this->container->make(Hooks::class))->setup_hooks();
 
-		($this->make(Settings::class))->setup_hooks();
-		($this->make(Cron::class))->setup_hooks();
-		($this->make(YandexIndexNow::class))->setup_hooks();
-		($this->make(BingIndexNow::class))->setup_hooks();
-		($this->make(SeznamIndexNow::class))->setup_hooks();
-		($this->make(NaverIndexNow::class))->setup_hooks();
-		($this->make(IndexNow::class))->setup_hooks();
+		($this->container->make(Settings::class))->setup_hooks();
+		($this->container->make(Cron::class))->setup_hooks();
+		($this->container->make(YandexIndexNow::class))->setup_hooks();
+		($this->container->make(BingIndexNow::class))->setup_hooks();
+		($this->container->make(SeznamIndexNow::class))->setup_hooks();
+		($this->container->make(NaverIndexNow::class))->setup_hooks();
+		($this->container->make(IndexNow::class))->setup_hooks();
+
 		add_action('plugins_loaded', function () {
 			if ( ! defined('CRAWLWP_DETACH_LIBSODIUM')) {
-				($this->make(UpsellAdminPages::class));
+				($this->container->make(UpsellAdminPages::class));
 			}
 		});
 
-		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER'] = $this->make(YandexWebmaster::class);
-		$GLOBALS['CRAWLWP_BING_WEBMASTER']   = $this->make(BingWebmaster::class);
-		$GLOBALS['CRAWLWP_GOOGLE_WEBMASTER'] = $this->make(GoogleWebmaster::class);
+		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER'] = $this->container->make(YandexWebmaster::class);
+		$GLOBALS['CRAWLWP_BING_WEBMASTER']   = $this->container->make(BingWebmaster::class);
+		$GLOBALS['CRAWLWP_GOOGLE_WEBMASTER'] = $this->container->make(GoogleWebmaster::class);
 
 		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER']->setup_hooks();
 		$GLOBALS['CRAWLWP_BING_WEBMASTER']->setup_hooks();

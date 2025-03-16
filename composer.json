@@ -36,7 +36,6 @@
     "collizo4sky/persist-admin-notices-dismissal": "^1.4",
     "writecrow/country_code_converter": "^1.2",
     "nesbot/carbon": "^2.72",
-    "martin-hughes/auryn": "^1.4",
     "sniccowp/php-scoper-wordpress-excludes": "^6.5"
   },
   "scripts": {

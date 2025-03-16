@@ -14,8 +14,6 @@
 
 namespace Mihdan\IndexNow;
 
-use \Mihdan\IndexNow\Dependencies\Auryn\Injector;
-
 if ( ! defined('ABSPATH')) {
 	exit;
 }
@@ -41,4 +39,4 @@ define('CRAWLWP_PRO_SEO_STAT_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_SE
 
 do_action('crawlwp_lite_pre_init');
 
-(new Main(new Injector()))->init();
+(new Main(new Container()))->init();
