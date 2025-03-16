@@ -1,5 +1,10 @@
 ﻿== Changelog ==
 
+= 3.0.4 =
+* Fixed bug where admin notice was not shown after saving settings.
+* Fixed background processing not working for some sites.
+* Fixed screen-option and profile-admin menu dropdown clash.
+
 = 3.0.3 =
 * Set Cron interval to 1min to quicken background task processing.
 
