@@ -661,23 +661,6 @@ class Settings
 
 		if ($this->wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_api_settings') {
 			/** API settings */
-			$this->wposa->add_section(
-				array(
-					'header_menu_id' => 'api_settings',
-					'id'             => 'bing_webmaster',
-					'title'          => __('Bing API', 'mihdan-index-now')
-				)
-			);
-
-			$this->wposa->add_field(
-				'bing_webmaster',
-				array(
-					'id'       => 'api_key',
-					'type'     => 'text',
-					'name'     => __('API Key', 'mihdan-index-now'),
-					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-bing/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=bing_api',
-				)
-			);
 
 			$this->wposa->add_section(
 				array(
@@ -695,6 +678,24 @@ class Settings
 					'name'     => __('Google JSON Key', 'mihdan-index-now'),
 					'desc'     => __('Paste the Service Account JSON key file contents you obtained from Google Cloud Console in the field.', 'mihdan-index-now'),
 					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-google-search/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=google_api'
+				)
+			);
+
+			$this->wposa->add_section(
+				array(
+					'header_menu_id' => 'api_settings',
+					'id'             => 'bing_webmaster',
+					'title'          => __('Bing API', 'mihdan-index-now')
+				)
+			);
+
+			$this->wposa->add_field(
+				'bing_webmaster',
+				array(
+					'id'       => 'api_key',
+					'type'     => 'text',
+					'name'     => __('API Key', 'mihdan-index-now'),
+					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-bing/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=bing_api',
 				)
 			);
 
