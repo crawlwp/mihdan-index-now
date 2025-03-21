@@ -187,7 +187,11 @@ class YandexWebmaster extends WebmasterAbstract {
 
 		$token = $this->get_token();
 
-		if(empty($token)) return;
+		$user_id = $this->get_user_id();
+
+		$host_id = $this->get_host_id();
+
+		if(empty($token) || empty($user_id) || empty($host_id)) return;
 
 		$url = sprintf( $this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id() );
 
