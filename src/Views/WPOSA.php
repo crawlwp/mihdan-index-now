@@ -1243,6 +1243,8 @@ class WPOSA
 
 		if ( ! $flag) return;
 
+		$wp_removable_query_args = array_merge(['paged'], wp_removable_query_args());
+
 		?>
 		<div class="wposa">
 			<div class="wposa-new-header">
@@ -1253,7 +1255,7 @@ class WPOSA
 
 				<nav class="wposa-tabs">
 					<?php foreach ($this->header_menu_array as $menu) :
-						$url = esc_url(remove_query_arg(wp_removable_query_args(), add_query_arg(['wposa-menu' => $menu['id']])));
+						$url = esc_url(remove_query_arg($wp_removable_query_args, add_query_arg(['wposa-menu' => $menu['id']])));
 						$active_class = $this->get_active_header_menu() == $menu['id'] ? ' wposa-tab-active' : '';
 						?>
 						<a href="<?php echo $url ?>" class="wposa-tab<?php echo $active_class; ?>"><?php echo $menu['title'] ?></a>
