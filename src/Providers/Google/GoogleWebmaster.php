@@ -1,9 +1,4 @@
 <?php
-/**
- * IndexNow via Bing.
- *
- * @package mihdan-index-now
- */
 
 namespace Mihdan\IndexNow\Providers\Google;
 
@@ -16,37 +11,44 @@ use Mihdan\IndexNow\Dependencies\Google\Client;
 use Mihdan\IndexNow\Dependencies\Google\Service\Exception as Google_Service_Exception;
 use Exception;
 
-class GoogleWebmaster extends WebmasterAbstract {
-	private const URL_UPDATED      = 'URL_UPDATED';
+class GoogleWebmaster extends WebmasterAbstract
+{
+	private const URL_UPDATED = 'URL_UPDATED';
 	private const RECRAWL_ENDPOINT = '';
 
-	public function get_ping_endpoint(): string {
+	public function get_ping_endpoint(): string
+	{
 		return self::RECRAWL_ENDPOINT;
 	}
 
-	public function get_slug(): string {
+	public function get_slug(): string
+	{
 		return 'google-webmaster';
 	}
 
-	public function get_name(): string {
-		return __( 'Google Webmaster', 'mihdan-index-now' );
+	public function get_name(): string
+	{
+		return __('Google Webmaster', 'mihdan-index-now');
 	}
 
-	public function get_token(): string {
-		return $this->wposa->get_option( 'json_key', 'google_webmaster' );
+	public function get_token(): string
+	{
+		return $this->wposa->get_option('json_key', 'google_webmaster');
 	}
 
-	public function is_enabled(): bool {
-		return $this->wposa->get_option( 'enable', 'google_webmaster', 'off' ) === 'on';
+	public function is_enabled(): bool
+	{
+		return $this->wposa->get_option('enable', 'google_webmaster', 'off') === 'on';
 	}
 
-	public function setup_hooks() {
-		if ( ! $this->is_enabled() ) {
+	public function setup_hooks()
+	{
+		if ( ! $this->is_enabled()) {
 			return;
 		}
 
-		add_action( 'mihdan_index_now/post_added', [ $this, 'ping' ] );
-		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
+		add_action('mihdan_index_now/post_added', [$this, 'ping']);
+		add_action('mihdan_index_now/post_updated', [$this, 'ping']);
 	}
 
 	/**
@@ -56,49 +58,50 @@ class GoogleWebmaster extends WebmasterAbstract {
 	 *
 	 * throws \Google\Exception
 	 */
-	public function ping( int $post_id ) {
-
+	public function ping(int $post_id)
+	{
 		$token = $this->get_token();
 
-		if(empty($token)) return;
+		if (empty($token)) return;
+
+		if (time() < (int)get_option('crawlwp_google_indexing_rate_limit_expiration', 0)) return;
 
 		try {
 			$client = new Client();
-			$client->setApplicationName( Utils::get_plugin_name() );
-			$client->setAuthConfig( json_decode( $token, true ) );
-			$client->addScope( Indexing::INDEXING );
-			$client->setUseBatch( true );
+			$client->setApplicationName(Utils::get_plugin_name());
+			$client->setAuthConfig(json_decode($token, true));
+			$client->addScope(Indexing::INDEXING);
+			$client->setUseBatch(true);
 
-			$post_url = Utils::normalize_url(get_permalink( $post_id ));
+			$post_url = Utils::normalize_url(get_permalink($post_id));
 
 			$body = new UrlNotification();
 			$urls = [$post_url];
 
-			$service = new Indexing( $client );
-			$batch = $service->createBatch();
+			$service = new Indexing($client);
+			$batch   = $service->createBatch();
 
-			foreach( $urls as $i => $url ) {
-				$body->setType( self::URL_UPDATED );
-				$body->setUrl( $url );
+			foreach ($urls as $i => $url) {
+				$body->setType(self::URL_UPDATED);
+				$body->setUrl($url);
 
-				$batch->add( $service->urlNotifications->publish( $body ), 'url-' . $i );
+				$batch->add($service->urlNotifications->publish($body), 'url-' . $i);
 			}
 
 			$results = $batch->execute();
 
-			foreach ( $results as $result ) {
-				if ( $result instanceof Google_Service_Exception ) {
+			foreach ($results as $result) {
+				if ($result instanceof Google_Service_Exception) {
 					$status_code = $result->getCode();
 					$message     = $result->getErrors()[0]['message'];
-					break;
 				} else {
 					$status_code = 200;
-					$message     = sprintf( '<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title( $post_id ) );
-					break;
+					$message     = sprintf('<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title($post_id));
 				}
+				break;
 			}
 
-		} catch ( Exception $e ) {
+		} catch (Exception $e) {
 			$message     = $e->getMessage();
 			$status_code = 400;
 		}
@@ -108,16 +111,21 @@ class GoogleWebmaster extends WebmasterAbstract {
 			'search_engine' => $this->get_slug(),
 		];
 
-		if ( Utils::is_response_code_success( $status_code ) ) {
-			$this->logger->info( $message, $data );
+		if (absint($status_code) === 429) {
+			update_option('crawlwp_google_indexing_rate_limit_expiration', time() + DAY_IN_SECONDS);
+		}
+
+		if (Utils::is_response_code_success($status_code)) {
+			$this->logger->info($message, $data);
 		} else {
-			$this->logger->error( $message, $data );
+			$this->logger->error($message, $data);
 		}
 
 		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 	}
 
-	public function get_quota(): array {
+	public function get_quota(): array
+	{
 		// TODO: Implement get_quota() method.
 		return [];
 	}
