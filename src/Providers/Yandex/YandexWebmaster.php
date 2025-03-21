@@ -185,6 +185,10 @@ class YandexWebmaster extends WebmasterAbstract {
 	 */
 	public function ping( int $post_id ) {
 
+		$token = $this->get_token();
+
+		if(empty($token)) return;
+
 		$url = sprintf( $this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id() );
 
 		$post_url = Utils::normalize_url(get_permalink( $post_id ));
@@ -192,7 +196,7 @@ class YandexWebmaster extends WebmasterAbstract {
 		$args = array(
 			'timeout' => 30,
 			'headers' => array(
-				'Authorization' => 'OAuth ' . $this->get_token(),
+				'Authorization' => 'OAuth ' . $token,
 				'Content-Type'  => 'application/json',
 			),
 			'body'    => wp_json_encode(

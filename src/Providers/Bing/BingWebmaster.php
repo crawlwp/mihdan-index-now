@@ -50,7 +50,12 @@ class BingWebmaster extends WebmasterAbstract {
 	 * @link https://www.bing.com/webmasters/url-submission-api#APIs
 	 */
 	public function ping( int $post_id ) {
-		$url  = sprintf( $this->get_ping_endpoint(), $this->get_token() );
+
+		$token = $this->get_token();
+
+		if(empty($token)) return;
+
+		$url  = sprintf( $this->get_ping_endpoint(), $token );
 
 		$post_url = Utils::normalize_url(get_permalink( $post_id ));
 

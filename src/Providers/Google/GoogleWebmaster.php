@@ -63,7 +63,6 @@ class GoogleWebmaster extends WebmasterAbstract {
 		if(empty($token)) return;
 
 		try {
-			/** @var Client $client */
 			$client = new Client();
 			$client->setApplicationName( Utils::get_plugin_name() );
 			$client->setAuthConfig( json_decode( $token, true ) );
