@@ -23,6 +23,8 @@ class Setup extends WP_Background_Process
 		add_filter($this->identifier . '_seconds_between_batches', function ($seconds) {
 			return 1;
 		});
+
+		add_filter($this->identifier . '_wp_die', '__return_false');
 	}
 
 	public function dispatch()
