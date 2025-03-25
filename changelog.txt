@@ -1,5 +1,10 @@
 ﻿== Changelog ==
 
+= 3.0.5 =
+* Fixed error with Cron job dispatching.
+* Enhancement: Delay index ping for 24hrs if API rate-limit is hit.
+* Fixed bug where index pinging can happen without saved API credentials.
+
 = 3.0.4 =
 * Fixed bug where admin notice was not shown after saving settings.
 * Fixed background processing not working for some sites.

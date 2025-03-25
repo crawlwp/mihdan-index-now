@@ -4,7 +4,7 @@ Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 3.0.4
+Stable tag: 3.0.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -122,6 +122,11 @@ Such HTTP 429 Too Many Requests response status code indicates you are sending t
 Sitemaps help webmasters inform search engines about their WordPress pages, but search engines don't visit them often. With CrawlWP integration with IndexNow and the Indexing API of search engines, you can directly notify search engines of new content without waiting for them to crawl your sitemaps.
 
 == Changelog ==
+
+= 3.0.5 =
+* Fixed error with Cron job dispatching.
+* Enhancement: Delay index ping for 24hrs if API rate-limit is hit.
+* Fixed bug where index pinging can happen without saved API credentials.
 
 = 3.0.4 =
 * Fixed bug where admin notice was not shown after saving settings.
