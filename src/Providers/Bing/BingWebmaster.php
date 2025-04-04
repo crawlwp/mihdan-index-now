@@ -68,7 +68,7 @@ class BingWebmaster extends WebmasterAbstract
 			),
 			'body'    => wp_json_encode(
 				[
-					'siteUrl' => get_home_url(),
+					'siteUrl' => Utils::normalized_home_url(),
 					'urlList' => [
 						$post_url,
 					],

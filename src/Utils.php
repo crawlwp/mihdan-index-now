@@ -197,7 +197,7 @@ class Utils
 	{
 		if ($empty) return ! empty($_POST[$key]) ? $_POST[$key] : $default;
 
-		return isset($_POST[$key]) ? $_POST[$key] : $default;
+		return $_POST[$key] ?? $default;
 	}
 
 	public static function _GET_var($key, $default = false, $empty = false)
@@ -206,7 +206,7 @@ class Utils
 
 		if ($empty) return ! empty($bucket[$key]) ? $bucket[$key] : $default;
 
-		return isset($bucket[$key]) ? $bucket[$key] : $default;
+		return $bucket[$key] ?? $default;
 	}
 
 	public static function _var($bucket, $key, $default = false, $empty = false)
@@ -215,7 +215,7 @@ class Utils
 			return isset($bucket[$key]) && ( ! empty($bucket[$key]) || self::is_boolean($bucket[$key])) ? $bucket[$key] : $default;
 		}
 
-		return isset($bucket[$key]) ? $bucket[$key] : $default;
+		return $bucket[$key] ?? $default;
 	}
 
 	public static function _var_obj($bucket, $key, $default = false, $empty = false)
@@ -224,16 +224,33 @@ class Utils
 			return isset($bucket->$key) && ( ! empty($bucket->$key) || self::is_boolean($bucket->$key)) ? $bucket->$key : $default;
 		}
 
-		return isset($bucket->$key) ? $bucket->$key : $default;
+		return $bucket->$key ?? $default;
 	}
 
 	public static function normalize_url($url)
 	{
-		if (defined('CRAWLWP_URL')) {
-			return str_replace(trailingslashit(home_url()), CRAWLWP_URL, $url);
+		$new_domain = apply_filters('crawlwp_normalized_new_url', defined('CRAWLWP_URL') ? CRAWLWP_URL : '');
+
+		if ( ! empty($new_domain)) {
+			$url = str_replace(untrailingslashit(home_url()), untrailingslashit($new_domain), $url);
 		}
 
 		return $url;
+	}
+
+	public static function normalized_home_url()
+	{
+		return self::normalize_url(home_url());
+	}
+
+	public static function normalized_get_permalink($post_id)
+	{
+		return self::normalize_url(get_permalink($post_id));
+	}
+
+	public static function normalized_get_term_link($term, $taxonomy = '')
+	{
+		return self::normalize_url(get_term_link($term, $taxonomy));
 	}
 
 	/**
