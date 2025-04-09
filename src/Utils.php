@@ -300,6 +300,19 @@ class Utils
 		}
 	}
 
+	public static function wposa_get_option($option, $section, $default = '', $prefix = 'mihdan_index_now')
+	{
+		$section = str_replace($prefix . '_', '', $section);
+
+		$options = get_option($prefix . '_' . $section);
+
+		if (isset($options[$option])) {
+			return apply_filters('wposa/get_option', $options[$option], $option, $section, $default);
+		}
+
+		return apply_filters('wposa/get_option', $default, $option, $section, $default);
+	}
+
 	/**
 	 * @return Logger
 	 */
