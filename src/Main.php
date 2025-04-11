@@ -98,8 +98,7 @@ class Main
 					Utils::get_plugin_version(),
 					Utils::get_plugin_slug(),
 					Utils::get_plugin_prefix(),
-					'',
-					esc_html__('Settings', 'mihdan-index-now')
+					''
 				);
 			}
 		);

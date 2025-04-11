@@ -194,13 +194,6 @@ class WPOSA
 	private $sub_menu_slug;
 
 	/**
-	 * Submenu page title.
-	 *
-	 * @var string
-	 */
-	private $sub_page_title;
-
-	/**
 	 * Plugin prefix.
 	 *
 	 * @var string
@@ -237,6 +230,13 @@ class WPOSA
 	 * @var array $sidebar_cards
 	 */
 	private $sidebar_cards = [];
+
+	/**
+	 * Submenu page title.
+	 *
+	 * @var string
+	 */
+	public $sub_page_title;
 
 	private $enable_blank_mode = false;
 

@@ -31,8 +31,7 @@ class UpsellAdminPages
 			Utils::get_plugin_version(),
 			Utils::get_plugin_slug(),
 			'crawlwp_upsell',
-			CRAWLWP_PRO_SEO_INDEX_SLUG,
-			esc_html__('SEO Indexing', 'mihdan-index-now')
+			CRAWLWP_PRO_SEO_INDEX_SLUG
 		);
 
 		$this->wposa->enable_blank_mode()->setup_hooks();
@@ -42,13 +41,12 @@ class UpsellAdminPages
 			Utils::get_plugin_version(),
 			Utils::get_plugin_slug(),
 			'crawlwp_upsell',
-			CRAWLWP_PRO_SEO_STAT_SLUG,
-			esc_html__('SEO Stats', 'mihdan-index-now')
+			CRAWLWP_PRO_SEO_STAT_SLUG
 		);
 
 		$this->wposa2->enable_blank_mode()->setup_hooks();
 
-		$this->setup_fields();
+		add_action('init', [$this, 'setup_fields'], 110);
 	}
 
 
@@ -95,6 +93,9 @@ class UpsellAdminPages
 		$seo_stat_upsell .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
 		$seo_stat_upsell .= '</div>';
 		$seo_stat_upsell .= '</div>';
+
+		$this->wposa->sub_page_title  = esc_html__('SEO Indexing', 'mihdan-index-now');
+		$this->wposa2->sub_page_title = esc_html__('SEO Stats', 'mihdan-index-now');
 
 		$this->wposa->add_section([
 			'id' => 'seo_index_upsell',

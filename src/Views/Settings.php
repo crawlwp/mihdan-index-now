@@ -120,6 +120,8 @@ class Settings
 
 		do_action('crawlwp_pre_setup_fields', $this->wposa, $this);
 
+		$this->wposa->sub_page_title = esc_html__('Settings', 'mihdan-index-now');
+
 		$this->wposa->add_header_menu([
 			'id'    => 'index_settings',
 			'title' => __('Indexing', 'mihdan-index-now'),
