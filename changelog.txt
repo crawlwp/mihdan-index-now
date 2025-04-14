@@ -1,5 +1,9 @@
 ﻿== Changelog ==
 
+= 3.0.6 =
+* Fixed Function _load_textdomain_just_in_time was called incorrectly
+* Added crawlwp_normalized_new_url filter to change site URL.
+
 = 3.0.5 =
 * Fixed error with Cron job dispatching.
 * Enhancement: Delay index ping for 24hrs if API rate-limit is hit.
