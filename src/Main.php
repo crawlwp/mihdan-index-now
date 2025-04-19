@@ -86,8 +86,6 @@ class Main
 
 		BackgroundProcess\Dispatch::get_instance();
 
-		\ProperP_Shogun::get_instance();
-
 		$this->logger = $this->container->make(Logger::class);
 
 		$this->container->set(
