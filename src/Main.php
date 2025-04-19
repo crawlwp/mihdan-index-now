@@ -78,8 +78,6 @@ class Main
 
 	private function load_requirements()
 	{
-		require_once __DIR__ . '/Functions/load.php';
-
 		if ( ! function_exists('dbDelta')) {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		}
