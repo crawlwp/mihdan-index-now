@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.6.1 =
+* Removed shogun class.
+
 = 3.0.6 =
 * Fixed Function _load_textdomain_just_in_time was called incorrectly
 * Added crawlwp_normalized_new_url filter to change site URL.
