@@ -102,6 +102,11 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 		return $this->wposa->get_option('search_engine', 'index_now', 'yandex-index-now');
 	}
 
+	private function rate_limit_db_key()
+	{
+		return sprintf('crawlwp_indexnow_%s_rate_limit_expiration', $this->get_current_search_engine());
+	}
+
 	/**
 	 * Fires actions related to the transitioning of a post's status.
 	 *
@@ -171,6 +176,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 
 	public function push(array $url_list): bool
 	{
+		if (time() < (int)get_option($this->rate_limit_db_key(), 0)) return false;
+
 		$args = array(
 			'timeout' => 30,
 			'body'    => wp_json_encode(
@@ -200,6 +207,10 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 			'status_code'   => $status_code,
 			'search_engine' => $this->get_current_search_engine(),
 		];
+
+		if (absint($status_code) === 429) {
+			update_option($this->rate_limit_db_key(), time() + DAY_IN_SECONDS);
+		}
 
 		if (Utils::is_response_code_success($status_code)) {
 			foreach ($url_list as $url) {
