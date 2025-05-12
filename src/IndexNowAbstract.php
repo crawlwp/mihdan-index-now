@@ -209,7 +209,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 		];
 
 		if (absint($status_code) === 429) {
-			update_option($this->rate_limit_db_key(), time() + DAY_IN_SECONDS);
+			update_option($this->rate_limit_db_key(), time() + (3 * HOUR_IN_SECONDS));
 		}
 
 		if (Utils::is_response_code_success($status_code)) {
