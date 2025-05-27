@@ -80,8 +80,8 @@ class BingWebmaster extends WebmasterAbstract
 		$status_code = wp_remote_retrieve_response_code($response);
 		$body        = json_decode(wp_remote_retrieve_body($response), true);
 
-		if (absint($status_code) === 400) {
-			update_option('crawlwp_bing_indexing_rate_limit_expiration', time() + DAY_IN_SECONDS);
+		if ($status_code >= 400 && $status_code < 500) {
+			update_option('crawlwp_bing_indexing_rate_limit_expiration', time() + (6 * HOUR_IN_SECONDS));
 		}
 
 		$data = [

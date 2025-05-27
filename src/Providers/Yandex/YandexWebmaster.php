@@ -10,71 +10,81 @@ namespace Mihdan\IndexNow\Providers\Yandex;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\WebmasterAbstract;
 
-class YandexWebmaster extends WebmasterAbstract {
-
-	private const USER_ENDPOINT    = 'https://api.webmaster.yandex.net/v4/user/';
-	private const TOKEN_ENDPOINT   = 'https://oauth.yandex.com/token';
-	private const HOSTS_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%d/hosts';
+class YandexWebmaster extends WebmasterAbstract
+{
+	private const USER_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/';
+	private const TOKEN_ENDPOINT = 'https://oauth.yandex.com/token';
+	private const HOSTS_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%d/hosts';
 	private const RECRAWL_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
-	private const QUOTA_ENDPOINT   = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/quota';
+	private const QUOTA_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/quota';
 
-	public function get_slug(): string {
+	public function get_slug(): string
+	{
 		return 'yandex-webmaster';
 	}
 
-	public function get_name(): string {
-		return __( 'Yandex Webmaster', 'mihdan-index-now' );
+	public function get_name(): string
+	{
+		return __('Yandex Webmaster', 'mihdan-index-now');
 	}
 
-	public function get_token(): string {
-		return $this->wposa->get_option( 'access_token', 'yandex_webmaster' );
+	public function get_token(): string
+	{
+		return $this->wposa->get_option('access_token', 'yandex_webmaster');
 	}
 
-	public function get_user_id(): string {
-		return $this->wposa->get_option( 'user_id', 'yandex_webmaster' );
+	public function get_user_id(): string
+	{
+		return $this->wposa->get_option('user_id', 'yandex_webmaster');
 	}
 
-	public function get_host_id(): string {
-		return $this->wposa->get_option( 'host_id', 'yandex_webmaster' );
+	public function get_host_id(): string
+	{
+		return $this->wposa->get_option('host_id', 'yandex_webmaster');
 	}
 
-	public function get_client_id(): string {
-		return $this->wposa->get_option( 'client_id', 'yandex_webmaster' );
+	public function get_client_id(): string
+	{
+		return $this->wposa->get_option('client_id', 'yandex_webmaster');
 	}
 
-	public function get_client_secret(): string {
-		return $this->wposa->get_option( 'client_secret', 'yandex_webmaster' );
+	public function get_client_secret(): string
+	{
+		return $this->wposa->get_option('client_secret', 'yandex_webmaster');
 	}
 
-	public function get_ping_endpoint(): string {
+	public function get_ping_endpoint(): string
+	{
 		return self::RECRAWL_ENDPOINT;
 	}
 
-	public function get_quota_endpoint(): string {
+	public function get_quota_endpoint(): string
+	{
 		return self::QUOTA_ENDPOINT;
 	}
 
-	public function is_enabled(): bool {
-		return $this->wposa->get_option( 'enable', 'yandex_webmaster', 'off' ) === 'on';
+	public function is_enabled(): bool
+	{
+		return $this->wposa->get_option('enable', 'yandex_webmaster', 'off') === 'on';
 	}
 
-	public function setup_hooks() {
+	public function setup_hooks()
+	{
+		add_action('admin_init', [$this, 'get_api_token']);
 
-		add_action( 'admin_init', [ $this, 'get_api_token' ] );
-
-		if ( ! $this->is_enabled() ) {
+		if ( ! $this->is_enabled()) {
 			return;
 		}
 
 		//$this->get_quota();
-		add_action( 'mihdan_index_now/post_added', [ $this, 'ping' ] );
-		add_action( 'mihdan_index_now/post_updated', [ $this, 'ping' ] );
+		add_action('mihdan_index_now/post_added', [$this, 'ping']);
+		add_action('mihdan_index_now/post_updated', [$this, 'ping']);
 	}
 
-	public function get_api_token() {
-
-		if ( isset( $_GET['code'], $_GET['state'] ) && $_GET['state'] === $this->get_slug() ) {
-			$data = [];
+	public function get_api_token()
+	{
+		if (isset($_GET['code'], $_GET['state']) && $_GET['state'] === $this->get_slug()) {
+			$data         = [];
 			$data['body'] = [
 				'grant_type'    => 'authorization_code',
 				'code'          => $_GET['code'],
@@ -82,28 +92,32 @@ class YandexWebmaster extends WebmasterAbstract {
 				'client_secret' => $this->get_client_secret(),
 			];
 
-			$response    = wp_remote_post( self::TOKEN_ENDPOINT, $data );
-			$status_code = wp_remote_retrieve_response_code( $response );
-			$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+			$response    = wp_remote_post(self::TOKEN_ENDPOINT, $data);
+			$status_code = wp_remote_retrieve_response_code($response);
+			$body        = json_decode(wp_remote_retrieve_body($response), true);
 
-			if ( $status_code !== 200 ) {
-				$this->logger->error( $body['error_description'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
+			if ($status_code !== 200) {
+				$this->logger->error($body['error_description'], [
+					'search_engine' => $this->get_slug(),
+					'status_code'   => $status_code
+				]);
+
 				return;
 			}
 
-			$this->wposa->set_option( 'access_token', $body['access_token'], 'yandex_webmaster' );
-			$this->wposa->set_option( 'refresh_token', $body['refresh_token'], 'yandex_webmaster' );
-			$this->wposa->set_option( 'expires_in', $body['expires_in'] + current_time( 'timestamp' ), 'yandex_webmaster' );
+			$this->wposa->set_option('access_token', $body['access_token'], 'yandex_webmaster');
+			$this->wposa->set_option('refresh_token', $body['refresh_token'], 'yandex_webmaster');
+			$this->wposa->set_option('expires_in', $body['expires_in'] + current_time('timestamp'), 'yandex_webmaster');
 
-			$user_id = $this->get_api_user_id( $body['access_token'] );
+			$user_id = $this->get_api_user_id($body['access_token']);
 
-			if ( $user_id ) {
-				$this->wposa->set_option( 'user_id', $user_id, 'yandex_webmaster' );
+			if ($user_id) {
+				$this->wposa->set_option('user_id', $user_id, 'yandex_webmaster');
 
-				$host_ids = $this->get_api_host_id( $user_id, $body['access_token'] );
+				$host_ids = $this->get_api_host_id($user_id, $body['access_token']);
 
-				if ( $host_ids ) {
-					$this->wposa->set_option( 'host_ids', serialize( $host_ids ), 'yandex_webmaster' );
+				if ($host_ids) {
+					$this->wposa->set_option('host_ids', serialize($host_ids), 'yandex_webmaster');
 				}
 			}
 
@@ -111,7 +125,7 @@ class YandexWebmaster extends WebmasterAbstract {
 				add_query_arg(
 					'page',
 					Utils::get_plugin_slug(),
-					admin_url( 'admin.php' )
+					admin_url('admin.php')
 				)
 			);
 		}
@@ -124,7 +138,8 @@ class YandexWebmaster extends WebmasterAbstract {
 	 *
 	 * @return int
 	 */
-	public function get_api_user_id( string $token ): int {
+	public function get_api_user_id(string $token): int
+	{
 		$args = [
 			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
@@ -133,12 +148,16 @@ class YandexWebmaster extends WebmasterAbstract {
 			'timeout' => 30,
 		];
 
-		$response    = wp_remote_get( self::USER_ENDPOINT, $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+		$response    = wp_remote_get(self::USER_ENDPOINT, $args);
+		$status_code = wp_remote_retrieve_response_code($response);
+		$body        = json_decode(wp_remote_retrieve_body($response), true);
 
-		if ( $status_code !== 200 ) {
-			$this->logger->error( $body['error_message'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
+		if ($status_code !== 200) {
+			$this->logger->error($body['error_message'], [
+				'search_engine' => $this->get_slug(),
+				'status_code'   => $status_code
+			]);
+
 			return 0;
 		}
 
@@ -148,12 +167,13 @@ class YandexWebmaster extends WebmasterAbstract {
 	/**
 	 * Get user ID.
 	 *
-	 * @param int    $user_id User ID.
-	 * @param string $token   Access token.
+	 * @param int $user_id User ID.
+	 * @param string $token Access token.
 	 *
 	 * @return int
 	 */
-	public function get_api_host_id( int $user_id, string $token ): array {
+	public function get_api_host_id(int $user_id, string $token): array
+	{
 		$args = [
 			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
@@ -162,17 +182,21 @@ class YandexWebmaster extends WebmasterAbstract {
 			'timeout' => 30,
 		];
 
-		$response    = wp_remote_get( sprintf( self::HOSTS_ENDPOINT, $user_id ), $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+		$response    = wp_remote_get(sprintf(self::HOSTS_ENDPOINT, $user_id), $args);
+		$status_code = wp_remote_retrieve_response_code($response);
+		$body        = json_decode(wp_remote_retrieve_body($response), true);
 
-		if ( $status_code !== 200 ) {
-			$this->logger->error( $body['error_message'], [ 'search_engine' => $this->get_slug(), 'status_code' => $status_code ] );
+		if ($status_code !== 200) {
+			$this->logger->error($body['error_message'], [
+				'search_engine' => $this->get_slug(),
+				'status_code'   => $status_code
+			]);
+
 			return 0;
 		}
 
-		return isset( $body['hosts'] )
-			? wp_list_pluck( $body['hosts'], 'host_id' )
+		return isset($body['hosts'])
+			? wp_list_pluck($body['hosts'], 'host_id')
 			: [];
 	}
 
@@ -183,19 +207,21 @@ class YandexWebmaster extends WebmasterAbstract {
 	 *
 	 * @link https://yandex.com/dev/webmaster/doc/dg/reference/host-recrawl-post.html
 	 */
-	public function ping( int $post_id ) {
-
+	public function ping(int $post_id)
+	{
 		$token = $this->get_token();
 
 		$user_id = $this->get_user_id();
 
 		$host_id = $this->get_host_id();
 
-		if(empty($token) || empty($user_id) || empty($host_id)) return;
+		if (empty($token) || empty($user_id) || empty($host_id)) return;
 
-		$url = sprintf( $this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id() );
+		if (time() < (int)get_option('crawlwp_yandex_indexing_rate_limit_expiration', 0)) return;
 
-		$post_url = Utils::normalize_url(get_permalink( $post_id ));
+		$url = sprintf($this->get_ping_endpoint(), $this->get_user_id(), $this->get_host_id());
+
+		$post_url = Utils::normalize_url(get_permalink($post_id));
 
 		$args = array(
 			'timeout' => 30,
@@ -210,27 +236,32 @@ class YandexWebmaster extends WebmasterAbstract {
 			),
 		);
 
-		$response    = wp_remote_post( $url, $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+		$response    = wp_remote_post($url, $args);
+		$status_code = wp_remote_retrieve_response_code($response);
+		$body        = json_decode(wp_remote_retrieve_body($response), true);
 
 		$data = [
 			'status_code'   => $status_code,
 			'search_engine' => $this->get_slug(),
 		];
 
-		if ( Utils::is_response_code_success( $status_code ) ) {
-			$message = sprintf( '<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title( $post_id ) );
-			$this->logger->info( $message, $data );
+		if ($status_code >= 400 && $status_code < 500) {
+			update_option('crawlwp_yandex_indexing_rate_limit_expiration', time() + (6 * HOUR_IN_SECONDS));
+		}
+
+		if (Utils::is_response_code_success($status_code)) {
+			$message = sprintf('<a href="%s" target="_blank">%s</a> - OK', $post_url, get_the_title($post_id));
+			$this->logger->info($message, $data);
 		} else {
-			$this->logger->error( $body['error_message'], $data );
+			$this->logger->error($body['error_message'], $data);
 		}
 
 		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 	}
 
-	public function get_quota(): array {
-		$url = sprintf( $this->get_quota_endpoint(), $this->get_user_id(), $this->get_host_id() );
+	public function get_quota(): array
+	{
+		$url = sprintf($this->get_quota_endpoint(), $this->get_user_id(), $this->get_host_id());
 
 		$args = array(
 			'timeout' => 30,
@@ -240,22 +271,22 @@ class YandexWebmaster extends WebmasterAbstract {
 			),
 		);
 
-		$response    = wp_remote_get( $url, $args );
-		$status_code = wp_remote_retrieve_response_code( $response );
-		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+		$response    = wp_remote_get($url, $args);
+		$status_code = wp_remote_retrieve_response_code($response);
+		$body        = json_decode(wp_remote_retrieve_body($response), true);
 
 		$data = [
 			'status_code'   => $status_code,
 			'search_engine' => $this->get_slug(),
 		];
 
-		if ( Utils::is_response_code_success( $status_code ) ) {
+		if (Utils::is_response_code_success($status_code)) {
 			$message = 'Data on daily limit successfully received';
-			$this->logger->info( $message, $data );
+			$this->logger->info($message, $data);
 
 			return $body;
 		} else {
-			$this->logger->error( $body['error_message'], $data );
+			$this->logger->error($body['error_message'], $data);
 
 			return [
 				'daily_quota'     => 0,

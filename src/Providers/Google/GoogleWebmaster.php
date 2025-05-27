@@ -111,8 +111,8 @@ class GoogleWebmaster extends WebmasterAbstract
 			'search_engine' => $this->get_slug(),
 		];
 
-		if (absint($status_code) === 429) {
-			update_option('crawlwp_google_indexing_rate_limit_expiration', time() + DAY_IN_SECONDS);
+		if ($status_code >= 400 && $status_code < 500) {
+			update_option('crawlwp_google_indexing_rate_limit_expiration', time() + (6 * HOUR_IN_SECONDS));
 		}
 
 		if (Utils::is_response_code_success($status_code)) {

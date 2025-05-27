@@ -208,7 +208,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 			'search_engine' => $this->get_current_search_engine(),
 		];
 
-		if (absint($status_code) === 429) {
+		if ($status_code >= 400 && $status_code < 500) {
 			update_option($this->rate_limit_db_key(), time() + (3 * HOUR_IN_SECONDS));
 		}
 
