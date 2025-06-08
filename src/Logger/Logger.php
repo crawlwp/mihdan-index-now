@@ -2,7 +2,6 @@
 namespace Mihdan\IndexNow\Logger;
 
 use Mihdan\IndexNow\Dependencies\Psr\Log\AbstractLogger;
-use WP_Post;
 
 class Logger extends AbstractLogger {
 	public function get_logger_table_name() {
