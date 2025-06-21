@@ -154,6 +154,7 @@ class Settings
 
 						$pro_features = [
 							esc_html__('Google Search Insights', 'mihdan-index-now'),
+							esc_html__('Bing Search Insights', 'mihdan-index-now'),
 							esc_html__('Auto Indexing', 'mihdan-index-now'),
 							esc_html__('Index Status Insights', 'mihdan-index-now'),
 							esc_html__('Index History', 'mihdan-index-now'),
