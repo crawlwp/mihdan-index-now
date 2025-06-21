@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CrawlWP SEO - Instant Indexing & SEO Insights
  * Description: SEO plugin for indexing WordPress content and monitoring search engine performance.
- * Version: 3.0.7
+ * Version: 3.0.8
  * Author: CrawlWP SEO Team
  * Author URI: https://crawlwp.com/
  * Plugin URI: https://crawlwp.com/
@@ -20,7 +20,7 @@ if ( ! defined('ABSPATH')) {
 
 require_once __DIR__ . '/vendor-prefixed/autoload.php';
 
-define('MIHDAN_INDEX_NOW_VERSION', '3.0.7');
+define('MIHDAN_INDEX_NOW_VERSION', '3.0.8');
 define('MIHDAN_INDEX_NOW_SLUG', 'mihdan-index-now');
 define('MIHDAN_INDEX_NOW_PREFIX', 'mihdan_index_now');
 define('MIHDAN_INDEX_NOW_NAME', 'CrawlWP');

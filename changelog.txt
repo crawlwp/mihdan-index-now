@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.8 =
+* Added effective 4XX error handling.
+
 = 3.0.7 =
 * Improvement: Indexnow pinging will be halted for few hours when on API rate-limit.
 
