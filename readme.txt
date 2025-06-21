@@ -125,6 +125,7 @@ Sitemaps help webmasters inform search engines about their WordPress pages, but 
 
 = 3.0.8 =
 * Added effective 4XX error handling.
+* Premium: Added [Bing support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).
 
 = 3.0.7 =
 * Improvement: Indexnow pinging will be halted for few hours when on API rate-limit.
