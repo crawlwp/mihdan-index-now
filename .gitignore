@@ -40,3 +40,4 @@ php-scoper/vendor/*
 build/*
 vendor-prefixed/*
 composer.lock
+/build
