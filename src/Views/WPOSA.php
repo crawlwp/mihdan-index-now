@@ -1243,7 +1243,7 @@ class WPOSA
 
 		if ( ! $flag) return;
 
-		$wp_removable_query_args = array_merge(['paged'], wp_removable_query_args());
+		$wp_removable_query_args = array_merge(['paged', 'cwp-page', 'cwp-query'], wp_removable_query_args());
 
 		?>
 		<div class="wposa">
@@ -1351,9 +1351,12 @@ class WPOSA
 
 			$section = $section['id'];
 
-			foreach ((array)$wp_settings_fields[$page][$section] as $field) {
+			if(isset($wp_settings_fields[$page][$section])) {
 
-				call_user_func($field['callback'], $field['args']);
+				foreach ((array)$wp_settings_fields[$page][$section] as $field) {
+
+					call_user_func($field['callback'], $field['args']);
+				}
 			}
 		}
 	}
