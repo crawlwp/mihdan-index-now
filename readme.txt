@@ -132,37 +132,6 @@ Sitemaps help webmasters inform search engines about their WordPress pages, but 
 = 3.0.6.2 =
 * Fixed error with previous update
 
-= 3.0.6.1 =
-* Removed shogun class.
-
-= 3.0.6 =
-* Fixed Function _load_textdomain_just_in_time was called incorrectly
-* Added crawlwp_normalized_new_url filter to change site URL.
-
-= 3.0.5 =
-* Fixed error with Cron job dispatching.
-* Enhancement: Delay index ping for 24hrs if API rate-limit is hit.
-* Fixed bug where index pinging can happen without saved API credentials.
-
-= 3.0.4 =
-* Fixed bug where admin notice was not shown after saving settings.
-* Fixed background processing not working for some sites.
-* Fixed screen-option and profile-admin menu dropdown clash.
-
-= 3.0.3 =
-* Set Cron interval to 1min to quicken background task processing.
-
-= 3.0.2 =
-* Added site verification feature.
-
-= 3.0.1 =
-* Fixed link to documentation.
-
-= 3.0.0 =
-* Redesigned admin page.
-* Premium Feature: [SEO Stats](https://crawlwp.com/?ref=changelog#features)
-* Premium Feature: [SEO Indexing](https://crawlwp.com/?ref=changelog#features)
-
 See the [changelog file](https://plugins.svn.wordpress.org/mihdan-index-now/trunk/changelog.txt) for complete change log information.
 
 == Installation ==
