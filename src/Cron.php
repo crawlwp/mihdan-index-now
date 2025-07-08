@@ -50,7 +50,7 @@ class Cron {
 	public function clear_log(): bool {
 		global $wpdb;
 
-		$lifetime   = $this->wposa->get_option( 'lifetime', 'logs', 1 );
+		$lifetime   = $this->wposa->get_option( 'lifetime', 'logs', 7 );
 		$table_name = $this->logger->get_logger_table_name();
 
 		$wpdb->query(

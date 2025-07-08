@@ -516,7 +516,7 @@ class Settings
 					'id'      => 'lifetime',
 					'type'    => 'number',
 					'name'    => __('Lifetime', 'mihdan-index-now'),
-					'default' => 1,
+					'default' => 7,
 					'desc'    => __('Logs lifetime in days', 'mihdan-index-now'),
 				)
 			);
