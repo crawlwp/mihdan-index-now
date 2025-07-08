@@ -87,4 +87,37 @@ class Setup extends WP_Background_Process
 
 		return false;
 	}
+
+	/**
+	 * Get count of batches.
+	 *
+	 * @return string|null
+	 */
+	public function get_batches_count()
+	{
+		global $wpdb;
+
+		$table      = $wpdb->options;
+		$column     = 'option_name';
+		$key_column = 'option_id';
+
+		if (is_multisite()) {
+			$table      = $wpdb->sitemeta;
+			$column     = 'meta_key';
+			$key_column = 'meta_id';
+		}
+
+		$key = $wpdb->esc_like($this->identifier . '_batch_') . '%';
+
+		$sql = '
+			SELECT COUNT(*)
+			FROM ' . $table . '
+			WHERE ' . $column . ' LIKE %s
+			ORDER BY ' . $key_column . ' ASC
+			';
+
+		$args = array($key);
+
+		return $wpdb->get_var($wpdb->prepare($sql, $args));
+	}
 }

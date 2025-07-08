@@ -26,7 +26,14 @@ class Dispatch
 
 	public function save_and_run()
 	{
-		$this->bgProcess->save()->dispatch();
+		if ($this->bgProcess->get_batches_count() < $this->get_batches_upper_limit()) {
+			$this->bgProcess->save()->dispatch();
+		}
+	}
+
+	public function get_batches_upper_limit()
+	{
+		return apply_filters('crawlwp_bg_process_batches_upper_limit', 20);
 	}
 
 	/**
