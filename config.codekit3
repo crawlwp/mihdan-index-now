@@ -510,6 +510,14 @@
       "oAP" : "\/vendor\/carbonphp\/carbon-doctrine-types\/LICENSE",
       "oF" : 0
     },
+    "\/vendor\/carbonphp\/carbon-doctrine-types\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/carbonphp\/carbon-doctrine-types\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/carbonphp\/carbon-doctrine-types\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -585,6 +593,14 @@
       "oAP" : "\/vendor\/carbonphp\/carbon-doctrine-types\/src\/Carbon\/Doctrine\/DateTimeType.php",
       "oF" : 0
     },
+    "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/CHANGES.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/CHANGES.html",
+      "oF" : 0
+    },
     "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/CHANGES.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -623,12 +639,31 @@
       "sC" : 3,
       "tS" : 0
     },
+    "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/dismiss-notice.min.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/dismiss-notice.min.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
     "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/persist-admin-notices-dismissal.php" : {
       "cB" : 0,
       "ft" : 8192,
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/persist-admin-notices-dismissal.php",
+      "oF" : 0
+    },
+    "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/README.html",
       "oF" : 0
     },
     "\/vendor\/collizo4sky\/persist-admin-notices-dismissal\/README.md" : {
@@ -746,6 +781,14 @@
       "oAP" : "\/vendor\/composer\/platform_check.php",
       "oF" : 0
     },
+    "\/vendor\/firebase\/php-jwt\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/firebase\/php-jwt\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/firebase\/php-jwt\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -779,6 +822,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/firebase\/php-jwt\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/firebase\/php-jwt\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/firebase\/php-jwt\/README.html",
       "oF" : 0
     },
     "\/vendor\/firebase\/php-jwt\/README.md" : {
@@ -888,6 +939,14 @@
       "oAP" : "\/vendor\/google\/apiclient-services\/LICENSE",
       "oF" : 0
     },
+    "\/vendor\/google\/apiclient-services\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/apiclient-services\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/google\/apiclient-services\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -906,6 +965,14 @@
       "pME" : 1,
       "rFN" : 0,
       "uCM" : 0
+    },
+    "\/vendor\/google\/apiclient-services\/SECURITY.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/apiclient-services\/SECURITY.html",
+      "oF" : 0
     },
     "\/vendor\/google\/apiclient-services\/SECURITY.md" : {
       "cB" : 0,
@@ -1262,6 +1329,14 @@
       "oAP" : "\/vendor\/google\/apiclient-services\/src\/SearchConsole\/WmxSitemapContent.php",
       "oF" : 0
     },
+    "\/vendor\/google\/apiclient\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/apiclient\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/google\/apiclient\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -1297,6 +1372,14 @@
       "oAP" : "\/vendor\/google\/apiclient\/LICENSE",
       "oF" : 0
     },
+    "\/vendor\/google\/apiclient\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/apiclient\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/google\/apiclient\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -1315,6 +1398,14 @@
       "pME" : 1,
       "rFN" : 0,
       "uCM" : 0
+    },
+    "\/vendor\/google\/apiclient\/SECURITY.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/apiclient\/SECURITY.html",
+      "oF" : 0
     },
     "\/vendor\/google\/apiclient\/SECURITY.md" : {
       "cB" : 0,
@@ -1455,6 +1546,14 @@
       "oAP" : "\/vendor\/google\/apiclient\/src\/Service\/Exception.php",
       "oF" : 0
     },
+    "\/vendor\/google\/apiclient\/src\/Service\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/apiclient\/src\/Service\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/google\/apiclient\/src\/Service\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -1554,6 +1653,14 @@
       "oAP" : "\/vendor\/google\/auth\/LICENSE",
       "oF" : 0
     },
+    "\/vendor\/google\/auth\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/auth\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/google\/auth\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -1572,6 +1679,14 @@
       "pME" : 1,
       "rFN" : 0,
       "uCM" : 0
+    },
+    "\/vendor\/google\/auth\/SECURITY.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/google\/auth\/SECURITY.html",
+      "oF" : 0
     },
     "\/vendor\/google\/auth\/SECURITY.md" : {
       "cB" : 0,
@@ -1910,6 +2025,14 @@
       "oAP" : "\/vendor\/google\/auth\/VERSION",
       "oF" : 0
     },
+    "\/vendor\/guzzlehttp\/guzzle\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/guzzle\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/guzzlehttp\/guzzle\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -1943,6 +2066,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/guzzlehttp\/guzzle\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/guzzlehttp\/guzzle\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/guzzle\/README.html",
       "oF" : 0
     },
     "\/vendor\/guzzlehttp\/guzzle\/README.md" : {
@@ -2292,6 +2423,14 @@
       "oAP" : "\/vendor\/guzzlehttp\/guzzle\/src\/Utils.php",
       "oF" : 0
     },
+    "\/vendor\/guzzlehttp\/guzzle\/UPGRADING.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/guzzle\/UPGRADING.html",
+      "oF" : 0
+    },
     "\/vendor\/guzzlehttp\/guzzle\/UPGRADING.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -2310,6 +2449,14 @@
       "pME" : 1,
       "rFN" : 0,
       "uCM" : 0
+    },
+    "\/vendor\/guzzlehttp\/promises\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/promises\/CHANGELOG.html",
+      "oF" : 0
     },
     "\/vendor\/guzzlehttp\/promises\/CHANGELOG.md" : {
       "cB" : 0,
@@ -2344,6 +2491,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/guzzlehttp\/promises\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/guzzlehttp\/promises\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/promises\/README.html",
       "oF" : 0
     },
     "\/vendor\/guzzlehttp\/promises\/README.md" : {
@@ -2493,6 +2648,14 @@
       "oAP" : "\/vendor\/guzzlehttp\/promises\/src\/Utils.php",
       "oF" : 0
     },
+    "\/vendor\/guzzlehttp\/psr7\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/psr7\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/guzzlehttp\/psr7\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -2526,6 +2689,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/guzzlehttp\/psr7\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/guzzlehttp\/psr7\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/guzzlehttp\/psr7\/README.html",
       "oF" : 0
     },
     "\/vendor\/guzzlehttp\/psr7\/README.md" : {
@@ -2795,6 +2966,14 @@
       "oAP" : "\/vendor\/guzzlehttp\/psr7\/src\/Utils.php",
       "oF" : 0
     },
+    "\/vendor\/monolog\/monolog\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/monolog\/monolog\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/monolog\/monolog\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -2828,6 +3007,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/monolog\/monolog\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/monolog\/monolog\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/monolog\/monolog\/README.html",
       "oF" : 0
     },
     "\/vendor\/monolog\/monolog\/README.md" : {
@@ -3769,6 +3956,14 @@
       "oAP" : "\/vendor\/monolog\/monolog\/src\/Monolog\/Utils.php",
       "oF" : 0
     },
+    "\/vendor\/monolog\/monolog\/UPGRADE.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/monolog\/monolog\/UPGRADE.html",
+      "oF" : 0
+    },
     "\/vendor\/monolog\/monolog\/UPGRADE.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -3898,6 +4093,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/nesbot\/carbon\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/nesbot\/carbon\/readme.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/nesbot\/carbon\/readme.html",
       "oF" : 0
     },
     "\/vendor\/nesbot\/carbon\/readme.md" : {
@@ -11151,6 +11354,14 @@
       "oAP" : "\/vendor\/paragonie\/constant_time_encoding\/LICENSE.txt",
       "oF" : 0
     },
+    "\/vendor\/paragonie\/constant_time_encoding\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/paragonie\/constant_time_encoding\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/paragonie\/constant_time_encoding\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14094,6 +14305,14 @@
       "oAP" : "\/vendor\/psr\/cache",
       "oF" : 0
     },
+    "\/vendor\/psr\/clock\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/clock\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/psr\/clock\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14129,6 +14348,14 @@
       "oAP" : "\/vendor\/psr\/clock\/LICENSE",
       "oF" : 0
     },
+    "\/vendor\/psr\/clock\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/clock\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/psr\/clock\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14154,6 +14381,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/psr\/clock\/src\/ClockInterface.php",
+      "oF" : 0
+    },
+    "\/vendor\/psr\/http-client\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-client\/CHANGELOG.html",
       "oF" : 0
     },
     "\/vendor\/psr\/http-client\/CHANGELOG.md" : {
@@ -14189,6 +14424,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/psr\/http-client\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/psr\/http-client\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-client\/README.html",
       "oF" : 0
     },
     "\/vendor\/psr\/http-client\/README.md" : {
@@ -14258,6 +14501,14 @@
       "oAP" : "\/vendor\/psr\/http-factory\/LICENSE",
       "oF" : 0
     },
+    "\/vendor\/psr\/http-factory\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-factory\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/psr\/http-factory\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14325,6 +14576,14 @@
       "oAP" : "\/vendor\/psr\/http-factory\/src\/UriFactoryInterface.php",
       "oF" : 0
     },
+    "\/vendor\/psr\/http-message\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-message\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/psr\/http-message\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14352,6 +14611,14 @@
       "oO" : 1,
       "oS" : 1
     },
+    "\/vendor\/psr\/http-message\/docs\/PSR7-Interfaces.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-message\/docs\/PSR7-Interfaces.html",
+      "oF" : 0
+    },
     "\/vendor\/psr\/http-message\/docs\/PSR7-Interfaces.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14370,6 +14637,14 @@
       "pME" : 1,
       "rFN" : 0,
       "uCM" : 0
+    },
+    "\/vendor\/psr\/http-message\/docs\/PSR7-Usage.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-message\/docs\/PSR7-Usage.html",
+      "oF" : 0
     },
     "\/vendor\/psr\/http-message\/docs\/PSR7-Usage.md" : {
       "cB" : 0,
@@ -14396,6 +14671,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/psr\/http-message\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/psr\/http-message\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/psr\/http-message\/README.html",
       "oF" : 0
     },
     "\/vendor\/psr\/http-message\/README.md" : {
@@ -14493,6 +14776,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/ralouphie\/getallheaders\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/ralouphie\/getallheaders\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/ralouphie\/getallheaders\/README.html",
       "oF" : 0
     },
     "\/vendor\/ralouphie\/getallheaders\/README.md" : {
@@ -14594,6 +14885,14 @@
       "oO" : 1,
       "oS" : 1
     },
+    "\/vendor\/sniccowp\/php-scoper-wordpress-excludes\/LICENSE.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/sniccowp\/php-scoper-wordpress-excludes\/LICENSE.html",
+      "oF" : 0
+    },
     "\/vendor\/sniccowp\/php-scoper-wordpress-excludes\/LICENSE.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14619,6 +14918,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/sniccowp\/php-scoper-wordpress-excludes\/update.sh",
+      "oF" : 0
+    },
+    "\/vendor\/symfony\/deprecation-contracts\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/deprecation-contracts\/CHANGELOG.html",
       "oF" : 0
     },
     "\/vendor\/symfony\/deprecation-contracts\/CHANGELOG.md" : {
@@ -14662,6 +14969,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/symfony\/deprecation-contracts\/LICENSE",
+      "oF" : 0
+    },
+    "\/vendor\/symfony\/deprecation-contracts\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/deprecation-contracts\/README.html",
       "oF" : 0
     },
     "\/vendor\/symfony\/deprecation-contracts\/README.md" : {
@@ -14721,6 +15036,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/symfony\/polyfill-mbstring\/Mbstring.php",
+      "oF" : 0
+    },
+    "\/vendor\/symfony\/polyfill-mbstring\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/polyfill-mbstring\/README.html",
       "oF" : 0
     },
     "\/vendor\/symfony\/polyfill-mbstring\/README.md" : {
@@ -14814,6 +15137,14 @@
       "oAP" : "\/vendor\/symfony\/polyfill-php80\/PhpToken.php",
       "oF" : 0
     },
+    "\/vendor\/symfony\/polyfill-php80\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/polyfill-php80\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/symfony\/polyfill-php80\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14873,6 +15204,14 @@
       "oAP" : "\/vendor\/symfony\/polyfill-php80\/Resources\/stubs\/ValueError.php",
       "oF" : 0
     },
+    "\/vendor\/symfony\/translation-contracts\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/translation-contracts\/CHANGELOG.html",
+      "oF" : 0
+    },
     "\/vendor\/symfony\/translation-contracts\/CHANGELOG.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -14914,6 +15253,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/symfony\/translation-contracts\/LocaleAwareInterface.php",
+      "oF" : 0
+    },
+    "\/vendor\/symfony\/translation-contracts\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/translation-contracts\/README.html",
       "oF" : 0
     },
     "\/vendor\/symfony\/translation-contracts\/README.md" : {
@@ -14997,6 +15344,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/vendor\/symfony\/translation\/Catalogue\/TargetOperation.php",
+      "oF" : 0
+    },
+    "\/vendor\/symfony\/translation\/CHANGELOG.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/translation\/CHANGELOG.html",
       "oF" : 0
     },
     "\/vendor\/symfony\/translation\/CHANGELOG.md" : {
@@ -15618,6 +15973,14 @@
       "oAP" : "\/vendor\/symfony\/translation\/Reader\/TranslationReaderInterface.php",
       "oF" : 0
     },
+    "\/vendor\/symfony\/translation\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/symfony\/translation\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/symfony\/translation\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -15821,6 +16184,14 @@
       "oAP" : "\/vendor\/writecrow\/country_code_converter\/phpunit.xml.dist",
       "oF" : 0
     },
+    "\/vendor\/writecrow\/country_code_converter\/README.html" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/vendor\/writecrow\/country_code_converter\/README.html",
+      "oF" : 0
+    },
     "\/vendor\/writecrow\/country_code_converter\/README.md" : {
       "cB" : 0,
       "cS" : 0,
@@ -15885,7 +16256,7 @@
     "displayValueWasSetByUser" : 1,
     "iconImageName" : "brackets-forest",
     "iconImageWasSetByUser" : 0,
-    "lastBuiltDate" : 772204983.67016101
+    "lastBuiltDate" : 774382680.02177203
   },
   "projectSettings" : {
     "abortBuildOnError" : 1,

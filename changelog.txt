@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.9 =
+* Set default log lifetime to 7days
+
 = 3.0.8 =
 * Added effective 4XX error handling.
 * Premium: Added [Bing support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).

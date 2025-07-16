@@ -2,9 +2,9 @@
 Contributors: collizo4sky, properfraction
 Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
-Requires at least: 5.9
+Requires at least: 6.0
 Tested up to: 6.8
-Stable tag: 3.0.8
+Stable tag: 3.0.9
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -122,6 +122,9 @@ Such HTTP 429 Too Many Requests response status code indicates you are sending t
 Sitemaps help webmasters inform search engines about their WordPress pages, but search engines don't visit them often. With CrawlWP integration with IndexNow and the Indexing API of search engines, you can directly notify search engines of new content without waiting for them to crawl your sitemaps.
 
 == Changelog ==
+
+= 3.0.9 =
+* Set default log lifetime to 7days
 
 = 3.0.8 =
 * Added effective 4XX error handling.
