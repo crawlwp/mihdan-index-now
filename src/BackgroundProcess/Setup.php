@@ -25,6 +25,28 @@ class Setup extends WP_Background_Process
 		});
 
 		add_filter($this->identifier . '_wp_die', '__return_false');
+
+		$this->custom_cron_healthcheck();
+	}
+
+	public function custom_cron_healthcheck()
+	{
+		add_filter('cron_schedules', function ($schedules) {
+			$schedules['cwp_5min'] = [
+				'interval' => 5 * MINUTE_IN_SECONDS,
+				'display'  => 'Every 5 Minute'
+			];
+
+			return $schedules;
+		});
+
+		add_action('init', function () {
+			if ( ! wp_next_scheduled($this->cron_hook_identifier . '_custom_healthcheck')) {
+				wp_schedule_event(time(), 'cwp_5min', $this->cron_hook_identifier . '_custom_healthcheck');
+			}
+		});
+
+		add_action($this->cron_hook_identifier . '_custom_healthcheck', [$this, 'maybe_handle']);
 	}
 
 	public function dispatch()
