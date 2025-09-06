@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.10 =
+* Added custom Cron health-check.
+
 = 3.0.9 =
 * Set default log lifetime to 7days
 
