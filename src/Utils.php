@@ -245,7 +245,41 @@ class Utils
 
 	public static function normalized_get_permalink($post_id)
 	{
-		return self::normalize_url(get_permalink($post_id));
+		$post_id = $post_id instanceof \WP_Post ? $post_id->ID : $post_id;
+
+		$url = '';
+
+		if (class_exists('\SitePress')) {
+
+			global $sitepress;
+
+			if (is_object($sitepress) && method_exists($sitepress, 'get_default_language')) {
+
+				$post_language = apply_filters('wpml_post_language_details', null, $post_id);
+
+				if ( ! empty($post_language['language_code'])) {
+
+					$target_language = $post_language['language_code'];
+
+					// Get the post ID in the target language
+					$translated_post_id = apply_filters('wpml_object_id', $post_id, 'any', false, $target_language);
+
+					if ($translated_post_id) {
+						// Switch WPML to the target language context
+						$current_language = $sitepress->get_current_language();
+						$sitepress->switch_lang($target_language);
+						// Get the permalink in the correct language context
+						$url = get_permalink($translated_post_id);
+						// Switch back to the original language
+						$sitepress->switch_lang($current_language);
+					}
+				}
+			}
+		}
+
+		if (empty($url)) $url = get_permalink($post_id);
+
+		return self::normalize_url($url);
 	}
 
 	public static function normalized_get_term_link($term, $taxonomy = '')

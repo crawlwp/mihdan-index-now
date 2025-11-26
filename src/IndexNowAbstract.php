@@ -128,7 +128,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 	private function maybe_do_ping_post(int $post_id)
 	{
 		if ($this->get_current_search_engine() === $this->get_slug()) {
-			$this->push([Utils::normalize_url(get_permalink($post_id))]);
+			$this->push([Utils::normalized_get_permalink($post_id)]);
 
 			do_action('mihdan_index_now/index_pinged', 'post', $post_id);
 		}

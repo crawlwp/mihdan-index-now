@@ -218,7 +218,7 @@ class Log_List_Table extends WP_List_Table
 			return sprintf(
 				'%d: <a href="%s" target="_blank">%s</a>',
 				$item->$colname,
-				Utils::normalize_url(get_permalink($item->$colname)),
+				Utils::normalized_get_permalink($item->$colname),
 				get_the_title($item->$colname));
 		} elseif ($colname === 'level') {
 			return sprintf('<span class="level level--%s" title="%s">.</span>', $item->$colname, $item->$colname);
