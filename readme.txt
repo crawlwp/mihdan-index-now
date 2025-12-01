@@ -3,8 +3,8 @@ Contributors: collizo4sky, properfraction
 Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
 Requires at least: 6.0
-Tested up to: 6.8
-Stable tag: 3.0.10
+Tested up to: 6.9
+Stable tag: 3.0.11
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -123,6 +123,10 @@ Sitemaps help webmasters inform search engines about their WordPress pages, but 
 
 == Changelog ==
 
+= 3.0.11 =
+* Added WPML support for correctly getting translated post URL.
+* Improved PHP 8.5 support.
+
 = 3.0.10 =
 * Added custom Cron health-check.
 
@@ -132,12 +136,6 @@ Sitemaps help webmasters inform search engines about their WordPress pages, but 
 = 3.0.8 =
 * Added effective 4XX error handling.
 * Premium: Added [Bing support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).
-
-= 3.0.7 =
-* Improvement: Indexnow pinging will be halted for few hours when on API rate-limit.
-
-= 3.0.6.2 =
-* Fixed error with previous update
 
 See the [changelog file](https://plugins.svn.wordpress.org/mihdan-index-now/trunk/changelog.txt) for complete change log information.
 
