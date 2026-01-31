@@ -354,4 +354,26 @@ class Utils
 	{
 		return new Logger();
 	}
+
+	public static function content_http_redirect($myURL)
+	{
+		?>
+		<script type="text/javascript">
+			window.location.href = "<?php echo $myURL;?>"
+		</script>
+		<meta http-equiv="refresh" content="0; url=<?php echo $myURL; ?>">
+		Please wait while you are redirected...or
+		<a href="<?php echo $myURL; ?>">Click Here</a> if you do not want to wait.
+		<?php
+	}
+
+	public static function do_admin_redirect($url)
+	{
+		if ( ! headers_sent()) {
+			wp_safe_redirect($url);
+			exit;
+		}
+
+		self::content_http_redirect($url);
+	}
 }
