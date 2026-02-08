@@ -13,7 +13,7 @@ class CoreSettings
 	{
 		$wposa->add_header_menu([
 			'id'    => 'core_settings',
-			'title' => __('Core', 'mihdan-index-now'),
+			'title' => __('Advanced', 'mihdan-index-now'),
 		]);
 	}
 }
