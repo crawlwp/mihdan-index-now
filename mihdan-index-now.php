@@ -31,6 +31,7 @@ define('MIHDAN_INDEX_NOW_URL', plugin_dir_url(__FILE__));
 
 define('MIHDAN_INDEX_NOW_SETTINGS_URL', admin_url('admin.php?page=' . MIHDAN_INDEX_NOW_SLUG));
 define('MIHDAN_INDEX_NOW_API_SETTINGS_URL', add_query_arg(['wposa-menu' => Utils::get_plugin_prefix() . '_api_settings'], MIHDAN_INDEX_NOW_SETTINGS_URL));
+define('MIHDAN_INDEX_NOW_ADVANCED_SETTINGS_URL', add_query_arg(['wposa-menu' => Utils::get_plugin_prefix() . '_core_settings'], MIHDAN_INDEX_NOW_SETTINGS_URL));
 
 define('CRAWLWP_PRO_SEO_INDEX_SLUG', 'mihdan-seo-index');
 define('CRAWLWP_PRO_SEO_STAT_SLUG', 'mihdan-seo-stats');

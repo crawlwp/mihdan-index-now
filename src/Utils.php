@@ -313,7 +313,7 @@ class Utils
 		$protocol = 'http://';
 
 		if ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1))
-		    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+			|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
 		) {
 			$protocol = 'https://';
 		}
@@ -334,8 +334,10 @@ class Utils
 		}
 	}
 
-	public static function wposa_get_option($option, $section, $default = '', $prefix = 'mihdan_index_now')
+	public static function wposa_get_option($option, $section, $default = '', $prefix = '')
 	{
+		if (empty($prefix)) $prefix = self::get_plugin_prefix();
+
 		$section = str_replace($prefix . '_', '', $section);
 
 		$options = get_option($prefix . '_' . $section);
@@ -375,5 +377,24 @@ class Utils
 		}
 
 		self::content_http_redirect($url);
+	}
+
+	public static function minify_css($buffer)
+	{
+		$buffer = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $buffer);
+		$buffer = str_replace(': ', ':', $buffer);
+
+		return str_replace(array("\r\n", "\r", "\n", "\t", '  ', '    ', '    '), '', $buffer);
+	}
+
+	public static function local_datetime_to_utc($date, $format = 'Y-m-d H:i:s')
+	{
+		try {
+			return (new \DateTimeImmutable($date, wp_timezone()))
+				->setTimezone(new \DateTimeZone('UTC'))
+				->format($format);
+		} catch (\Exception $e) {
+			return false;
+		}
 	}
 }

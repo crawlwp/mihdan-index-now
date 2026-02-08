@@ -20,6 +20,8 @@ class SiteVerificationSettings
 	{
 		if ($wposa->get_active_header_menu() === Utils::get_plugin_prefix() . '_core_settings') {
 
+			do_action('crawlwp_before_core_settings_fields', $wposa);
+
 			$wposa->add_section([
 				'header_menu_id' => 'core_settings',
 				'id'             => 'site_verification',
@@ -28,22 +30,22 @@ class SiteVerificationSettings
 			]);
 
 			$providers = [
-				'google' => [
+				'google'    => [
 					'name'     => __('Google Verification Code', 'mihdan-index-now'),
 					'meta_tag' => '<meta name="google-site-verification" content="%ssite-verification-code%s"/>',
 					'help_tab' => 'https://crawlwp.com/?p=763&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=google',
 				],
-				'bing'   => [
+				'bing'      => [
 					'name'     => __('Bing Verification Code', 'mihdan-index-now'),
 					'meta_tag' => '<meta name="msvalidate.01" content="%ssite-verification-code%s" />',
 					'help_tab' => 'https://crawlwp.com/?p=768&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=bing',
 				],
-				'yandex' => [
+				'yandex'    => [
 					'name'     => __('Yandex Verification Code', 'mihdan-index-now'),
 					'meta_tag' => '<meta name="yandex-verification" content="%ssite-verification-code%s" />',
 					'help_tab' => 'https://crawlwp.com/?p=770&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=yandex',
 				],
-				'baidu' => [
+				'baidu'     => [
 					'name'     => __('Baidu Verification Code', 'mihdan-index-now'),
 					'meta_tag' => '<meta name="baidu-site-verification" content="%ssite-verification-code%s" />',
 					'help_tab' => 'https://crawlwp.com/?p=772&utm_source=wp_dashboard&utm_medium=site_verification_page&utm_campaign=baidu',
@@ -67,6 +69,8 @@ class SiteVerificationSettings
 					]
 				);
 			}
+
+			do_action('crawlwp_after_core_settings_fields', $wposa);
 		}
 	}
 
