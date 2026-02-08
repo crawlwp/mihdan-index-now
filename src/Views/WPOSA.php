@@ -131,6 +131,7 @@ class WPOSA
 			'placeholder' => true,
 			'checked'     => true,
 			'readonly'    => true,
+			'onclick'     => true,
 			'disabled'    => true,
 		],
 		'script'   => [
@@ -525,7 +526,6 @@ class WPOSA
 					exit;
 				}
 			}
-
 		}
 		/**
 		 * Register the sections.
@@ -1092,13 +1092,15 @@ class WPOSA
 	 */
 	function callback_button($args)
 	{
-		$value = $args['placeholder'] ?? __('Submit');
-		$class = $args['button_class'] ?? 'button-secondary';
-		$id    = $args['id'] ?? time();
+		$value   = $args['placeholder'] ?? __('Submit');
+		$class   = $args['button_class'] ?? 'button-secondary';
+		$id      = $args['id'] ?? time();
+		$onclick = $args['attributes']['onclick'] ?? '';
 		?>
 		<input
 			type="button"
 			id="<?php echo esc_attr($id); ?>"
+			onclick="<?php echo esc_attr($onclick); ?>"
 			value="<?php echo esc_attr($value); ?>"
 			class="button <?php echo esc_attr($class); ?>"
 		/>
@@ -1351,7 +1353,7 @@ class WPOSA
 
 			$section = $section['id'];
 
-			if(isset($wp_settings_fields[$page][$section])) {
+			if (isset($wp_settings_fields[$page][$section])) {
 
 				foreach ((array)$wp_settings_fields[$page][$section] as $field) {
 
