@@ -4,7 +4,7 @@ Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 3.0.11
+Stable tag: 3.0.12
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,6 +84,7 @@ If you like this plugin, then consider checking out our other products.
 4. (Premium) Posts and their index status.
 5. (Premium) Google Search Performance Chart
 6. (Premium) SEO Insights: View keywords, top pages etc.
+6. (Premium) SEO Email Report
 
 == Frequently Asked Questions ==
 
@@ -122,6 +123,10 @@ Such HTTP 429 Too Many Requests response status code indicates you are sending t
 Sitemaps help webmasters inform search engines about their WordPress pages, but search engines don't visit them often. With CrawlWP integration with IndexNow and the Indexing API of search engines, you can directly notify search engines of new content without waiting for them to crawl your sitemaps.
 
 == Changelog ==
+
+= 3.0.12 =
+* Added onclick field support to admin framework.
+* Premium: Added [SEO Performance Email Report](https://crawlwp.com/article/seo-performance-email-reports/?ref=changelog).
 
 = 3.0.11 =
 * Added WPML support for correctly getting translated post URL.

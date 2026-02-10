@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.12 =
+* Added onclick field support to admin framework.
+
 = 3.0.11 =
 * Added WPML support for correctly getting translated post URL.
 * Improved PHP 8.5 support.
