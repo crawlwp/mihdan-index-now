@@ -63,7 +63,7 @@ class UpsellAdminPages
 		$seo_index_upsell .= '<div class="crawlwp-upsell-featured-image">';
 		$seo_index_upsell .= '<img src="' . Utils::get_plugin_asset_url('images/crawlwp-content-indexing-stat-list.png') . '">';
 		$seo_index_upsell .= '</div>';
-		$seo_index_upsell .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
+		$seo_index_upsell .= sprintf('<a class="bbtn" target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
 		$seo_index_upsell .= '</div>';
 		$seo_index_upsell .= '<div class="crawlwp-upsell-bottom">';
 		$seo_index_upsell .= '<div class="crawlwp-upsell-featured-image">';
@@ -71,7 +71,7 @@ class UpsellAdminPages
 		$seo_index_upsell .= '</div>';
 		$seo_index_upsell .= sprintf('<h3>%s</h3>', esc_html__('Search Engine Index History', 'mihdan-index-now'));
 		$seo_index_upsell .= sprintf('<p>%s</p>', esc_html__('View records of every indexing done, last submitted date, and progress over time to understand better how search engines recognize your site.', 'mihdan-index-now'));
-		$seo_index_upsell .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
+		$seo_index_upsell .= sprintf('<a class="bbtn" target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
 		$seo_index_upsell .= '</div>';
 		$seo_index_upsell .= '</div>';
 
@@ -79,10 +79,14 @@ class UpsellAdminPages
 		$seo_stat_upsell .= '<div class="crawlwp-upsell-top">';
 		$seo_stat_upsell .= sprintf('<h2>%s</h2>', esc_html__('Search Performance & Insights at Your Fingertips', 'mihdan-index-now'));
 		$seo_stat_upsell .= sprintf('<p>%s</p>', esc_html__('Get powerful search ranking insights without leaving WordPress. Track rankings and spot growth opportunities buried in Google Search Console and Bing Webmaster Tools.', 'mihdan-index-now'));
+		$seo_stat_upsell .= '<p>'.sprintf(
+			esc_html__('Get %speriodic SEO email report%s on your website performance and pages index status on search results.', 'mihdan-index-now'),
+			'<a href="https://crawlwp.com/article/seo-performance-email-reports/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-seo-index-upsell-page" target="_blank">', '</a>'
+		) . '</p>';
 		$seo_stat_upsell .= '<div class="crawlwp-upsell-featured-image">';
 		$seo_stat_upsell .= '<img src="' . Utils::get_plugin_asset_url('images/crawlwp-google-search-console-top-section-stat.png') . '">';
 		$seo_stat_upsell .= '</div>';
-		$seo_stat_upsell .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
+		$seo_stat_upsell .= sprintf('<a class="bbtn" target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
 		$seo_stat_upsell .= '</div>';
 		$seo_stat_upsell .= '<div class="crawlwp-upsell-bottom">';
 		$seo_stat_upsell .= '<div class="crawlwp-upsell-featured-image">';
@@ -90,7 +94,7 @@ class UpsellAdminPages
 		$seo_stat_upsell .= '</div>';
 		$seo_stat_upsell .= sprintf('<h3>%s</h3>', esc_html__('Complete SEO Clarity in One Dashboard', 'mihdan-index-now'));
 		$seo_stat_upsell .= sprintf('<p>%s</p>', esc_html__('Track your website search performance with precise keyword rankings, click-through rates, and position data directly from Google and Bing. Uncover actionable insights about your top-performing pages, user demographics, and device preferences to optimize your content strategy and boost organic traffic.', 'mihdan-index-now'));
-		$seo_stat_upsell .= sprintf('<a target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
+		$seo_stat_upsell .= sprintf('<a class="bbtn" target="_blank" href="%s">%s</a>', $upgrade_url, esc_html__('Upgrade to CrawlWP Premium', 'mihdan-index-now'));
 		$seo_stat_upsell .= '</div>';
 		$seo_stat_upsell .= '</div>';
 

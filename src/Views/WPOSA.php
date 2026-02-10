@@ -2220,7 +2220,7 @@ class WPOSA
 				max-width: 900px;
 			}
 
-			.crawlwp-full-feature-upsell-page-wrap a {
+			.crawlwp-full-feature-upsell-page-wrap a.bbtn {
 				border-style: solid;
 				border-width: 1px 1px 2px 1px;
 				border-radius: 3px;
