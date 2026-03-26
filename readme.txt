@@ -4,7 +4,7 @@ Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 3.0.12
+Stable tag: 3.0.13
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -53,7 +53,7 @@ IndexNow is a protocol that allows website owners to promptly notify search engi
 * **Bulk Indexing**: Submit multiple URLs for indexing at once. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Indexing Status Reports**: Track the success of your indexing submissions. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Indexing History**: View records of every indexing done, last submitted date, and progress over time to understand better how search engines recognize your site. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
-* **Email Notifications**: Get an email report of WordPress indexed pages and alert when new pages are indexed and deindexed (Coming Soon). [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
+* **SEO Reports via Email**: Get daily, weekly or monthly email reports of your WordPress site SEO performance (impressions, clicks, ranking positions, top keywords etc) and pages indexed and deindexed on Google and Bing. [Learn more](https://crawlwp.com/article/seo-performance-email-reports/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 
 = Why Choose CrawlWP SEO ? =
 
@@ -123,6 +123,9 @@ Such HTTP 429 Too Many Requests response status code indicates you are sending t
 Sitemaps help webmasters inform search engines about their WordPress pages, but search engines don't visit them often. With CrawlWP integration with IndexNow and the Indexing API of search engines, you can directly notify search engines of new content without waiting for them to crawl your sitemaps.
 
 == Changelog ==
+
+= 3.0.13 =
+* Improved admin UI for WP 7.0.
 
 = 3.0.12 =
 * Added onclick field support to admin framework.
