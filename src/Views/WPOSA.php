@@ -1418,7 +1418,7 @@ class WPOSA
 								<div class="wposa-footer__column wposa-footer__column--right">
 									<?php if ($form['reset_button']) : ?>
 										<input type="button"
-											   class="button button-danger button-link"
+											   class="button-danger button-link"
 											   data-section="<?php echo esc_attr($form['id']); ?>"
 											   id="<?php echo esc_attr($form['id']); ?>_reset_form"
 											   value="<?php echo esc_attr(__('Reset Form', 'mihdan-index-now')); ?>"
@@ -1731,6 +1731,7 @@ class WPOSA
 			input.wposa-field--switch:checked {
 				border-color: #135e96;
 				box-shadow: inset 20px 0 0 0 #135e96;
+				background: transparent;
 			}
 
 			input.wposa-field--switch:checked:after {

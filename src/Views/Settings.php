@@ -99,6 +99,17 @@ class Settings
 			}
 		}, 10, 2);
 
+
+		add_filter('admin_body_class', function ($classes) {
+			global $wp_version;
+
+			if (version_compare($wp_version, '6.9.4', '>')) {
+				$classes .= ' cwpWP7higher';
+			}
+
+			return $classes;
+		});
+
 	}
 
 	public function admin_enqueue_scripts()
