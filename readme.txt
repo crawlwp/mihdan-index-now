@@ -3,7 +3,7 @@ Contributors: collizo4sky, properfraction
 Donate link: https://crawlwp.com/
 Tags: seo, indexing, yandex, bing, google
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 7.0
 Stable tag: 3.0.13
 Requires PHP: 8.0
 License: GPLv2 or later
