@@ -99,7 +99,6 @@ class Settings
 			}
 		}, 10, 2);
 
-
 		add_filter('admin_body_class', function ($classes) {
 			global $wp_version;
 
@@ -109,7 +108,6 @@ class Settings
 
 			return $classes;
 		});
-
 	}
 
 	public function admin_enqueue_scripts()
