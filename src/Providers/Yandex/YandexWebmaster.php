@@ -30,7 +30,14 @@ class YandexWebmaster extends WebmasterAbstract
 
 	public function get_token(): string
 	{
-		return $this->wposa->get_option('access_token', 'yandex_webmaster');
+		$token = $this->wposa->get_option('access_token', 'yandex_webmaster');
+		$expires_in = (int)$this->wposa->get_option('expires_in', 'yandex_webmaster');
+
+		if (empty($token) || ($expires_in > 0 && time() > $expires_in)) {
+			$token = $this->refresh_api_token();
+		}
+
+		return (string)$token;
 	}
 
 	public function get_user_id(): string
@@ -72,11 +79,10 @@ class YandexWebmaster extends WebmasterAbstract
 	{
 		add_action('admin_init', [$this, 'get_api_token']);
 
-		if ( ! $this->is_enabled()) {
+		if (!$this->is_enabled()) {
 			return;
 		}
 
-		//$this->get_quota();
 		add_action('mihdan_index_now/post_added', [$this, 'ping']);
 		add_action('mihdan_index_now/post_updated', [$this, 'ping']);
 	}
@@ -84,22 +90,22 @@ class YandexWebmaster extends WebmasterAbstract
 	public function get_api_token()
 	{
 		if (isset($_GET['code'], $_GET['state']) && $_GET['state'] === $this->get_slug()) {
-			$data         = [];
+			$data = [];
 			$data['body'] = [
-				'grant_type'    => 'authorization_code',
-				'code'          => $_GET['code'],
-				'client_id'     => $this->get_client_id(),
+				'grant_type' => 'authorization_code',
+				'code' => $_GET['code'],
+				'client_id' => $this->get_client_id(),
 				'client_secret' => $this->get_client_secret(),
 			];
 
-			$response    = wp_remote_post(self::TOKEN_ENDPOINT, $data);
+			$response = wp_remote_post(self::TOKEN_ENDPOINT, $data);
 			$status_code = wp_remote_retrieve_response_code($response);
-			$body        = json_decode(wp_remote_retrieve_body($response), true);
+			$body = json_decode(wp_remote_retrieve_body($response), true);
 
 			if ($status_code !== 200) {
-				$this->logger->error($body['error_description'], [
+				$this->logger->error($body['error_description'] ?? 'Unknown error', [
 					'search_engine' => $this->get_slug(),
-					'status_code'   => $status_code
+					'status_code' => $status_code
 				]);
 
 				return;
@@ -107,7 +113,7 @@ class YandexWebmaster extends WebmasterAbstract
 
 			$this->wposa->set_option('access_token', $body['access_token'], 'yandex_webmaster');
 			$this->wposa->set_option('refresh_token', $body['refresh_token'], 'yandex_webmaster');
-			$this->wposa->set_option('expires_in', $body['expires_in'] + current_time('timestamp'), 'yandex_webmaster');
+			$this->wposa->set_option('expires_in', $body['expires_in'] + time(), 'yandex_webmaster');
 
 			$user_id = $this->get_api_user_id($body['access_token']);
 
@@ -132,6 +138,47 @@ class YandexWebmaster extends WebmasterAbstract
 	}
 
 	/**
+	 * Refresh API token.
+	 *
+	 * @return string
+	 */
+	public function refresh_api_token(): string
+	{
+		$refresh_token = $this->wposa->get_option('refresh_token', 'yandex_webmaster');
+
+		if (empty($refresh_token)) {
+			return '';
+		}
+
+		$data = [];
+		$data['body'] = [
+			'grant_type' => 'refresh_token',
+			'refresh_token' => $refresh_token,
+			'client_id' => $this->get_client_id(),
+			'client_secret' => $this->get_client_secret(),
+		];
+
+		$response = wp_remote_post(self::TOKEN_ENDPOINT, $data);
+		$status_code = wp_remote_retrieve_response_code($response);
+		$body = json_decode(wp_remote_retrieve_body($response), true);
+
+		if ($status_code !== 200) {
+			$this->logger->error($body['error_description'] ?? 'Token refresh failed', [
+				'search_engine' => $this->get_slug(),
+				'status_code' => $status_code
+			]);
+
+			return '';
+		}
+
+		$this->wposa->set_option('access_token', $body['access_token'], 'yandex_webmaster');
+		$this->wposa->set_option('refresh_token', $body['refresh_token'], 'yandex_webmaster');
+		$this->wposa->set_option('expires_in', $body['expires_in'] + time(), 'yandex_webmaster');
+
+		return $body['access_token'];
+	}
+
+	/**
 	 * Get user ID.
 	 *
 	 * @param string $token Access token.
@@ -143,19 +190,19 @@ class YandexWebmaster extends WebmasterAbstract
 		$args = [
 			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
-				'Content-Type'  => 'application/json',
+				'Content-Type' => 'application/json',
 			],
 			'timeout' => 30,
 		];
 
-		$response    = wp_remote_get(self::USER_ENDPOINT, $args);
+		$response = wp_remote_get(self::USER_ENDPOINT, $args);
 		$status_code = wp_remote_retrieve_response_code($response);
-		$body        = json_decode(wp_remote_retrieve_body($response), true);
+		$body = json_decode(wp_remote_retrieve_body($response), true);
 
 		if ($status_code !== 200) {
 			$this->logger->error($body['error_message'], [
 				'search_engine' => $this->get_slug(),
-				'status_code'   => $status_code
+				'status_code' => $status_code
 			]);
 
 			return 0;
@@ -177,19 +224,19 @@ class YandexWebmaster extends WebmasterAbstract
 		$args = [
 			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
-				'Content-Type'  => 'application/json',
+				'Content-Type' => 'application/json',
 			],
 			'timeout' => 30,
 		];
 
-		$response    = wp_remote_get(sprintf(self::HOSTS_ENDPOINT, $user_id), $args);
+		$response = wp_remote_get(sprintf(self::HOSTS_ENDPOINT, $user_id), $args);
 		$status_code = wp_remote_retrieve_response_code($response);
-		$body        = json_decode(wp_remote_retrieve_body($response), true);
+		$body = json_decode(wp_remote_retrieve_body($response), true);
 
 		if ($status_code !== 200) {
 			$this->logger->error($body['error_message'], [
 				'search_engine' => $this->get_slug(),
-				'status_code'   => $status_code
+				'status_code' => $status_code
 			]);
 
 			return 0;
@@ -223,25 +270,25 @@ class YandexWebmaster extends WebmasterAbstract
 
 		$post_url = Utils::normalized_get_permalink($post_id);
 
-		$args = array(
+		$args = [
 			'timeout' => 30,
-			'headers' => array(
+			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
-				'Content-Type'  => 'application/json',
-			),
-			'body'    => wp_json_encode(
-				array(
+				'Content-Type' => 'application/json',
+			],
+			'body' => wp_json_encode(
+				[
 					'url' => $post_url,
-				)
+				]
 			),
-		);
+		];
 
-		$response    = wp_remote_post($url, $args);
+		$response = wp_remote_post($url, $args);
 		$status_code = wp_remote_retrieve_response_code($response);
-		$body        = json_decode(wp_remote_retrieve_body($response), true);
+		$body = json_decode(wp_remote_retrieve_body($response), true);
 
 		$data = [
-			'status_code'   => $status_code,
+			'status_code' => $status_code,
 			'search_engine' => $this->get_slug(),
 		];
 
@@ -261,22 +308,31 @@ class YandexWebmaster extends WebmasterAbstract
 
 	public function get_quota(): array
 	{
+		$token = $this->get_token();
+
+		if (empty($token)) {
+			return [
+				'daily_quota' => 0,
+				'quota_remainder' => 0,
+			];
+		}
+
 		$url = sprintf($this->get_quota_endpoint(), $this->get_user_id(), $this->get_host_id());
 
-		$args = array(
+		$args = [
 			'timeout' => 30,
-			'headers' => array(
-				'Authorization' => 'OAuth ' . $this->get_token(),
-				'Content-Type'  => 'application/json',
-			),
-		);
+			'headers' => [
+				'Authorization' => 'OAuth ' . $token,
+				'Content-Type' => 'application/json',
+			],
+		];
 
-		$response    = wp_remote_get($url, $args);
+		$response = wp_remote_get($url, $args);
 		$status_code = wp_remote_retrieve_response_code($response);
-		$body        = json_decode(wp_remote_retrieve_body($response), true);
+		$body = json_decode(wp_remote_retrieve_body($response), true);
 
 		$data = [
-			'status_code'   => $status_code,
+			'status_code' => $status_code,
 			'search_engine' => $this->get_slug(),
 		];
 
@@ -289,7 +345,7 @@ class YandexWebmaster extends WebmasterAbstract
 			$this->logger->error($body['error_message'], $data);
 
 			return [
-				'daily_quota'     => 0,
+				'daily_quota' => 0,
 				'quota_remainder' => 0,
 			];
 		}

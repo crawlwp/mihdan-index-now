@@ -760,7 +760,7 @@ class Settings
 						'id'      => 'host_id',
 						'type'    => 'select',
 						'name'    => __('Host ID', 'mihdan-index-now'),
-						'options' => $this->get_yandex_webmaster_host_ids()
+						'options' => ['' => '&mdash;&mdash;&mdash;'] + $this->get_yandex_webmaster_host_ids()
 					)
 				);
 			}
