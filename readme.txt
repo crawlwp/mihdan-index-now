@@ -1,7 +1,7 @@
 === CrawlWP SEO - Instant Search Engine Indexing & SEO Performance Monitor ===
 Contributors: collizo4sky, properfraction
 Donate link: https://crawlwp.com/
-Tags: seo, indexing, yandex, bing, google
+Tags: seo, wordpress seo, yandex, bing, google search
 Requires at least: 6.0
 Tested up to: 7.0
 Stable tag: 3.0.13
