@@ -17,6 +17,7 @@ class YandexWebmaster extends WebmasterAbstract
 	private const HOSTS_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%d/hosts';
 	private const RECRAWL_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/queue';
 	private const QUOTA_ENDPOINT = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/recrawl/quota';
+	private const API_BASE_URL = 'https://api.webmaster.yandex.net/v4/user/%s/hosts/%s/';
 
 	public function get_slug(): string
 	{
@@ -68,6 +69,11 @@ class YandexWebmaster extends WebmasterAbstract
 	public function get_quota_endpoint(): string
 	{
 		return self::QUOTA_ENDPOINT;
+	}
+
+	public function get_api_base_url()
+	{
+		return sprintf(self::API_BASE_URL, $this->get_user_id(), $this->get_host_id());
 	}
 
 	public function is_enabled(): bool
@@ -192,7 +198,7 @@ class YandexWebmaster extends WebmasterAbstract
 				'Authorization' => 'OAuth ' . $token,
 				'Content-Type' => 'application/json',
 			],
-			'timeout' => 30,
+			'timeout' => 60,
 		];
 
 		$response = wp_remote_get(self::USER_ENDPOINT, $args);
@@ -226,7 +232,7 @@ class YandexWebmaster extends WebmasterAbstract
 				'Authorization' => 'OAuth ' . $token,
 				'Content-Type' => 'application/json',
 			],
-			'timeout' => 30,
+			'timeout' => 60,
 		];
 
 		$response = wp_remote_get(sprintf(self::HOSTS_ENDPOINT, $user_id), $args);
@@ -271,7 +277,7 @@ class YandexWebmaster extends WebmasterAbstract
 		$post_url = Utils::normalized_get_permalink($post_id);
 
 		$args = [
-			'timeout' => 30,
+			'timeout' => 60,
 			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
 				'Content-Type' => 'application/json',
@@ -320,10 +326,10 @@ class YandexWebmaster extends WebmasterAbstract
 		$url = sprintf($this->get_quota_endpoint(), $this->get_user_id(), $this->get_host_id());
 
 		$args = [
-			'timeout' => 30,
+			'timeout' => 60,
 			'headers' => [
 				'Authorization' => 'OAuth ' . $token,
-				'Content-Type' => 'application/json',
+				'Content-Type' => 'application/json'
 			],
 		];
 
