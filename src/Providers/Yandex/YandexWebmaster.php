@@ -95,11 +95,11 @@ class YandexWebmaster extends WebmasterAbstract
 
 	public function get_api_token()
 	{
-		if (isset($_GET['code'], $_GET['state']) && $_GET['state'] === $this->get_slug()) {
+		if (isset($_GET['code'], $_GET['state']) && $_GET['state'] === $this->get_slug() && current_user_can('manage_options')) {
 			$data = [];
 			$data['body'] = [
 				'grant_type' => 'authorization_code',
-				'code' => $_GET['code'],
+				'code' => sanitize_text_field(wp_unslash($_GET['code'])),
 				'client_id' => $this->get_client_id(),
 				'client_secret' => $this->get_client_secret(),
 			];

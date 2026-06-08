@@ -1252,7 +1252,7 @@ class WPOSA
 			<div class="wposa-new-header">
 				<div class="wposa-branding">
 					<img class="wposa-logo" src="<?php echo esc_url(Utils::get_plugin_asset_url('images/icons/crawlwp-favicon.svg')); ?>" width="80" alt=""/>
-					<h1><?php echo $this->sub_page_title ?></h1>
+					<h1><?php echo esc_html($this->sub_page_title) ?></h1>
 				</div>
 
 				<nav class="wposa-tabs">
@@ -1260,12 +1260,12 @@ class WPOSA
 						$url = esc_url(remove_query_arg($wp_removable_query_args, add_query_arg(['wposa-menu' => $menu['id']])));
 						$active_class = $this->get_active_header_menu() == $menu['id'] ? ' wposa-tab-active' : '';
 						?>
-						<a href="<?php echo $url ?>" class="wposa-tab<?php echo $active_class; ?>"><?php echo $menu['title'] ?></a>
+						<a href="<?php echo $url ?>" class="wposa-tab<?php echo $active_class; ?>"><?php echo esc_html($menu['title']) ?></a>
 					<?php endforeach; ?>
 				</nav>
 
 				<div class="wposa-header-right">
-					<a href="<?php echo $review_url ?>" target="_blank" class="wposa-header-action review">
+					<a href="<?php echo esc_url($review_url) ?>" target="_blank" class="wposa-header-action review">
 						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
 							<path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2.5" d="m12 2l3.104 6.728l7.358.873l-5.44 5.03l1.444 7.268L12 18.28L5.534 21.9l1.444-7.268L1.538 9.6l7.359-.873L12 2Z"></path>
 						</svg>
@@ -1277,7 +1277,7 @@ class WPOSA
 						<?php esc_html_e('Documentation', 'mihdan-index-now'); ?>
 					</a>
 					<?php if ( ! defined('CRAWLWP_DETACH_LIBSODIUM')) { ?>
-						<a href="<?php echo $upgrade_url; ?>" target="_blank" class="button-primary plugin-upgrade">
+						<a href="<?php echo esc_url($upgrade_url); ?>" target="_blank" class="button-primary plugin-upgrade">
 							<?php esc_html_e('CrawlWP Premium', 'mihdan-index-now'); ?>
 						</a>
 					<?php } ?>
