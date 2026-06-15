@@ -1245,7 +1245,7 @@ class WPOSA
 
 		if ( ! $flag) return;
 
-		$wp_removable_query_args = array_merge(['paged', 'cwp-page', 'cwp-query'], wp_removable_query_args());
+		$wp_removable_query_args = array_merge(['paged', 'cwp-page', 'cwp-query', 'preset', 'start_date', 'end_date'], wp_removable_query_args());
 
 		?>
 		<div class="wposa">
