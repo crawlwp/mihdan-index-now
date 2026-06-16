@@ -2203,10 +2203,14 @@ class WPOSA
 				margin: 0;
 			}
 
-			.cwp-premium-sidebar-upsell-cta .button-primary {
-				padding-top: 6px;
-				padding-bottom: 6px;
+			body:not(.cwpWP7higher) .cwp-premium-sidebar-upsell-cta .button-primary {
+				padding-top: 8px;
+				padding-bottom: 8px;
 				line-height: inherit;
+				margin-right: 6px;
+			}
+
+			.cwp-premium-sidebar-upsell-cta .button-primary {
 				margin-right: 6px;
 			}
 

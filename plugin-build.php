@@ -53,6 +53,6 @@ foreach (
 
 // move up directory
 chdir($dir);
-exec("7z a mihdan-index-now.zip mihdan-index-now/");
+exec("7zz a mihdan-index-now.zip mihdan-index-now/");
 deleteDir($plugin_git_name);
 
