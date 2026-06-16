@@ -257,7 +257,7 @@ class Utils
 
 				$post_language = apply_filters('wpml_post_language_details', null, $post_id);
 
-				if ( ! empty($post_language['language_code'])) {
+				if ( is_array($post_language) && ! empty($post_language['language_code'])) {
 
 					$target_language = $post_language['language_code'];
 
