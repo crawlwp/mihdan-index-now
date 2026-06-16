@@ -1,5 +1,10 @@
 ﻿== Changelog ==
 
+= 3.0.14 =
+* Premium: Added [Yandex support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).
+* Added automatic access token refresh to Yandex integration.
+* Improve security of oauth connection.
+
 = 3.0.13 =
 * Improved admin UI for WP 7.0.
 

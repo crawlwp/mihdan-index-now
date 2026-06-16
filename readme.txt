@@ -4,7 +4,7 @@ Donate link: https://crawlwp.com/
 Tags: seo, wordpress seo, yandex, bing, google search
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 3.0.13
+Stable tag: 3.0.14
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -124,26 +124,17 @@ Sitemaps help webmasters inform search engines about their WordPress pages, but 
 
 == Changelog ==
 
+= 3.0.14 =
+* Premium: Added [Yandex support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).
+* Added automatic access token refresh to Yandex integration.
+* Improve security of oauth connection.
+
 = 3.0.13 =
 * Improved admin UI for WP 7.0.
 
 = 3.0.12 =
 * Added onclick field support to admin framework.
 * Premium: Added [SEO Performance Email Report](https://crawlwp.com/article/seo-performance-email-reports/?ref=changelog).
-
-= 3.0.11 =
-* Added WPML support for correctly getting translated post URL.
-* Improved PHP 8.5 support.
-
-= 3.0.10 =
-* Added custom Cron health-check.
-
-= 3.0.9 =
-* Set default log lifetime to 7days.
-
-= 3.0.8 =
-* Added effective 4XX error handling.
-* Premium: Added [Bing support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).
 
 See the [changelog file](https://plugins.svn.wordpress.org/mihdan-index-now/trunk/changelog.txt) for complete change log information.
 
