@@ -111,6 +111,32 @@
       "q" : 90,
       "rq" : 75
     },
+    "\/assets\/images\/crawlwp-yandex-top-section-stat.png" : {
+      "ft" : 32768,
+      "iS" : 91356,
+      "oA" : 0,
+      "oAP" : "\/assets\/images\/crawlwp-yandex-top-section-stat.png",
+      "oF" : 0,
+      "oIPL" : 1,
+      "opt" : 1,
+      "oT" : 1,
+      "ou" : "lpckwebp-none",
+      "q" : 90,
+      "rq" : 75
+    },
+    "\/assets\/images\/crawlwp-yandex-webmaster-main-stat.png" : {
+      "ft" : 32768,
+      "iS" : 210401,
+      "oA" : 0,
+      "oAP" : "\/assets\/images\/crawlwp-yandex-webmaster-main-stat.png",
+      "oF" : 0,
+      "oIPL" : 1,
+      "opt" : 1,
+      "oT" : 1,
+      "ou" : "lpckwebp-none",
+      "q" : 90,
+      "rq" : 75
+    },
     "\/assets\/images\/icons\/crawlwp-favicon.svg" : {
       "ft" : 2097152,
       "miP" : 0,
@@ -15952,7 +15978,7 @@
     "displayValueWasSetByUser" : 1,
     "iconImageName" : "brackets-forest",
     "iconImageWasSetByUser" : 0,
-    "lastBuiltDate" : 796236197.40600502
+    "lastBuiltDate" : 803312745.02300501
   },
   "projectSettings" : {
     "abortBuildOnError" : 1,
