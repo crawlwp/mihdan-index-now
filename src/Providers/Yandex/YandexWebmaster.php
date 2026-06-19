@@ -152,9 +152,7 @@ class YandexWebmaster extends WebmasterAbstract
 	{
 		$refresh_token = $this->wposa->get_option('refresh_token', 'yandex_webmaster');
 
-		if (empty($refresh_token)) {
-			return '';
-		}
+		if (empty($refresh_token)) return '';
 
 		$data = [];
 		$data['body'] = [
