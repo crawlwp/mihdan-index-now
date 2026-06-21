@@ -133,13 +133,8 @@ class YandexWebmaster extends WebmasterAbstract
 				}
 			}
 
-			wp_safe_redirect(
-				add_query_arg(
-					'page',
-					Utils::get_plugin_slug(),
-					admin_url('admin.php')
-				)
-			);
+			wp_safe_redirect(MIHDAN_INDEX_NOW_API_SETTINGS_URL);
+			exit;
 		}
 	}
 
