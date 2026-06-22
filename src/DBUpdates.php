@@ -75,6 +75,7 @@ class DBUpdates
 		];
 
 		foreach ($options_map as $old_option_name => $new_option_name) {
+
 			$new_option = get_option($new_option_name, '');
 
 			if (!empty($new_option)) {
@@ -88,7 +89,6 @@ class DBUpdates
 			}
 
 			update_option($new_option_name, $old_option);
-			delete_option($old_option_name);
 		}
 
 		if (is_multisite()) {
