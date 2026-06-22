@@ -298,6 +298,14 @@
       "oAP" : "\/src\/Cron.php",
       "oF" : 0
     },
+    "\/src\/DBUpdates.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/DBUpdates.php",
+      "oF" : 0
+    },
     "\/src\/Hooks.php" : {
       "cB" : 0,
       "ft" : 8192,

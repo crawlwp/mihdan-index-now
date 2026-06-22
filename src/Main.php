@@ -107,7 +107,6 @@ class Main
 		($this->container->make(SeznamIndexNow::class))->setup_hooks();
 		($this->container->make(NaverIndexNow::class))->setup_hooks();
 		($this->container->make(IndexNow::class))->setup_hooks();
-		($this->container->make(Migrations::class))->setup_hooks();
 
 		add_action('plugins_loaded', function () {
 			if (!defined('CRAWLWP_DETACH_LIBSODIUM')) {
@@ -159,7 +158,7 @@ class Main
 			add_action('admin_head', [$this, 'add_css_for_column']);
 		}
 
-		register_activation_hook(MIHDAN_INDEX_NOW_FILE, [$this, 'activate_plugin']);
+		register_activation_hook(CRAWLWP_FILE, [$this, 'activate_plugin']);
 
 		// Multisite.
 		add_action('wp_delete_site', [$this, 'delete_site_tables']);
@@ -336,6 +335,8 @@ class Main
 		if (version_compare($db_version, $plugin_version, '<')) {
 			$this->create_tables(true);
 		}
+
+		DBUpdates::get_instance()->maybe_update();
 	}
 
 	/**
@@ -364,7 +365,7 @@ class Main
 				 *
 				 * @var WP_List_Table $table
 				 */
-				$table = $GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'];
+				$table = $GLOBALS[CRAWLWP_PREFIX . '_log'];
 				$table->display();
 				?>
 			</form>

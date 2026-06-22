@@ -133,7 +133,7 @@ class YandexWebmaster extends WebmasterAbstract
 				}
 			}
 
-			wp_safe_redirect(MIHDAN_INDEX_NOW_API_SETTINGS_URL);
+			wp_safe_redirect(CRAWLWP_API_SETTINGS_URL);
 			exit;
 		}
 	}

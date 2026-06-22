@@ -13,7 +13,7 @@ class Utils
 	 */
 	public static function get_plugin_path(): string
 	{
-		return MIHDAN_INDEX_NOW_DIR;
+		return CRAWLWP_DIR;
 	}
 
 	/**
@@ -23,7 +23,7 @@ class Utils
 	 */
 	public static function get_plugin_basename(): string
 	{
-		return MIHDAN_INDEX_NOW_BASENAME;
+		return CRAWLWP_BASENAME;
 	}
 
 	/**
@@ -33,7 +33,7 @@ class Utils
 	 */
 	public static function get_plugin_version(): string
 	{
-		return MIHDAN_INDEX_NOW_VERSION;
+		return CRAWLWP_VERSION;
 	}
 
 	/**
@@ -43,7 +43,7 @@ class Utils
 	 */
 	public static function get_plugin_file(): string
 	{
-		return MIHDAN_INDEX_NOW_FILE;
+		return CRAWLWP_FILE;
 	}
 
 	/**
@@ -53,7 +53,7 @@ class Utils
 	 */
 	public static function get_plugin_url(): string
 	{
-		return MIHDAN_INDEX_NOW_URL;
+		return CRAWLWP_PLUGIN_URL;
 	}
 
 	/**
@@ -75,7 +75,7 @@ class Utils
 	 */
 	public static function get_plugin_slug(): string
 	{
-		return MIHDAN_INDEX_NOW_SLUG;
+		return CRAWLWP_SLUG;
 	}
 
 	/**
@@ -85,7 +85,7 @@ class Utils
 	 */
 	public static function get_plugin_prefix(): string
 	{
-		return MIHDAN_INDEX_NOW_PREFIX;
+		return CRAWLWP_PREFIX;
 	}
 
 	/**
@@ -95,7 +95,7 @@ class Utils
 	 */
 	public static function get_plugin_name(): string
 	{
-		return MIHDAN_INDEX_NOW_NAME;
+		return CRAWLWP_NAME;
 	}
 
 	public static function is_response_code_success($code): bool
@@ -295,7 +295,7 @@ class Utils
 	public static function is_admin_page()
 	{
 		$pages = [
-			MIHDAN_INDEX_NOW_SLUG,
+			CRAWLWP_SLUG,
 			CRAWLWP_PRO_SEO_INDEX_SLUG,
 			CRAWLWP_PRO_SEO_STAT_SLUG
 		];
