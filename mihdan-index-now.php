@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CrawlWP SEO - Instant Indexing & SEO Insights
  * Description: SEO plugin for indexing WordPress content and monitoring search engine performance.
- * Version: 3.0.14
+ * Version: 3.0.15
  * Author: CrawlWP SEO Team
  * Author URI: https://crawlwp.com/
  * Plugin URI: https://crawlwp.com/
@@ -20,7 +20,7 @@ if ( ! defined('ABSPATH')) {
 
 require_once __DIR__ . '/vendor-prefixed/autoload.php';
 
-define('CRAWLWP_VERSION', '3.0.14');
+define('CRAWLWP_VERSION', '3.0.15');
 define('CRAWLWP_SLUG', 'crawlwp');
 define('CRAWLWP_PREFIX', 'crawlwp');
 define('CRAWLWP_NAME', 'CrawlWP');

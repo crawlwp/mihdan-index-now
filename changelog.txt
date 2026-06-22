@@ -1,5 +1,9 @@
 ﻿== Changelog ==
 
+= 3.0.15 =
+* Update admin url from mihdan-* to crawlwp-*
+* Fixed incorrect redirect after Yandex oauth.
+
 = 3.0.14 =
 * Premium: Added [Yandex support to SEO Stats](https://crawlwp.com/article/overview-of-seo-stats-feature/?ref=changelog).
 * Added automatic access token refresh to Yandex integration.
