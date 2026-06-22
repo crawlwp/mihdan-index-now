@@ -12,6 +12,7 @@ function crawlwp_lite_mo_uninstall_function()
 {
 	global $wpdb;
 
+	$drop_tables[] = "DROP TABLE IF EXISTS {$wpdb->prefix}crawlwp_log";
 	$drop_tables[] = "DROP TABLE IF EXISTS {$wpdb->prefix}index_now_log";
 
 	foreach ($drop_tables as $tables) {
@@ -37,6 +38,13 @@ function crawlwp_lite_mo_uninstall_function()
 	}
 
 	// ensure leftovers are deleted
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+			'crawlwp%'
+		)
+	);
+
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",

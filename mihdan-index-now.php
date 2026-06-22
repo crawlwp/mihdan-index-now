@@ -39,6 +39,6 @@ define('CRAWLWP_PRO_AUTO_INDEX_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_
 define('CRAWLWP_PRO_AUTO_INDEX_PAGE_RECENT_MOVEMENT', add_query_arg(['section' => 'recent-movement'], CRAWLWP_PRO_AUTO_INDEX_PAGE));
 define('CRAWLWP_PRO_SEO_STAT_PAGE', admin_url('admin.php?page=' . CRAWLWP_PRO_SEO_STAT_SLUG));
 
-do_action('crawlwp_lite_pre_init');
+do_action('crawlwp_lite_before_init');
 
 (new Main(new Container()))->init();
