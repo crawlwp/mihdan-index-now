@@ -6,7 +6,7 @@ use Mihdan\IndexNow\Dependencies\Psr\Log\AbstractLogger;
 class Logger extends AbstractLogger {
 	public function get_logger_table_name() {
 		global $wpdb;
-		return $wpdb->prefix . 'index_now_log';
+		return $wpdb->prefix . 'crawlwp_log';
 	}
 
 	public function log( $level, $message, array $context = [] ) {

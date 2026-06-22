@@ -70,11 +70,11 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 		}
 
 		add_action('parse_request', [$this, 'set_virtual_key_file']);
-		add_action('mihdan_index_now/post_added', [$this, 'ping_on_post_update'], 10, 2);
-		add_action('mihdan_index_now/post_updated', [$this, 'ping_on_post_update'], 10, 2);
+		add_action('crawlwp/post_added', [$this, 'ping_on_post_update'], 10, 2);
+		add_action('crawlwp/post_updated', [$this, 'ping_on_post_update'], 10, 2);
 
 		if ($this->is_ping_on_term()) {
-			add_action('mihdan_index_now/term_updated', [$this, 'ping_on_insert_term'], 10, 2);
+			add_action('crawlwp/term_updated', [$this, 'ping_on_insert_term'], 10, 2);
 		}
 	}
 
@@ -130,7 +130,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 		if ($this->get_current_search_engine() === $this->get_slug()) {
 			$this->push([Utils::normalized_get_permalink($post_id)]);
 
-			do_action('mihdan_index_now/index_pinged', 'post', $post_id);
+			do_action('crawlwp/index_pinged', 'post', $post_id);
 		}
 	}
 
@@ -143,7 +143,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 		if ($this->get_current_search_engine() === $this->get_slug()) {
 			$this->push([Utils::normalized_get_term_link($term_id, $taxonomy)]);
 
-			do_action('mihdan_index_now/index_pinged', 'taxonomy', $term_id);
+			do_action('crawlwp/index_pinged', 'taxonomy', $term_id);
 		}
 	}
 
@@ -178,20 +178,20 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 	{
 		if (time() < (int)get_option($this->rate_limit_db_key(), 0)) return false;
 
-		$args = array(
+		$args = [
 			'timeout' => 30,
 			'body'    => wp_json_encode(
-				array(
+				[
 					'host'        => $this->get_host(),
 					'key'         => $this->get_api_key(),
 					'keyLocation' => $this->get_api_key_location(),
 					'urlList'     => $url_list,
-				)
+				]
 			),
 			'headers' => [
 				'Content-Type' => 'application/json',
 			],
-		);
+		];
 
 		$response = wp_remote_post($this->get_api_url(), $args);
 

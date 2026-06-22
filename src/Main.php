@@ -55,7 +55,7 @@ class Main
 
 		SEOCoreInit::get_instance();
 
-		do_action('mihdan_index_now/init', $this);
+		do_action('crawlwp/init', $this);
 	}
 
 	/**

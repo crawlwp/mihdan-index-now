@@ -89,8 +89,8 @@ class YandexWebmaster extends WebmasterAbstract
 			return;
 		}
 
-		add_action('mihdan_index_now/post_added', [$this, 'ping']);
-		add_action('mihdan_index_now/post_updated', [$this, 'ping']);
+		add_action('crawlwp/post_added', [$this, 'ping']);
+		add_action('crawlwp/post_updated', [$this, 'ping']);
 	}
 
 	public function get_api_token()
@@ -302,7 +302,7 @@ class YandexWebmaster extends WebmasterAbstract
 			$this->logger->error($body['error_message'], $data);
 		}
 
-		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
+		do_action('crawlwp/index_pinged', 'post', $post_id);
 	}
 
 	public function get_quota(): array

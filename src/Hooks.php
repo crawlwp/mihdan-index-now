@@ -77,7 +77,7 @@ class Hooks {
 			return;
 		}
 
-		do_action( 'mihdan_index_now/comment_updated', $comment->comment_post_ID, $comment );
+		do_action( 'crawlwp/comment_updated', $comment->comment_post_ID, $comment );
 
 		update_comment_meta(
 			$id,
@@ -136,12 +136,12 @@ class Hooks {
 		if ( $old_status === $new_status ) {
 			// Post updated.
 			if ( $this->wposa->get_option( 'ping_on_post_updated', 'general', 'on' ) === 'on' ) {
-				do_action( 'mihdan_index_now/post_updated', $post->ID, $post );
+				do_action( 'crawlwp/post_updated', $post->ID, $post );
 			}
 		} else {
 			// Post added.
 			if ( $this->wposa->get_option( 'ping_on_post', 'general', 'on' ) === 'on' ) {
-				do_action( 'mihdan_index_now/post_added', $post->ID, $post );
+				do_action( 'crawlwp/post_added', $post->ID, $post );
 			}
 		}
 
@@ -179,7 +179,7 @@ class Hooks {
 			return;
 		}
 
-		do_action( 'mihdan_index_now/comment_updated', $comment->comment_post_ID, $comment );
+		do_action( 'crawlwp/comment_updated', $comment->comment_post_ID, $comment );
 
 		update_comment_meta(
 			$comment->comment_ID,
@@ -208,7 +208,7 @@ class Hooks {
 			return;
 		}
 
-		do_action( 'mihdan_index_now/term_updated', $term_id, $taxonomy );
+		do_action( 'crawlwp/term_updated', $term_id, $taxonomy );
 
 		update_term_meta(
 			$term_id,

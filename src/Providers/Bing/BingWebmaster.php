@@ -38,8 +38,8 @@ class BingWebmaster extends WebmasterAbstract
 	{
 		if ( ! $this->is_enabled()) return;
 
-		add_action('mihdan_index_now/post_added', [$this, 'ping']);
-		add_action('mihdan_index_now/post_updated', [$this, 'ping']);
+		add_action('crawlwp/post_added', [$this, 'ping']);
+		add_action('crawlwp/post_updated', [$this, 'ping']);
 	}
 
 	/**
@@ -96,7 +96,7 @@ class BingWebmaster extends WebmasterAbstract
 			$this->logger->error($body['Message'], $data);
 		}
 
-		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
+		do_action('crawlwp/index_pinged', 'post', $post_id);
 	}
 
 	public function get_quota(): array

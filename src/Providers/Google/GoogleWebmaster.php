@@ -47,8 +47,8 @@ class GoogleWebmaster extends WebmasterAbstract
 			return;
 		}
 
-		add_action('mihdan_index_now/post_added', [$this, 'ping']);
-		add_action('mihdan_index_now/post_updated', [$this, 'ping']);
+		add_action('crawlwp/post_added', [$this, 'ping']);
+		add_action('crawlwp/post_updated', [$this, 'ping']);
 	}
 
 	/**
@@ -121,7 +121,7 @@ class GoogleWebmaster extends WebmasterAbstract
 			$this->logger->error($message, $data);
 		}
 
-		do_action('mihdan_index_now/index_pinged', 'post', $post_id);
+		do_action('crawlwp/index_pinged', 'post', $post_id);
 	}
 
 	public function get_quota(): array
