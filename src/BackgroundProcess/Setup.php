@@ -105,7 +105,7 @@ class Setup extends WP_Background_Process
 
 		$action = Utils::_var($item, 'action', '');
 
-		do_action('mihdan_index_now/bg_process_task', $action, $item, $this);
+		do_action('crawlwp/bg_process_task', $action, $item, $this);
 
 		return false;
 	}

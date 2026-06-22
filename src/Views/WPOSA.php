@@ -501,7 +501,7 @@ class WPOSA
 	 */
 	function admin_init()
 	{
-		if (isset($_REQUEST['action'], $_REQUEST['mihdan_index_now_options_save']) && $_REQUEST['action'] == 'update' && current_user_can('manage_options')) {
+		if (isset($_REQUEST['action'], $_REQUEST['crawlwp_options_save']) && $_REQUEST['action'] == 'update' && current_user_can('manage_options')) {
 
 			$option_page = ! empty($_REQUEST['option_page']) ? sanitize_text_field($_REQUEST['option_page']) : '';
 
@@ -607,37 +607,37 @@ class WPOSA
 		foreach ($this->fields_array as $section => $field_array) {
 			foreach ($field_array as $field) {
 				// ID.
-				$id = isset($field['id']) ? $field['id'] : false;
+				$id = $field['id'] ?? false;
 
 				// Type.
-				$type = isset($field['type']) ? $field['type'] : 'text';
+				$type = $field['type'] ?? 'text';
 
 				// Name.
-				$name = isset($field['name']) ? $field['name'] : 'No Name Added';
+				$name = $field['name'] ?? 'No Name Added';
 
 				// Label for.
 				$label_for = "{$section}[{$field['id']}]";
 
 				// Description.
-				$description = isset($field['desc']) ? $field['desc'] : '';
+				$description = $field['desc'] ?? '';
 
 				// Size.
-				$size = isset($field['size']) ? $field['size'] : null;
+				$size = $field['size'] ?? null;
 
 				// Options.
-				$options = isset($field['options']) ? $field['options'] : '';
+				$options = $field['options'] ?? '';
 
 				// Standard default value.
-				$default = isset($field['default']) ? $field['default'] : '';
+				$default = $field['default'] ?? '';
 
 				// Standard default placeholder.
-				$placeholder = isset($field['placeholder']) ? $field['placeholder'] : '';
+				$placeholder = $field['placeholder'] ?? '';
 
 				// Readonly attribute.
 				$readonly = $field['readonly'] ?? false;
 
 				// Sanitize Callback.
-				$sanitize_callback = isset($field['sanitize_callback']) ? $field['sanitize_callback'] : '';
+				$sanitize_callback = $field['sanitize_callback'] ?? '';
 
 				$help_tab = $field['help_tab'] ?? '';
 				$class    = $field['class'] ?? "wposa-form-table__row wposa-form-table__row_type_{$type} wposa-form-table__row_{$section}_{$id}";
@@ -1026,9 +1026,7 @@ class WPOSA
 		$value = esc_attr($this->get_option($args['id'], $args['section'], $args['std']));
 		$size  = isset($args['size']) && ! is_null($args['size']) ? $args['size'] : 'regular';
 		$id    = $args['section'] . '[' . $args['id'] . ']';
-		$label = isset($args['options']['button_label']) ?
-			$args['options']['button_label'] :
-			__('Choose Image');
+		$label = $args['options']['button_label'] ?? __('Choose Image');
 
 		$html = sprintf('<input type="text" class="%1$s-text wpsa-url" id="%2$s[%3$s]" name="%2$s[%3$s]" value="%4$s"/>', $size, $args['section'], $args['id'], $value);
 		$html .= '<input type="button" class="button wpsa-browse" value="' . $label . '" />';
@@ -1412,7 +1410,7 @@ class WPOSA
 							?>
 							<div class="wposa-footer">
 								<div class="wposa-footer__column wposa-footer__column--left">
-									<input type="hidden" name="mihdan_index_now_options_save" value="true">
+									<input type="hidden" name="crawlwp_options_save" value="true">
 									<?php submit_button($form['label_submit'], $form['submit_type'], 'submit_' . $form['id'], $form['wrap'], $form['attributes']); ?>
 								</div>
 								<div class="wposa-footer__column wposa-footer__column--right">
@@ -1478,7 +1476,7 @@ class WPOSA
 						'click',
 						function () {
 							var $this = $(this);
-							var tab = '#tab-link-<?php echo esc_js(MIHDAN_INDEX_NOW_PREFIX); ?>_' + $this.data('tab');
+							var tab = '#tab-link-<?php echo esc_js(CRAWLWP_PREFIX); ?>_' + $this.data('tab');
 
 							if ($show_settings_toggler.attr('aria-expanded') === 'false') {
 								$show_settings_toggler.trigger('click');
@@ -1588,7 +1586,7 @@ class WPOSA
 					$('#button_get_token').on(
 						'click',
 						function () {
-							var CLIENT_ID = document.getElementById('mihdan_index_now_yandex_webmaster[client_id]').value;
+							var CLIENT_ID = document.getElementById('crawlwp_yandex_webmaster[client_id]').value;
 
 							window.location.href = CODE_ENDPOINT + CLIENT_ID;
 						}
@@ -1633,7 +1631,7 @@ class WPOSA
 				padding-left: 0;
 			}
 
-			.toplevel_page_mihdan-index-now #screen-meta-links {
+			.toplevel_page_crawlwp #screen-meta-links {
 				position: relative;
 				z-index: 10;
 			}
@@ -1729,8 +1727,8 @@ class WPOSA
 			}
 
 			input.wposa-field--switch:checked {
-				border-color: #135e96;
-				box-shadow: inset 20px 0 0 0 #135e96;
+				border-color: var(--wp-admin-theme-color, #135e96);
+				box-shadow: inset 20px 0 0 0 var(--wp-admin-theme-color, #135e96);
 				background: transparent;
 			}
 
@@ -1770,14 +1768,6 @@ class WPOSA
 				width: 50px;
 			}
 
-			.wposa-form-table__row_mihdan_index_now_logs_enable label,
-			.wposa-form-table__row_mihdan_index_now_yandex_webmaster_enable label,
-			.wposa-form-table__row_mihdan_index_now_google_webmaster_enable label,
-			.wposa-form-table__row_mihdan_index_now_bing_webmaster_enable label,
-			.wposa-form-table__row_mihdan_index_now_index_now_enable label {
-				color: #135e96 !important;
-			}
-
 			.wrap-column--form form {
 				max-width: 600px;
 			}
@@ -1807,7 +1797,7 @@ class WPOSA
 				display: block;
 			}
 
-			.wposa-card--mihdan_index_now_wpshop {
+			.wposa-card--crawlwp_wpshop {
 				padding: 0;
 				border: 0;
 			}
@@ -1820,16 +1810,16 @@ class WPOSA
 				background-color: #fff;
 			}
 
-			.wposa-card--mihdan_index_now_rtfm {
+			.wposa-card--crawlwp_rtfm {
 				position: sticky;
 				top: 50px;
 			}
 
-			.wposa-form-table__row_mihdan_index_now_plugins_plugins th {
+			.wposa-form-table__row_crawlwp_plugins_plugins th {
 				display: none;
 			}
 
-			.wposa-form-table__row_mihdan_index_now_plugins_plugins td {
+			.wposa-form-table__row_crawlwp_plugins_plugins td {
 				padding: 0;
 			}
 
@@ -1924,7 +1914,7 @@ class WPOSA
 			}
 
 			@media (max-width: 544px) {
-				.toplevel_page_mihdan-index-now #wpcontent {
+				.toplevel_page_crawlwp #wpcontent {
 					/*padding-left: 0;*/
 				}
 
@@ -1972,7 +1962,7 @@ class WPOSA
 			}
 
 			/*	new header */
-			[class*=mihdan-].wp-admin #screen-meta-links {
+			[class*=crawlwp].wp-admin #screen-meta-links {
 				position: absolute;
 				right: 0;
 				z-index: 9999;
@@ -2193,13 +2183,13 @@ class WPOSA
 				margin-left: 0.5rem;
 			}
 
-			.card.wposa-card.wposa-card--mihdan_index_now_upsell_card {
+			.card.wposa-card.wposa-card--crawlwp_upsell_card {
 				border-radius: 0.375rem;
-				border-color: #2271b1;
+				border-color: var(--wp-admin-theme-color, #2271b1);
 				padding: 1.5rem;
 			}
 
-			.wposa-card.wposa-card--mihdan_index_now_upsell_card h2 {
+			.wposa-card.wposa-card--crawlwp_upsell_card h2 {
 				margin: 0;
 			}
 

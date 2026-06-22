@@ -94,8 +94,8 @@ class Settings
 		add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
 
 		add_action('wpposa_load_menu_hook', function ($sub_menu_slug, $plugin_slug) {
-			if ($plugin_slug == MIHDAN_INDEX_NOW_SLUG && Utils::_GET_var('wposa-menu') == MIHDAN_INDEX_NOW_PREFIX . '_log') {
-				$GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'] = new Log_List_Table($this->logger, $this->wposa);
+			if ($plugin_slug == CRAWLWP_SLUG && Utils::_GET_var('wposa-menu') == CRAWLWP_PREFIX . '_log') {
+				$GLOBALS[CRAWLWP_PREFIX . '_log'] = new Log_List_Table($this->logger, $this->wposa);
 			}
 		}, 10, 2);
 
@@ -345,7 +345,7 @@ class Settings
 					'placeholder' => __('Set the API key', 'mihdan-index-now'),
 					'default'     => Utils::generate_key(),
 					'help_tab'    => 'https://crawlwp.com/article/setting-up-search-engine-indexing-for-wordpress/?utm_source=wp_dashboard&utm_medium=indexing_settings_page&utm_campaign=indexnow#wordpress-indexing-via-indexnow',
-					'desc'        => sprintf('<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'mihdan_index_now_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr(Utils::generate_key()), __('Show example', 'mihdan-index-now')),
+					'desc'        => sprintf('<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'crawlwp_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr(Utils::generate_key()), __('Show example', 'mihdan-index-now')),
 				)
 			);
 
@@ -384,7 +384,7 @@ class Settings
 						'type' => 'html',
 						'desc' => sprintf(
 							'<div class="notice notice-warning inline"><p>' . __('This setting will not work  because Bing API is not configured. Go to %sAPI Settings%s to set it up.', 'mihdan-index-now') . '</p></div>',
-							'<a target="_blank" href="' . MIHDAN_INDEX_NOW_API_SETTINGS_URL . '">', '</a>'
+							'<a target="_blank" href="' . CRAWLWP_API_SETTINGS_URL . '">', '</a>'
 						),
 					)
 				);
@@ -415,7 +415,7 @@ class Settings
 						'type' => 'html',
 						'desc' => sprintf(
 							'<div class="notice notice-warning inline"><p>' . __('This setting will not work  because Google API is not configured. Go to %sAPI Settings%s to set it up.', 'mihdan-index-now') . '</p></div>',
-							'<a target="_blank" href="' . MIHDAN_INDEX_NOW_API_SETTINGS_URL . '">', '</a>'
+							'<a target="_blank" href="' . CRAWLWP_API_SETTINGS_URL . '">', '</a>'
 						),
 					)
 				);
@@ -446,7 +446,7 @@ class Settings
 						'type' => 'html',
 						'desc' => sprintf(
 							'<div class="notice notice-warning inline"><p>' . __('This setting will not work  because Yandex API is not configured. Go to %sAPI Settings%s to set it up.', 'mihdan-index-now') . '</p></div>',
-							'<a target="_blank" href="' . MIHDAN_INDEX_NOW_API_SETTINGS_URL . '">', '</a>'
+							'<a target="_blank" href="' . CRAWLWP_API_SETTINGS_URL . '">', '</a>'
 						),
 					)
 				);
@@ -749,7 +749,7 @@ class Settings
 					'readonly' => true,
 					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-yandex/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=yandex_api',
 					'name'     => __('Redirect URI', 'mihdan-index-now'),
-					'value'    => MIHDAN_INDEX_NOW_API_SETTINGS_URL
+					'value'    => CRAWLWP_API_SETTINGS_URL
 				)
 			);
 
@@ -862,7 +862,7 @@ class Settings
 						 *
 						 * @var \WP_List_Table $table
 						 */
-						$table = $GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'];
+						$table = $GLOBALS[CRAWLWP_PREFIX . '_log'];
 						$table->display();
 
 						echo '</form>';

@@ -1,13 +1,9 @@
 <?php
-/**
- * Main class.
- *
- * @package mihdan-index-now
- */
 
 namespace Mihdan\IndexNow;
 
 use Mihdan\IndexNow\Logger\Logger;
+use Mihdan\IndexNow\Migrations\Migrations;
 use Mihdan\IndexNow\Providers\Bing\BingIndexNow;
 use Mihdan\IndexNow\Providers\Bing\BingWebmaster;
 use Mihdan\IndexNow\Providers\Google\GoogleWebmaster;
@@ -59,7 +55,7 @@ class Main
 
 		SEOCoreInit::get_instance();
 
-		do_action('mihdan_index_now/init', $this);
+		do_action('crawlwp/init', $this);
 	}
 
 	/**
@@ -78,7 +74,7 @@ class Main
 
 	private function load_requirements()
 	{
-		if ( ! function_exists('dbDelta')) {
+		if (!function_exists('dbDelta')) {
 			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		}
 
@@ -113,13 +109,13 @@ class Main
 		($this->container->make(IndexNow::class))->setup_hooks();
 
 		add_action('plugins_loaded', function () {
-			if ( ! defined('CRAWLWP_DETACH_LIBSODIUM')) {
+			if (!defined('CRAWLWP_DETACH_LIBSODIUM')) {
 				($this->container->make(UpsellAdminPages::class));
 			}
 		});
 
 		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER'] = $this->container->make(YandexWebmaster::class);
-		$GLOBALS['CRAWLWP_BING_WEBMASTER']   = $this->container->make(BingWebmaster::class);
+		$GLOBALS['CRAWLWP_BING_WEBMASTER'] = $this->container->make(BingWebmaster::class);
 		$GLOBALS['CRAWLWP_GOOGLE_WEBMASTER'] = $this->container->make(GoogleWebmaster::class);
 
 		$GLOBALS['CRAWLWP_YANDEX_WEBMASTER']->setup_hooks();
@@ -153,16 +149,13 @@ class Main
 		if ($this->wposa->get_option('show_last_update_column', 'general', 'on') === 'on') {
 			foreach ((array)$this->wposa->get_option('post_types', 'general', []) as $post_type) {
 				add_filter("manage_{$post_type}_posts_columns", [$this, 'add_last_update_column']);
-				add_action("manage_{$post_type}_posts_custom_column", [
-					$this,
-					'add_last_update_column_content'
-				], 10, 2);
+				add_action("manage_{$post_type}_posts_custom_column", [$this, 'add_last_update_column_content'], 10, 2);
 			}
 
 			add_action('admin_head', [$this, 'add_css_for_column']);
 		}
 
-		register_activation_hook(MIHDAN_INDEX_NOW_FILE, [$this, 'activate_plugin']);
+		register_activation_hook(CRAWLWP_FILE, [$this, 'activate_plugin']);
 
 		// Multisite.
 		add_action('wp_delete_site', [$this, 'delete_site_tables']);
@@ -210,11 +203,11 @@ class Main
 	{
 		?>
 		<style>
-			.column-index-now {
+			.column-crawlwp_last_update {
 				width: 8em;
 			}
 
-			.column-index-now img {
+			.column-crawlwp_last_update img {
 				vertical-align: bottom;
 			}
 		</style>
@@ -223,9 +216,9 @@ class Main
 
 	public function add_last_update_column(array $columns): array
 	{
-		$columns['index-now'] = sprintf(
+		$columns['crawlwp_last_update'] = sprintf(
 			'<span class="dashicons dashicons-share" title="%s"></span>',
-			__('IndexNow: Last Update', 'mihdan-index-now')
+			__('CrawlWP: Last Update', 'mihdan-index-now')
 		);
 
 		return $columns;
@@ -233,7 +226,7 @@ class Main
 
 	public function add_last_update_column_content(string $column_name, int $post_id): void
 	{
-		if ($column_name !== 'index-now') {
+		if ($column_name !== 'crawlwp_last_update') {
 			return;
 		}
 
@@ -248,11 +241,11 @@ class Main
 
 	public function post_row_actions(array $actions, WP_Post $post): array
 	{
-		if ( ! in_array($post->post_type, (array)$this->wposa->get_option('post_types', 'general', []), true)) {
+		if (!in_array($post->post_type, (array)$this->wposa->get_option('post_types', 'general', []), true)) {
 			return $actions;
 		}
 
-		if ( ! is_post_publicly_viewable($post)) {
+		if (!is_post_publicly_viewable($post)) {
 			return $actions;
 		}
 
@@ -310,17 +303,17 @@ class Main
 	{
 		global $wpdb;
 
-		$table_name      = $wpdb->prefix . 'index_now_log';
+		$table_name = $wpdb->prefix . 'crawlwp_log';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		if ($upgrade || $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") !== $table_name) {
-			$sql = "CREATE TABLE {$wpdb->prefix}index_now_log (
-    			log_id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+			$sql = "CREATE TABLE {$wpdb->prefix}crawlwp_log (
+    			log_id bigint(20) NOT NULL AUTO_INCREMENT,
     			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-    			level enum('emergency','alert','critical','error','warning','notice','info','debug') NOT NULL DEFAULT 'debug',
-    			search_engine enum('index-now','yandex-index-now','yandex-webmaster','bing-index-now','bing-webmaster','site','google-webmaster','seznam-index-now','naver-index-now') NOT NULL DEFAULT 'site',
-    			direction enum('incoming','outgoing','internal') NOT NULL DEFAULT 'incoming',
-    			status_code INT(11) unsigned NOT NULL,
+    			level varchar(255) NOT NULL DEFAULT 'debug',
+    			search_engine varchar(255) NOT NULL DEFAULT 'site',
+    			direction varchar(255) NOT NULL DEFAULT 'incoming',
+    			status_code INT(11) NOT NULL DEFAULT 0,
     			message text NOT NULL,
     			PRIMARY KEY (log_id)
 				) {$charset_collate};";
@@ -333,12 +326,14 @@ class Main
 
 	public function maybe_upgrade()
 	{
-		$db_version     = Utils::get_db_version();
+		$db_version = Utils::get_db_version();
 		$plugin_version = Utils::get_plugin_version();
 
 		if (version_compare($db_version, $plugin_version, '<')) {
 			$this->create_tables(true);
 		}
+
+		DBUpdates::get_instance()->maybe_update();
 	}
 
 	/**
@@ -347,7 +342,7 @@ class Main
 	public function add_log_menu_page()
 	{
 
-		if ( ! $this->is_logging_enabled()) {
+		if (!$this->is_logging_enabled()) {
 			return;
 		}
 	}
@@ -367,7 +362,7 @@ class Main
 				 *
 				 * @var WP_List_Table $table
 				 */
-				$table = $GLOBALS[MIHDAN_INDEX_NOW_PREFIX . '_log'];
+				$table = $GLOBALS[CRAWLWP_PREFIX . '_log'];
 				$table->display();
 				?>
 			</form>

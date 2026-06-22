@@ -77,7 +77,7 @@ class SiteVerificationSettings
 
 	public function sanitize_site_verification_data($submitted_data, $name)
 	{
-		if ($name === 'mihdan_index_now_site_verification') {
+		if ($name === 'crawlwp_site_verification') {
 			$providers = ['google', 'bing', 'yandex', 'baidu', 'pinterest'];
 
 			foreach ($providers as $provider) {

@@ -19,13 +19,17 @@ function crawlwp_lite_mo_uninstall_function()
 	}
 
 	$options = [
-		'mihdan_index_now_general',
-		'mihdan_index_now_index_now',
-		'mihdan_index_now_bing_webmaster',
-		'mihdan_index_now_google_webmaster',
-		'mihdan_index_now_yandex_webmaster',
-		'mihdan_index_now_logs',
-		'mihdan_index_now_version',
+		'crawlwp_general',
+		'crawlwp_index_now',
+		'crawlwp_bing_webmaster',
+		'crawlwp_google_webmaster',
+		'crawlwp_yandex_webmaster',
+		'crawlwp_logs',
+		'crawlwp_version',
+		'crawlwp_lite_db_ver',
+		'crawlwp_google_indexing_rate_limit_expiration',
+		'crawlwp_bing_indexing_rate_limit_expiration',
+		'crawlwp_yandex_indexing_rate_limit_expiration',
 	];
 
 	foreach ($options as $option) {
