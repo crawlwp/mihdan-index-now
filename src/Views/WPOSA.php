@@ -501,7 +501,7 @@ class WPOSA
 	 */
 	function admin_init()
 	{
-		if (isset($_REQUEST['action'], $_REQUEST['mihdan_index_now_options_save']) && $_REQUEST['action'] == 'update' && current_user_can('manage_options')) {
+		if (isset($_REQUEST['action'], $_REQUEST['crawlwp_options_save']) && $_REQUEST['action'] == 'update' && current_user_can('manage_options')) {
 
 			$option_page = ! empty($_REQUEST['option_page']) ? sanitize_text_field($_REQUEST['option_page']) : '';
 
@@ -1410,7 +1410,7 @@ class WPOSA
 							?>
 							<div class="wposa-footer">
 								<div class="wposa-footer__column wposa-footer__column--left">
-									<input type="hidden" name="mihdan_index_now_options_save" value="true">
+									<input type="hidden" name="crawlwp_options_save" value="true">
 									<?php submit_button($form['label_submit'], $form['submit_type'], 'submit_' . $form['id'], $form['wrap'], $form['attributes']); ?>
 								</div>
 								<div class="wposa-footer__column wposa-footer__column--right">

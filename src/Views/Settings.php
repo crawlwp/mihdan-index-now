@@ -345,7 +345,7 @@ class Settings
 					'placeholder' => __('Set the API key', 'mihdan-index-now'),
 					'default'     => Utils::generate_key(),
 					'help_tab'    => 'https://crawlwp.com/article/setting-up-search-engine-indexing-for-wordpress/?utm_source=wp_dashboard&utm_medium=indexing_settings_page&utm_campaign=indexnow#wordpress-indexing-via-indexnow',
-					'desc'        => sprintf('<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'mihdan_index_now_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr(Utils::generate_key()), __('Show example', 'mihdan-index-now')),
+					'desc'        => sprintf('<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'crawlwp_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr(Utils::generate_key()), __('Show example', 'mihdan-index-now')),
 				)
 			);
 
