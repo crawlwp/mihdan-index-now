@@ -58,8 +58,8 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 	{
 		$this->logger     = $logger;
 		$this->wposa      = $wposa;
-		$this->post_types = apply_filters('mihdan_index_now/post_types', (array)$this->wposa->get_option('post_types', 'general', []));
-		$this->taxonomies = apply_filters('mihdan_index_now/taxonomies', (array)$this->wposa->get_option('taxonomies', 'general', []));
+		$this->post_types = apply_filters('crawlwp/post_types', (array)$this->wposa->get_option('post_types', 'general', []));
+		$this->taxonomies = apply_filters('crawlwp/taxonomies', (array)$this->wposa->get_option('taxonomies', 'general', []));
 		$this->api_key    = $this->wposa->get_option('api_key', 'index_now', Utils::generate_key());
 	}
 
@@ -171,7 +171,7 @@ abstract class IndexNowAbstract implements SearchEngineInterface
 	 */
 	private function get_host()
 	{
-		return apply_filters('mihdan_index_now/host', wp_parse_url(Utils::normalized_home_url(), PHP_URL_HOST));
+		return apply_filters('crawlwp/host', wp_parse_url(Utils::normalized_home_url(), PHP_URL_HOST));
 	}
 
 	public function push(array $url_list): bool
