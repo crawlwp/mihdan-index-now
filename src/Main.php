@@ -149,10 +149,7 @@ class Main
 		if ($this->wposa->get_option('show_last_update_column', 'general', 'on') === 'on') {
 			foreach ((array)$this->wposa->get_option('post_types', 'general', []) as $post_type) {
 				add_filter("manage_{$post_type}_posts_columns", [$this, 'add_last_update_column']);
-				add_action("manage_{$post_type}_posts_custom_column", [
-					$this,
-					'add_last_update_column_content'
-				], 10, 2);
+				add_action("manage_{$post_type}_posts_custom_column", [$this, 'add_last_update_column_content'], 10, 2);
 			}
 
 			add_action('admin_head', [$this, 'add_css_for_column']);
@@ -206,11 +203,11 @@ class Main
 	{
 		?>
 		<style>
-			.column-crawlwp {
+			.column-crawlwp_last_update {
 				width: 8em;
 			}
 
-			.column-crawlwp img {
+			.column-crawlwp_last_update img {
 				vertical-align: bottom;
 			}
 		</style>
@@ -219,7 +216,7 @@ class Main
 
 	public function add_last_update_column(array $columns): array
 	{
-		$columns['crawlwp'] = sprintf(
+		$columns['crawlwp_last_update'] = sprintf(
 			'<span class="dashicons dashicons-share" title="%s"></span>',
 			__('CrawlWP: Last Update', 'mihdan-index-now')
 		);
@@ -229,7 +226,7 @@ class Main
 
 	public function add_last_update_column_content(string $column_name, int $post_id): void
 	{
-		if ($column_name !== 'crawlwp') {
+		if ($column_name !== 'crawlwp_last_update') {
 			return;
 		}
 
