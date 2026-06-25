@@ -84,6 +84,7 @@ class YandexWebmaster extends WebmasterAbstract
 	public function setup_hooks()
 	{
 		add_action('admin_init', [$this, 'get_api_token']);
+		add_action('admin_init', [$this, 'yandex_webmaster_find_website'], -1);
 
 		if (!$this->is_enabled()) {
 			return;
@@ -136,6 +137,67 @@ class YandexWebmaster extends WebmasterAbstract
 			wp_safe_redirect(CRAWLWP_API_SETTINGS_URL);
 			exit;
 		}
+	}
+
+	/**
+	 * @return void
+	 */
+	public function yandex_webmaster_find_website()
+	{
+		if (empty($this->get_token())) return;
+
+		$saved_host_id = $this->get_host_id();
+
+		if (!empty($saved_host_id) && empty(Utils::_POST_var('submit_' . Utils::get_plugin_prefix() . '_yandex_webmaster'))) return;
+
+		if (!empty(Utils::_POST_var('submit_' . Utils::get_plugin_prefix() . '_yandex_webmaster'))) {
+			delete_option('crawlwp_yandex_find_website_request_error');
+		}
+
+		if (time() < (int)get_option('crawlwp_yandex_find_website_request_error', 0)) return;
+
+		$user_id = $this->get_api_user_id($this->get_token());
+
+		if ($user_id) {
+
+			$host_ids = $this->get_api_host_id($user_id, $this->get_token());
+
+			if ($host_ids) {
+
+				$this->wposa->set_option('host_ids', serialize($host_ids), 'yandex_webmaster');
+
+				$home_url = Utils::normalized_home_url();
+
+				$is_https = strstr($home_url, 'https') !== false;
+				$parse = parse_url($home_url);
+				$website_domain = str_replace('www.', '', $parse["host"] ?? $home_url);
+
+				$detected_https_host_id = false;
+				$detected_http_host_id = false;
+
+				foreach ($host_ids as $host_id) {
+
+					if ($is_https && strstr($host_id, 'https') && strstr($host_id, $website_domain)) {
+						$detected_https_host_id = $host_id;
+						break;
+					}
+
+					if (strstr($host_id, $website_domain)) {
+						$detected_http_host_id = $host_id;
+						break;
+					}
+				}
+
+				$detected_host_id = !empty($detected_https_host_id) ? $detected_https_host_id : (!empty($detected_http_host_id) ? $detected_http_host_id : '');
+
+				if (!empty($detected_host_id)) {
+					$this->wposa->set_option('host_id', $detected_host_id, 'yandex_webmaster');
+					return;
+				}
+			}
+		}
+
+		update_option('crawlwp_yandex_find_website_request_error', time() + (10 * MINUTE_IN_SECONDS));
 	}
 
 	/**
