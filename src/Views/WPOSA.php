@@ -496,8 +496,6 @@ class WPOSA
 	 *
 	 * Initializes and registers the settings sections and fields.
 	 * Usually this should be called at `admin_init` hook.
-	 *
-	 * @since  1.0.0
 	 */
 	function admin_init()
 	{
@@ -699,8 +697,8 @@ class WPOSA
 					$section,
 					$args
 				);
-			} // foreach ended.
-		} // foreach ended.
+			}
+		}
 
 		// Creates our settings in the fields table.
 		foreach ($this->sections_array as $section) {
@@ -714,9 +712,9 @@ class WPOSA
 			 * @since 1.0.0
 			 */
 			register_setting($section['id'], $section['id'], array($this, 'sanitize_fields'));
-		} // foreach ended.
+		}
 
-	} // admin_init() ended.
+	}
 
 
 	/**

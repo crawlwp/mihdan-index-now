@@ -31,6 +31,7 @@ function crawlwp_lite_mo_uninstall_function()
 		'crawlwp_google_indexing_rate_limit_expiration',
 		'crawlwp_bing_indexing_rate_limit_expiration',
 		'crawlwp_yandex_indexing_rate_limit_expiration',
+		'crawlwp_yandex_find_website_request_error',
 	];
 
 	foreach ($options as $option) {
