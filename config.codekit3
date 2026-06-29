@@ -147,12 +147,6 @@
       "plM" : 52780316221407,
       "prP" : 0
     },
-    "\/build" : {
-      "ft" : 65536,
-      "oA" : 1,
-      "oAP" : "\/build",
-      "oF" : 0
-    },
     "\/changelog.txt" : {
       "cB" : 0,
       "ft" : 8192,
@@ -16381,7 +16375,7 @@
     "displayValueWasSetByUser" : 1,
     "iconImageName" : "brackets-forest",
     "iconImageWasSetByUser" : 0,
-    "lastBuiltDate" : 803820944.54358101
+    "lastBuiltDate" : 804415529.785676
   },
   "projectSettings" : {
     "abortBuildOnError" : 1,
