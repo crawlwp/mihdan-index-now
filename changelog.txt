@@ -1,5 +1,8 @@
 ﻿== Changelog ==
 
+= 3.0.16 =
+* Autoselect website as host id after yandex oauth.
+
 = 3.0.15 =
 * Update admin url from mihdan-* to crawlwp-*
 * Fixed incorrect redirect after Yandex oauth.
