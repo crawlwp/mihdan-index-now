@@ -46,21 +46,21 @@ IndexNow is a protocol that allows website owners to promptly notify search engi
 
 ### Premium Features ###
 
-* **SEO Performance Tracking**: Deep Google Search Console and Bing Wenmaster Tools integration for detailed insights about your site's search visibility and performance. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
+* **SEO Performance Tracking**: Deep Google Search Console, Yandex, and Bing Webmaster Tools integration for detailed insights about your site's search visibility and performance. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Keyword Tracking**: Monitor the performance of the keywords for which your website ranks using precise data instead of estimates. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Manual Submission:** You can manually submit specific WordPress posts and pages for indexing. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Real-time Indexing Status**: Monitor when search engines discover and index your pages. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Bulk Indexing**: Submit multiple URLs for indexing at once. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Indexing Status Reports**: Track the success of your indexing submissions. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 * **Indexing History**: View records of every indexing done, last submitted date, and progress over time to understand better how search engines recognize your site. [Learn more](https://crawlwp.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
-* **SEO Reports via Email**: Get daily, weekly or monthly email reports of your WordPress site SEO performance (impressions, clicks, ranking positions, top keywords etc) and pages indexed and deindexed on Google and Bing. [Learn more](https://crawlwp.com/article/seo-performance-email-reports/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
+* **SEO Reports via Email**: Get daily, weekly, or monthly email reports of your WordPress site SEO performance (impressions, clicks, ranking positions, top keywords etc) and pages indexed and deindexed on Google, Bing, and Yandex. [Learn more](https://crawlwp.com/article/seo-performance-email-reports/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion#features)
 
 = Why Choose CrawlWP SEO ? =
 
 * Save time by automating the indexing process.
 * Improve search visibility with faster indexing.
 * Track your SEO performance in one dashboard.
-* Support all major search engines, including Google, Bing and Yandex.
+* Support all major search engines, including Google, Bing, and Yandex.
 * User-friendly interface for all experience levels.
 
 Improve your SEO rankings by taking control of the crawling and indexing process so search engines know what to focus on.
