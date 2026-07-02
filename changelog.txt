@@ -1,5 +1,11 @@
 ﻿== Changelog ==
 
+= 3.0.17 =
+* Added nonce security to log deletion.
+* Added nonce verification to Yandex oauth flow.
+* Removed logging of cron event.
+* Removed logging of bulk_actions.
+
 = 3.0.16 =
 * Autoselect website as host id after yandex oauth.
 
