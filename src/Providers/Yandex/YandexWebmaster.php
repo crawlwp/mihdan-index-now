@@ -96,7 +96,7 @@ class YandexWebmaster extends WebmasterAbstract
 
 	public function get_api_token()
 	{
-		if (isset($_GET['code'], $_GET['state']) && $_GET['state'] === $this->get_slug() && current_user_can('manage_options')) {
+		if (isset($_GET['code'], $_GET['state']) && check_admin_referer('yandex_oauth_nonce', 'state') && current_user_can('manage_options')) {
 			$data = [];
 			$data['body'] = [
 				'grant_type' => 'authorization_code',

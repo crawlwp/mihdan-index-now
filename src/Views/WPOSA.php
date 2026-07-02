@@ -1579,7 +1579,8 @@ class WPOSA
 						.change();
 
 					var REDIRECT_URL = '<?php echo esc_url(admin_url('admin.php?page=' . Utils::get_plugin_slug())); ?>';
-					var CODE_ENDPOINT = 'https://oauth.yandex.com/authorize?state=yandex-webmaster&response_type=code&force_confirm=yes&redirect_uri=' + REDIRECT_URL + '&client_id=';
+					var YSTATE = '<?php echo wp_create_nonce('yandex_oauth_nonce'); ?>';
+					var CODE_ENDPOINT = 'https://oauth.yandex.com/authorize?state=' + YSTATE + '&response_type=code&force_confirm=yes&redirect_uri=' + REDIRECT_URL + '&client_id=';
 
 					$('#button_get_token').on(
 						'click',
