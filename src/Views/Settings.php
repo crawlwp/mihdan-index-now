@@ -486,7 +486,7 @@ class Settings
 				array(
 					'id'      => 'key_logging',
 					'type'    => 'switch',
-					'name'    => __('Key logging', 'mihdan-index-now'),
+					'name'    => __('IndexNow logging', 'mihdan-index-now'),
 					'default' => 'on',
 				)
 			);
@@ -498,26 +498,6 @@ class Settings
 					'type'    => 'switch',
 					'name'    => __('Outgoing requests', 'mihdan-index-now'),
 					'default' => 'on',
-				)
-			);
-
-			$this->wposa->add_field(
-				'logs',
-				array(
-					'id'      => 'cron_events',
-					'type'    => 'switch',
-					'name'    => __('Cron events', 'mihdan-index-now'),
-					'default' => 'off',
-				)
-			);
-
-			$this->wposa->add_field(
-				'logs',
-				array(
-					'id'      => 'bulk_actions',
-					'type'    => 'switch',
-					'name'    => __('Bulk Actions', 'mihdan-index-now'),
-					'default' => 'off',
 				)
 			);
 

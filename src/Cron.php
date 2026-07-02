@@ -57,14 +57,6 @@ class Cron {
 			$wpdb->prepare( "DELETE FROM {$table_name} WHERE DATEDIFF(NOW(), created_at)>=%d", $lifetime )
 		);
 
-		if ( $this->wposa->get_option( 'cron_events', 'logs', 'off' ) === 'on' ) {
-			$data = [
-				'direction' => 'internal',
-			];
-
-			$this->logger->info( 'Old log entries were deleted successfully.', $data );
-		}
-
 		return true;
 	}
 }
