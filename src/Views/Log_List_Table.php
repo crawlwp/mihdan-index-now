@@ -256,13 +256,15 @@ class Log_List_Table extends WP_List_Table
 	 */
 	private function bulk_action_handler()
 	{
-		global $wpdb;
-
-		if ( ! empty($_POST['_wpnonce']) && ! wp_verify_nonce(wp_unslash($_POST['_wpnonce']), 'bulk-' . $this->_args['plural'])) {
-			return;
-		}
-
 		if (isset($_POST['log_rows']) && is_array($_POST['log_rows']) && 'delete' === $this->current_action()) {
+
+			global $wpdb;
+
+			// Bail if user is not an admin or without admin privileges.
+			if ( ! current_user_can('manage_options')) return;
+
+			check_admin_referer('bulk-' . $this->_args['plural']);
+
 			$log_rows   = array_map('absint', $_POST['log_rows']);
 			$table_name = $this->logger->get_logger_table_name();
 
@@ -275,15 +277,6 @@ class Log_List_Table extends WP_List_Table
 			$wpdb->query(
 				$wpdb->prepare($query, $log_rows)
 			);
-
-			if ($this->wposa->get_option('bulk_actions', 'logs', 'off') === 'on') {
-
-				$data = [
-					'direction' => 'internal',
-				];
-
-				$this->logger->info(sprintf('The log entries with IDs %s were deleted successfully.', $log_rows), $data);
-			}
 		}
 	}
 }
