@@ -47,6 +47,8 @@ class Assets
 
 		$author      = '';
 		$categories  = [];
+		$content     = '';
+		$inbound     = [];
 
 		if ($post instanceof \WP_Post) {
 			$author_obj = get_userdata($post->post_author);
@@ -55,6 +57,8 @@ class Assets
 			if (! empty($terms) && ! is_wp_error($terms)) {
 				$categories = wp_list_pluck($terms, 'name');
 			}
+			$content = $post->post_content;
+			$inbound = $this->get_inbound_links($post->ID);
 		}
 
 		wp_localize_script('crawlwp-seo-metabox', 'crawlwpSEO', [
@@ -67,6 +71,45 @@ class Assets
 			'author'      => $author,
 			'category'    => ! empty($categories) ? $categories[0] : '',
 			'permalink'   => $post instanceof \WP_Post ? get_permalink($post->ID) : '',
+			'postContent' => $content,
+			'inboundLinks' => $inbound,
 		]);
+	}
+
+	private function get_inbound_links(int $post_id): array
+	{
+		$permalink = get_permalink($post_id);
+
+		if (! $permalink) {
+			return [];
+		}
+
+		global $wpdb;
+
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ID, post_title, post_content, post_date FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ('post','page') AND post_content LIKE %s AND ID != %d LIMIT 20",
+				'%' . $wpdb->esc_like($permalink) . '%',
+				$post_id
+			)
+		);
+
+		$links = [];
+
+		foreach ($results as $row) {
+			$anchor = '';
+			if (preg_match('/<a[^>]+href=["\']' . preg_quote($permalink, '/') . '["\'][^>]*>(.*?)<\/a>/is', $row->post_content, $m)) {
+				$anchor = wp_strip_all_tags($m[1]);
+			}
+
+			$links[] = [
+				'title'  => $row->post_title,
+				'url'    => get_permalink($row->ID),
+				'anchor' => $anchor,
+				'date'   => mysql2date('j M Y', $row->post_date),
+			];
+		}
+
+		return $links;
 	}
 }

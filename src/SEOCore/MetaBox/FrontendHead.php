@@ -4,7 +4,7 @@ namespace Mihdan\IndexNow\SEOCore\MetaBox;
 
 class FrontendHead
 {
-	public function __construct()
+	public function Link__construct()
 	{
 		add_action('wp_head', [$this, 'output_meta_tags'], 1);
 	}

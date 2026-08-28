@@ -30,7 +30,13 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
     <button class="cwp-tab is-active" role="tab" aria-selected="true" data-panel="general" type="button"><?php esc_html_e('General', 'mihdan-index-now'); ?></button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="social" type="button"><?php esc_html_e('Social', 'mihdan-index-now'); ?></button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="schema" type="button"><?php esc_html_e('Schema', 'mihdan-index-now'); ?></button>
+    <button class="cwp-tab" role="tab" aria-selected="false" data-panel="links" type="button">
+      <?php esc_html_e('Links', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-links" title="<?php esc_attr_e('No internal links yet', 'mihdan-index-now'); ?>" hidden></span>
+    </button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="advanced" type="button"><?php esc_html_e('Advanced', 'mihdan-index-now'); ?></button>
+    <button class="cwp-tab" role="tab" aria-selected="false" data-panel="analysis" type="button">
+      <?php esc_html_e('Analysis', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-analysis" title="" hidden></span>
+    </button>
   </div>
 
   <!-- GENERAL -->
@@ -320,6 +326,47 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
     </div>
   </div>
 
+  <!-- LINKS -->
+  <div class="cwp-panel" id="cwp-panel-links" role="tabpanel">
+
+    <div class="cwp-linkbar">
+      <div class="cwp-linkstat">
+        <b id="cwpLinksOut">0</b>
+        <span><?php esc_html_e('links out', 'mihdan-index-now'); ?></span>
+      </div>
+      <div class="cwp-linkstat">
+        <b id="cwpLinksIn">0</b>
+        <span><?php esc_html_e('links in', 'mihdan-index-now'); ?></span>
+      </div>
+      <div class="cwp-linkstat">
+        <b id="cwpLinksExt">0</b>
+        <span><?php esc_html_e('external', 'mihdan-index-now'); ?></span>
+      </div>
+    </div>
+
+    <div class="cwp-notice cwp-links-notice" id="cwpLinksNotice" hidden>
+      <svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.6v4.2M8 11.2v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span id="cwpLinksNoticeText"></span>
+    </div>
+
+    <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Outbound links in this post', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Internal and external links found in the post content.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-linklist" id="cwpOutboundLinks">
+        <p class="cwp-empty-msg" id="cwpOutboundEmpty"><?php esc_html_e('No links found in the content yet.', 'mihdan-index-now'); ?></p>
+      </div>
+    </div>
+
+    <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Linking to this post', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Posts on your site that already point here.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-linklist" id="cwpInboundLinks">
+        <p class="cwp-empty-msg" id="cwpInboundEmpty"><?php esc_html_e('No inbound links found.', 'mihdan-index-now'); ?></p>
+      </div>
+    </div>
+
+  </div>
+
   <!-- ADVANCED -->
   <div class="cwp-panel" id="cwp-panel-advanced" role="tabpanel">
     <div class="cwp-section">
@@ -387,6 +434,16 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
         <p class="cwp-hint"><?php esc_html_e('Leave empty to use the post\'s own permalink.', 'mihdan-index-now'); ?></p>
       </div>
     </div>
+  </div>
+
+  <!-- ANALYSIS -->
+  <div class="cwp-panel" id="cwp-panel-analysis" role="tabpanel">
+    <div class="cwp-notice" id="cwpAnalysisNotice">
+      <svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.6v4.2M8 11.2v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span id="cwpAnalysisNoticeText"><?php esc_html_e('Enter a focus keyword on the General tab to run the analysis.', 'mihdan-index-now'); ?></span>
+    </div>
+
+    <div class="cwp-checklist" id="cwpChecklist"></div>
   </div>
 
   <!-- FOOTER -->
