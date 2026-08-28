@@ -1,0 +1,65 @@
+<?php
+
+namespace Mihdan\IndexNow\SEOCore\MetaBox;
+
+class MetaBox
+{
+	public function __construct()
+	{
+		add_action('add_meta_boxes', [$this, 'register']);
+		add_action('save_post', [$this, 'save']);
+	}
+
+	public function register(): void
+	{
+		$post_types = get_post_types(['public' => true]);
+
+		foreach ($post_types as $post_type) {
+			add_meta_box(
+				'crawlwp-seo-metabox',
+				__('CrawlWP SEO', 'mihdan-index-now'),
+				[$this, 'render'],
+				$post_type,
+				'normal',
+				'high'
+			);
+		}
+	}
+
+	public function save(int $post_id): void
+	{
+		MetaFields::save($post_id);
+	}
+
+	public function render(\WP_Post $post): void
+	{
+		$data      = MetaFields::get_all($post->ID);
+		$post_type = get_post_type_object($post->post_type);
+		$type_name = $post_type ? $post_type->labels->singular_name : __('Post', 'mihdan-index-now');
+		$site_name = get_bloginfo('name');
+		$site_url  = home_url('/');
+		$permalink = get_permalink($post->ID);
+
+		$og_image_url = '';
+		if (! empty($data['og_image'])) {
+			$img = wp_get_attachment_image_url((int) $data['og_image'], 'large');
+			if ($img) {
+				$og_image_url = $img;
+			}
+		}
+
+		$x_image_url = '';
+		if (! empty($data['x_image'])) {
+			$img = wp_get_attachment_image_url((int) $data['x_image'], 'large');
+			if ($img) {
+				$x_image_url = $img;
+			}
+		}
+
+		$featured_image_url = get_the_post_thumbnail_url($post->ID, 'large') ?: '';
+
+		wp_nonce_field(MetaFields::NONCE_ACTION, MetaFields::NONCE_NAME);
+
+		include __DIR__ . '/views/metabox-template.php';
+	}
+}
