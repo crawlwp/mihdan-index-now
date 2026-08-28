@@ -1,6 +1,7 @@
 (function($){
   'use strict';
 
+  function initCrawlWPMetabox() {
   var $mb = $('#crawlwp-seo-metabox-inner');
   if (!$mb.length) return;
 
@@ -21,6 +22,7 @@
     if ($wpTitle.length) {
       $wpTitle.on('input', function() {
         TOKENS['%%title%%'] = $wpTitle.val();
+        crawlwpSEO.postTitle = $wpTitle.val();
         measureAll();
         sync();
         runAnalysis();
@@ -36,6 +38,7 @@
         if (newTitle !== undefined && newTitle !== lastTitle) {
           lastTitle = newTitle;
           TOKENS['%%title%%'] = newTitle;
+          crawlwpSEO.postTitle = newTitle;
           measureAll();
           sync();
           runAnalysis();
@@ -95,6 +98,55 @@
           $slug.val(newSlug);
           sync();
           runAnalysis();
+        }
+      });
+    }
+  }
+
+  /* ---------- sync WP post content → metabox analysis ---------- */
+  function watchPostContent() {
+    var _contentDebounce = null;
+    function onContentChange() {
+      clearTimeout(_contentDebounce);
+      _contentDebounce = setTimeout(function() {
+        renderLinks();
+        runAnalysis();
+      }, 500);
+    }
+
+    /* Classic editor: TinyMCE */
+    if (typeof tinymce !== 'undefined') {
+      var tryBind = function() {
+        var ed = tinymce.get('content');
+        if (ed) {
+          ed.on('input change keyup Undo Redo', onContentChange);
+        } else {
+          setTimeout(tryBind, 500);
+        }
+      };
+      tryBind();
+    }
+
+    /* Classic editor: plain-text textarea fallback */
+    var $contentTA = $('#content');
+    if ($contentTA.length) {
+      $contentTA.on('input', onContentChange);
+    }
+
+    /* Gutenberg: subscribe to content changes */
+    if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe && wp.data.select('core/editor')) {
+      var lastContent = '';
+      var sel = wp.data.select('core/editor');
+      if (sel) {
+        lastContent = sel.getEditedPostContent() || '';
+      }
+      wp.data.subscribe(function() {
+        var s = wp.data.select('core/editor');
+        if (!s) return;
+        var newContent = s.getEditedPostContent() || '';
+        if (newContent !== lastContent) {
+          lastContent = newContent;
+          onContentChange();
         }
       });
     }
@@ -403,10 +455,19 @@
 
   /* ---------- links panel ---------- */
   function getEditorContent() {
-    /* Try TinyMCE first, then Gutenberg, then fall back to localized content */
+    /* Try TinyMCE first, then Gutenberg data store, then DOM fallbacks */
     if (typeof tinymce !== 'undefined') {
       var ed = tinymce.get('content');
       if (ed && !ed.isHidden()) return ed.getContent();
+    }
+    /* Gutenberg: the block editor canvas is iframed, so DOM scraping fails.
+       Use the data store which returns clean serialized post content. */
+    if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
+      var sel = wp.data.select('core/editor');
+      if (sel && typeof sel.getEditedPostContent === 'function') {
+        var content = sel.getEditedPostContent();
+        if (content) return content;
+      }
     }
     var $wpBlock = $('.block-editor-block-list__layout');
     if ($wpBlock.length) return $wpBlock.html();
@@ -1055,7 +1116,14 @@
   runAnalysis();
   watchPostTitle();
   watchPostSlug();
+  watchPostContent();
   initSocialImagePlaceholders();
   watchFeaturedImage();
+
+  } /* end initCrawlWPMetabox */
+
+  $(function() {
+    initCrawlWPMetabox();
+  });
 
 })(jQuery);
