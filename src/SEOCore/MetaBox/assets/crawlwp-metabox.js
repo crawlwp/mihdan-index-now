@@ -14,6 +14,112 @@
     '%%author%%':      crawlwpSEO.author || ''
   };
 
+  /* ---------- sync WP post title → metabox ---------- */
+  function watchPostTitle() {
+    /* Classic editor */
+    var wpTitle = document.getElementById('title');
+    if (wpTitle) {
+      wpTitle.addEventListener('input', function() {
+        TOKENS['%%title%%'] = wpTitle.value;
+        measureAll();
+        sync();
+        runAnalysis();
+      });
+    }
+    /* Gutenberg: subscribe to title changes */
+    if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
+      var lastTitle = TOKENS['%%title%%'];
+      wp.data.subscribe(function() {
+        var newTitle = wp.data.select('core/editor').getEditedPostAttribute('title');
+        if (newTitle !== undefined && newTitle !== lastTitle) {
+          lastTitle = newTitle;
+          TOKENS['%%title%%'] = newTitle;
+          measureAll();
+          sync();
+          runAnalysis();
+        }
+      });
+    }
+  }
+
+  /* ---------- two-way slug sync ---------- */
+  var _slugSyncLock = false;
+
+  function watchPostSlug() {
+    /* Classic editor: #post_name or the editable slug span */
+    var wpSlugInput = document.getElementById('post_name');
+    if (wpSlugInput) {
+      new MutationObserver(function() {
+        if (_slugSyncLock) return;
+        var val = wpSlugInput.value;
+        if (val && val !== slug.value) {
+          slug.value = val;
+          sync();
+          runAnalysis();
+        }
+      }).observe(wpSlugInput, { attributes: true, attributeFilter: ['value'] });
+      wpSlugInput.addEventListener('change', function() {
+        if (_slugSyncLock) return;
+        if (wpSlugInput.value && wpSlugInput.value !== slug.value) {
+          slug.value = wpSlugInput.value;
+          sync();
+          runAnalysis();
+        }
+      });
+    }
+    /* Classic editor editable slug span */
+    var editSlug = document.getElementById('editable-post-name');
+    if (editSlug) {
+      new MutationObserver(function() {
+        if (_slugSyncLock) return;
+        var val = editSlug.textContent.trim();
+        if (val && val !== slug.value) {
+          slug.value = val;
+          sync();
+          runAnalysis();
+        }
+      }).observe(editSlug, { childList: true, characterData: true, subtree: true });
+    }
+    /* Gutenberg: subscribe to slug changes */
+    if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
+      var lastSlug = slug.value;
+      wp.data.subscribe(function() {
+        if (_slugSyncLock) return;
+        var sel = wp.data.select('core/editor');
+        var newSlug = sel.getEditedPostAttribute('slug');
+        if (newSlug !== undefined && newSlug !== lastSlug) {
+          lastSlug = newSlug;
+          slug.value = newSlug;
+          sync();
+          runAnalysis();
+        }
+      });
+    }
+  }
+
+  /* Push metabox slug → WP post slug */
+  function pushSlugToWP(val) {
+    _slugSyncLock = true;
+    /* Classic editor */
+    var wpSlugInput = document.getElementById('post_name');
+    if (wpSlugInput) {
+      wpSlugInput.value = val;
+    }
+    var editSlug = document.getElementById('editable-post-name');
+    if (editSlug) {
+      editSlug.textContent = val;
+    }
+    var editSlugFull = document.getElementById('editable-post-name-full');
+    if (editSlugFull) {
+      editSlugFull.textContent = val;
+    }
+    /* Gutenberg */
+    if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+      wp.data.dispatch('core/editor').editPost({ slug: val });
+    }
+    _slugSyncLock = false;
+  }
+
   function resolve(str) {
     return str.replace(/%%[a-z]+%%/g, function(m) {
       return TOKENS[m] !== undefined ? TOKENS[m] : m;
@@ -151,7 +257,10 @@
   [title, desc].forEach(function(el) {
     el.addEventListener('input', function() { measure(el); sync(); });
   });
-  slug.addEventListener('input', sync);
+  slug.addEventListener('input', function() {
+    sync();
+    pushSlugToWP(slug.value);
+  });
 
   /* ---------- JSON-LD toggle ---------- */
   var jsonBtn = document.getElementById('cwpJsonToggle');
@@ -197,6 +306,77 @@
   }
 
   /* ---------- image pickers (WP media) ---------- */
+
+  /* Map input IDs to their corresponding social preview card image selectors */
+  function updateSocialPreviewImage(targetId, imageUrl) {
+    if (targetId === 'cwpOgImage') {
+      /* Update Facebook preview card image */
+      var fbCard = mb.querySelector('.cwp-fb-card .cwp-og-img');
+      if (fbCard) {
+        if (imageUrl) {
+          fbCard.style.backgroundImage = 'url(' + imageUrl + ')';
+          fbCard.textContent = '';
+        } else {
+          var fiFb = crawlwpSEO.featuredImageUrl || '';
+          if (fiFb) {
+            fbCard.style.backgroundImage = 'url(' + fiFb + ')';
+            fbCard.textContent = '';
+          } else {
+            fbCard.style.backgroundImage = '';
+            fbCard.textContent = '1200 \u00d7 630';
+          }
+        }
+      }
+      /* Also update X preview if X has no custom image */
+      var xInput = document.getElementById('cwpXImage');
+      if (xInput && !xInput.value) {
+        var xCard = mb.querySelector('.cwp-x-card .cwp-og-img');
+        if (xCard) {
+          if (imageUrl) {
+            xCard.style.backgroundImage = 'url(' + imageUrl + ')';
+            xCard.textContent = '';
+          } else {
+            var fiX1 = crawlwpSEO.featuredImageUrl || '';
+            if (fiX1) {
+              xCard.style.backgroundImage = 'url(' + fiX1 + ')';
+              xCard.textContent = '';
+            } else {
+              xCard.style.backgroundImage = '';
+              xCard.textContent = '1200 \u00d7 675';
+            }
+          }
+        }
+      }
+    } else if (targetId === 'cwpXImage') {
+      /* Update X preview card image */
+      var xCard = mb.querySelector('.cwp-x-card .cwp-og-img');
+      if (xCard) {
+        if (imageUrl) {
+          xCard.style.backgroundImage = 'url(' + imageUrl + ')';
+          xCard.textContent = '';
+        } else {
+          /* Fall back to OG image or clear */
+          var ogInput = document.getElementById('cwpOgImage');
+          var ogThumb = ogInput ? ogInput.closest('.cwp-img-picker') : null;
+          var ogBg = ogThumb ? ogThumb.querySelector('.cwp-img-thumb') : null;
+          var fallback = ogBg ? ogBg.style.backgroundImage : '';
+          xCard.style.backgroundImage = fallback;
+          if (fallback) {
+            xCard.textContent = '';
+          } else {
+            var fiX2 = crawlwpSEO.featuredImageUrl || '';
+            if (fiX2) {
+              xCard.style.backgroundImage = 'url(' + fiX2 + ')';
+              xCard.textContent = '';
+            } else {
+              xCard.textContent = '1200 \u00d7 675';
+            }
+          }
+        }
+      }
+    }
+  }
+
   mb.querySelectorAll('.cwp-img-pick-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
@@ -216,6 +396,8 @@
         if (thumbEl && attachment.url) {
           thumbEl.style.backgroundImage = 'url(' + attachment.url + ')';
         }
+        /* Instantly update the social preview card */
+        updateSocialPreviewImage(target, attachment.url);
       });
 
       frame.open();
@@ -230,8 +412,18 @@
       var thumbEl = btn.closest('.cwp-img-picker').querySelector('.cwp-img-thumb');
       inputEl.value = '';
       if (thumbEl) {
-        thumbEl.style.backgroundImage = '';
+        /* Fall back to featured image or green placeholder */
+        var fi = crawlwpSEO.featuredImageUrl || '';
+        if (fi) {
+          thumbEl.style.backgroundImage = 'url(' + fi + ')';
+          thumbEl.classList.remove('cwp-thumb-empty');
+        } else {
+          thumbEl.style.backgroundImage = '';
+          thumbEl.classList.add('cwp-thumb-empty');
+        }
       }
+      /* Instantly update the social preview card */
+      updateSocialPreviewImage(target, '');
     });
   });
 
@@ -274,6 +466,27 @@
     return { internal: internal, external: external };
   }
 
+  /* ---------- show-all toggle helpers ---------- */
+  function addShowAll(container, total) {
+    var btn = document.createElement('a');
+    btn.href = '#';
+    btn.className = 'cwp-show-all-link';
+    btn.textContent = 'Show all ' + total + ' links';
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      container.querySelectorAll('.cwp-link-hidden').forEach(function(el) {
+        el.classList.remove('cwp-link-hidden');
+      });
+      btn.remove();
+    });
+    container.appendChild(btn);
+  }
+
+  function removeShowAll(container) {
+    var existing = container.querySelector('.cwp-show-all-link');
+    if (existing) existing.remove();
+  }
+
   function renderLinks() {
     var html = getEditorContent();
     var parsed = parseLinks(html);
@@ -301,15 +514,17 @@
     var outList = document.getElementById('cwpOutboundLinks');
     var outEmpty = document.getElementById('cwpOutboundEmpty');
     outList.querySelectorAll('.cwp-link-item').forEach(function(el) { el.remove(); });
+    removeShowAll(outList);
     if (outTotal === 0) {
       outEmpty.hidden = false;
     } else {
       outEmpty.hidden = true;
       var all = parsed.internal.map(function(l) { l.type = 'internal'; return l; })
         .concat(parsed.external.map(function(l) { l.type = 'external'; return l; }));
-      all.forEach(function(link) {
+      all.forEach(function(link, idx) {
         var div = document.createElement('div');
         div.className = 'cwp-link-item';
+        if (idx >= 6) div.classList.add('cwp-link-hidden');
         var chipClass = link.type === 'internal' ? 'is-good' : 'is-muted';
         var chipLabel = link.type === 'internal' ? 'Internal' : 'External';
         div.innerHTML = '<div class="cwp-link-main">' +
@@ -319,25 +534,78 @@
           '<div class="cwp-link-side"><span class="cwp-chip ' + chipClass + '">' + chipLabel + '</span></div>';
         outList.appendChild(div);
       });
+      if (all.length > 6) addShowAll(outList, all.length);
     }
 
     /* inbound list */
     var inList = document.getElementById('cwpInboundLinks');
     var inEmpty = document.getElementById('cwpInboundEmpty');
     inList.querySelectorAll('.cwp-link-item').forEach(function(el) { el.remove(); });
+    removeShowAll(inList);
     if (inbound.length === 0) {
       inEmpty.hidden = false;
     } else {
       inEmpty.hidden = true;
-      inbound.forEach(function(link) {
+      inbound.forEach(function(link, idx) {
         var div = document.createElement('div');
         div.className = 'cwp-link-item is-inbound';
+        if (idx >= 6) div.classList.add('cwp-link-hidden');
         var anchorInfo = link.anchor ? 'Anchor: "' + escHtml(link.anchor) + '" \u00b7 ' : '';
         div.innerHTML = '<div class="cwp-link-main">' +
           '<a class="cwp-link-title" href="' + escHtml(link.url) + '" target="_blank">' + escHtml(link.title) + '</a>' +
           '<div class="cwp-link-meta">' + anchorInfo + 'published ' + escHtml(link.date) + '</div>' +
           '</div>';
         inList.appendChild(div);
+      });
+      if (inbound.length > 6) addShowAll(inList, inbound.length);
+    }
+
+    /* suggested links */
+    var suggested = crawlwpSEO.suggestedLinks || [];
+    var sugList = document.getElementById('cwpSuggestedLinks');
+    var sugEmpty = document.getElementById('cwpSuggestedEmpty');
+    sugList.querySelectorAll('.cwp-link-item').forEach(function(el) { el.remove(); });
+    removeShowAll(sugList);
+    if (suggested.length === 0) {
+      sugEmpty.hidden = false;
+    } else {
+      sugEmpty.hidden = true;
+      suggested.forEach(function(link, idx) {
+        var div = document.createElement('div');
+        div.className = 'cwp-link-item is-suggested';
+        if (idx >= 6) div.classList.add('cwp-link-hidden');
+        div.innerHTML = '<div class="cwp-link-main">' +
+          '<a class="cwp-link-title" href="' + escHtml(link.url) + '" target="_blank">' + escHtml(link.title) + '</a>' +
+          '<div class="cwp-link-meta">' + escHtml(link.url) + ' \u00b7 ' + escHtml(link.date) + '</div>' +
+          '</div>' +
+          '<div class="cwp-link-side">' +
+            '<button class="cwp-copy-url-btn" type="button" data-url="' + escHtml(link.url) + '" title="Copy URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+            '<span class="cwp-chip is-info">Suggested</span>' +
+          '</div>';
+        sugList.appendChild(div);
+      });
+      if (suggested.length > 6) addShowAll(sugList, suggested.length);
+
+      /* bind copy buttons */
+      sugList.querySelectorAll('.cwp-copy-url-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var url = btn.getAttribute('data-url');
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function() {
+              btn.classList.add('is-copied');
+              btn.title = 'Copied!';
+              setTimeout(function() { btn.classList.remove('is-copied'); btn.title = 'Copy URL'; }, 1500);
+            });
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+            document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+            btn.classList.add('is-copied');
+            btn.title = 'Copied!';
+            setTimeout(function() { btn.classList.remove('is-copied'); btn.title = 'Copy URL'; }, 1500);
+          }
+        });
       });
     }
   }
@@ -638,6 +906,207 @@
     });
   });
 
+  /* ---------- insights panel (pro only) ---------- */
+  if (crawlwpSEO.isProActive) {
+    var insightsPeriod = document.getElementById('cwpInsightsPeriod');
+    var _insightsLoading = false;
+    var _insightsCache = {};
+    var _currentEngine = 'google';
+    var engineLabels = { google: 'Google', bing: 'Bing', yandex: 'Yandex' };
+
+    /* Engine tab switching */
+    var engineTabs = mb.querySelectorAll('.cwp-engine-tab');
+    engineTabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        engineTabs.forEach(function(t) { t.classList.remove('is-active'); });
+        tab.classList.add('is-active');
+        _currentEngine = tab.dataset.engine;
+        if (_insightsCache[_currentEngine]) {
+          populateInsightsForEngine(_insightsCache[_currentEngine], _currentEngine);
+        } else {
+          var period = insightsPeriod ? insightsPeriod.value : '28';
+          loadInsights(period);
+        }
+      });
+    });
+
+    if (insightsPeriod) {
+      insightsPeriod.addEventListener('change', function() {
+        _insightsCache = {};
+        loadInsights(insightsPeriod.value);
+      });
+    }
+
+    function loadInsights(days) {
+      var postId = crawlwpSEO.postId || 0;
+      if (!postId) {
+        var noticeText = document.getElementById('cwpInsightsNoticeText');
+        if (noticeText) noticeText.textContent = 'Save the post first to load search performance data.';
+        return;
+      }
+
+      if (_insightsLoading) return;
+      _insightsLoading = true;
+
+      /* Show loading state */
+      var cardEls = ['cwpInsClicks', 'cwpInsImpressions', 'cwpInsPosition', 'cwpInsCTR'];
+      cardEls.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = '\u2026';
+      });
+
+      jQuery.ajax({
+        url: crawlwpSEO.ajaxUrl,
+        type: 'POST',
+        data: {
+          action: 'crawlwp_load_insights',
+          nonce: crawlwpSEO.insightsNonce,
+          post_id: postId,
+          days: parseInt(days, 10)
+        },
+        success: function(response) {
+          _insightsLoading = false;
+          if (response.success && response.data) {
+            if (response.data.engines) {
+              _insightsCache = response.data.engines;
+              var engineData = _insightsCache[_currentEngine] || {};
+              populateInsightsForEngine(engineData, _currentEngine);
+            } else {
+              /* Legacy flat format — treat as google */
+              _insightsCache = { google: response.data };
+              populateInsightsForEngine(response.data, _currentEngine);
+            }
+          }
+        },
+        error: function() {
+          _insightsLoading = false;
+          cardEls.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = '\u2014';
+          });
+        }
+      });
+
+      /* Also fire custom event for additional pro plugin listeners */
+      var evt = new CustomEvent('crawlwp:loadInsights', {
+        detail: { permalink: crawlwpSEO.permalink || '', days: parseInt(days, 10) }
+      });
+      document.dispatchEvent(evt);
+    }
+
+    function populateInsightsForEngine(data, engine) {
+      var label = engineLabels[engine] || engine;
+      var clicks = document.getElementById('cwpInsClicks');
+      var impressions = document.getElementById('cwpInsImpressions');
+      var position = document.getElementById('cwpInsPosition');
+      var ctr = document.getElementById('cwpInsCTR');
+
+      if (clicks) clicks.textContent = data.clicks !== undefined ? Number(data.clicks).toLocaleString() : '\u2014';
+      if (impressions) impressions.textContent = data.impressions !== undefined ? Number(data.impressions).toLocaleString() : '\u2014';
+      if (position) position.textContent = data.position !== undefined ? Number(data.position).toFixed(1) : '\u2014';
+      if (ctr) ctr.textContent = data.ctr !== undefined ? (Number(data.ctr) * 100).toFixed(1) + '%' : '\u2014';
+
+      /* Update keywords description */
+      var kwDesc = document.getElementById('cwpKeywordsDesc');
+      if (kwDesc) kwDesc.textContent = 'Search queries where this page appeared in ' + label + ' results.';
+
+      /* keywords table */
+      var tbody = document.getElementById('cwpInsightsKeywordsBody');
+      if (tbody && data.keywords && data.keywords.length > 0) {
+        tbody.innerHTML = '';
+        data.keywords.forEach(function(kw) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + escHtml(kw.keyword) + '</td>' +
+            '<td>' + (kw.clicks || 0) + '</td>' +
+            '<td>' + (kw.impressions || 0) + '</td>' +
+            '<td>' + (kw.position ? Number(kw.position).toFixed(1) : '\u2014') + '</td>' +
+            '<td>' + (kw.ctr ? (Number(kw.ctr) * 100).toFixed(1) + '%' : '\u2014') + '</td>';
+          tbody.appendChild(tr);
+        });
+      } else if (tbody && (!data.keywords || data.keywords.length === 0)) {
+        tbody.innerHTML = '<tr><td colspan="5" class="cwp-empty-msg">No keyword data available for this period.</td></tr>';
+      }
+
+      /* indexing status */
+      var engineIndexLabel = document.getElementById('cwpEngineIndexLabel');
+      var engineIndex = document.getElementById('cwpEngineIndex');
+      var lastCrawled = document.getElementById('cwpLastCrawled');
+      var indexNowStatus = document.getElementById('cwpIndexNowStatus');
+
+      if (engineIndexLabel) engineIndexLabel.textContent = label + ' Index';
+      if (engineIndex && data.indexStatus !== undefined) {
+        engineIndex.textContent = data.indexStatus ? 'Indexed' : 'Not indexed';
+        engineIndex.className = 'cwp-chip ' + (data.indexStatus ? 'is-good' : 'is-warn');
+      }
+      if (lastCrawled && data.lastCrawled) lastCrawled.textContent = data.lastCrawled;
+      if (indexNowStatus && data.indexNowSubmitted) indexNowStatus.textContent = data.indexNowSubmitted;
+    }
+
+    /* Also listen for insights data from the pro plugin via custom event */
+    document.addEventListener('crawlwp:insightsData', function(e) {
+      if (e.detail) {
+        if (e.detail.engines) {
+          _insightsCache = e.detail.engines;
+          populateInsightsForEngine(_insightsCache[_currentEngine] || {}, _currentEngine);
+        } else {
+          populateInsightsForEngine(e.detail, _currentEngine);
+        }
+      }
+    });
+
+    /* load insights when switching to the tab */
+    mb.querySelectorAll('.cwp-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        if (tab.dataset.panel === 'insights') {
+          var period = insightsPeriod ? insightsPeriod.value : '28';
+          loadInsights(period);
+        }
+      });
+    });
+  }
+
+  /* ---------- featured image for social placeholders ---------- */
+  function initSocialImagePlaceholders() {
+    var featuredUrl = crawlwpSEO.featuredImageUrl || '';
+    mb.querySelectorAll('.cwp-img-picker').forEach(function(picker) {
+      var thumb = picker.querySelector('.cwp-img-thumb');
+      var input = picker.querySelector('input[type="hidden"]');
+      if (!thumb || !input) return;
+      /* Only set fallback if no custom image is selected */
+      if (input.value) return;
+      if (featuredUrl) {
+        thumb.style.backgroundImage = 'url(' + featuredUrl + ')';
+        thumb.classList.remove('cwp-thumb-empty');
+      } else {
+        thumb.style.backgroundImage = '';
+        thumb.classList.add('cwp-thumb-empty');
+      }
+    });
+  }
+
+  /* Watch for featured image changes in Gutenberg */
+  function watchFeaturedImage() {
+    if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe) {
+      var _lastFeaturedId = null;
+      wp.data.subscribe(function() {
+        var editor = wp.data.select('core/editor');
+        if (!editor) return;
+        var fid = editor.getEditedPostAttribute('featured_media');
+        if (fid === _lastFeaturedId) return;
+        _lastFeaturedId = fid;
+        if (fid) {
+          var media = wp.data.select('core').getMedia(fid);
+          if (media && media.source_url) {
+            crawlwpSEO.featuredImageUrl = media.source_url;
+          }
+        } else {
+          crawlwpSEO.featuredImageUrl = '';
+        }
+        initSocialImagePlaceholders();
+      });
+    }
+  }
+
   /* ---------- init ---------- */
   measureAll();
   sync();
@@ -645,5 +1114,9 @@
   updateSchemaPreview();
   renderLinks();
   runAnalysis();
+  watchPostTitle();
+  watchPostSlug();
+  initSocialImagePlaceholders();
+  watchFeaturedImage();
 
 })(jQuery);

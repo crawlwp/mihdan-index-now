@@ -37,6 +37,11 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="analysis" type="button">
       <?php esc_html_e('Analysis', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-analysis" title="" hidden></span>
     </button>
+    <?php if (defined('CRAWLWP_PRO_VERSION')) : ?>
+    <button class="cwp-tab" role="tab" aria-selected="false" data-panel="insights" type="button">
+      <?php esc_html_e('Insights', 'mihdan-index-now'); ?>
+    </button>
+    <?php endif; ?>
   </div>
 
   <!-- GENERAL -->
@@ -350,6 +355,14 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
     </div>
 
     <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Suggested links', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Related posts you could link to from this content.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-linklist" id="cwpSuggestedLinks">
+        <p class="cwp-empty-msg" id="cwpSuggestedEmpty"><?php esc_html_e('No suggestions available yet. Add a focus keyword to get link suggestions.', 'mihdan-index-now'); ?></p>
+      </div>
+    </div>
+
+    <div class="cwp-section">
       <h4 class="cwp-section-title"><?php esc_html_e('Outbound links in this post', 'mihdan-index-now'); ?></h4>
       <p class="cwp-section-desc"><?php esc_html_e('Internal and external links found in the post content.', 'mihdan-index-now'); ?></p>
       <div class="cwp-linklist" id="cwpOutboundLinks">
@@ -445,6 +458,101 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
 
     <div class="cwp-checklist" id="cwpChecklist"></div>
   </div>
+
+  <?php if (defined('CRAWLWP_PRO_VERSION')) : ?>
+  <!-- INSIGHTS -->
+  <div class="cwp-panel" id="cwp-panel-insights" role="tabpanel">
+
+    <div class="cwp-notice" id="cwpInsightsNotice">
+      <svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.6v4.2M8 11.2v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span id="cwpInsightsNoticeText"><?php esc_html_e('Search performance data for this page across search engines.', 'mihdan-index-now'); ?></span>
+    </div>
+
+    <div class="cwp-insights-engines" id="cwpInsightsEngines">
+      <button class="cwp-engine-tab is-active" type="button" data-engine="google">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        <?php esc_html_e('Google', 'mihdan-index-now'); ?>
+      </button>
+      <button class="cwp-engine-tab" type="button" data-engine="bing">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M5 3v16.5l4.06 2.15L18 17.27l-4.28-2.6-4.66 2.76V6.16L5 3z" fill="#008373"/><path d="M9.06 6.16v7.27l4.66-2.76L18 17.27V8.5L9.06 6.16z" fill="#00A68E" opacity=".8"/></svg>
+        <?php esc_html_e('Bing', 'mihdan-index-now'); ?>
+      </button>
+      <button class="cwp-engine-tab" type="button" data-engine="yandex">
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#FC3F1D"/><path d="M13.5 17.5h-1.8V12l-2.4-5.5h1.9l1.5 3.8 1.5-3.8h1.8L13.5 12v5.5z" fill="#fff"/></svg>
+        <?php esc_html_e('Yandex', 'mihdan-index-now'); ?>
+      </button>
+    </div>
+
+    <div class="cwp-insights-period">
+      <label class="cwp-label"><?php esc_html_e('Period', 'mihdan-index-now'); ?></label>
+      <select class="cwp-select cwp-select-sm" id="cwpInsightsPeriod">
+        <option value="7"><?php esc_html_e('Last 7 days', 'mihdan-index-now'); ?></option>
+        <option value="28" selected><?php esc_html_e('Last 28 days', 'mihdan-index-now'); ?></option>
+        <option value="90"><?php esc_html_e('Last 3 months', 'mihdan-index-now'); ?></option>
+      </select>
+    </div>
+
+    <div class="cwp-insights-cards" id="cwpInsightsCards">
+      <div class="cwp-insight-card">
+        <span class="cwp-insight-label"><?php esc_html_e('Clicks', 'mihdan-index-now'); ?></span>
+        <b class="cwp-insight-value" id="cwpInsClicks">—</b>
+      </div>
+      <div class="cwp-insight-card">
+        <span class="cwp-insight-label"><?php esc_html_e('Impressions', 'mihdan-index-now'); ?></span>
+        <b class="cwp-insight-value" id="cwpInsImpressions">—</b>
+      </div>
+      <div class="cwp-insight-card">
+        <span class="cwp-insight-label"><?php esc_html_e('Avg. Position', 'mihdan-index-now'); ?></span>
+        <b class="cwp-insight-value" id="cwpInsPosition">—</b>
+      </div>
+      <div class="cwp-insight-card">
+        <span class="cwp-insight-label"><?php esc_html_e('CTR', 'mihdan-index-now'); ?></span>
+        <b class="cwp-insight-value" id="cwpInsCTR">—</b>
+      </div>
+    </div>
+
+    <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Top keywords driving traffic', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc" id="cwpKeywordsDesc"><?php esc_html_e('Search queries where this page appeared in Google results.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-insights-table-wrap">
+        <table class="cwp-insights-table" id="cwpInsightsKeywords">
+          <thead>
+            <tr>
+              <th><?php esc_html_e('Keyword', 'mihdan-index-now'); ?></th>
+              <th><?php esc_html_e('Clicks', 'mihdan-index-now'); ?></th>
+              <th><?php esc_html_e('Impressions', 'mihdan-index-now'); ?></th>
+              <th><?php esc_html_e('Position', 'mihdan-index-now'); ?></th>
+              <th><?php esc_html_e('CTR', 'mihdan-index-now'); ?></th>
+            </tr>
+          </thead>
+          <tbody id="cwpInsightsKeywordsBody">
+            <tr><td colspan="5" class="cwp-empty-msg"><?php esc_html_e('No data available yet. Connect Google Search Console in CrawlWP Premium settings.', 'mihdan-index-now'); ?></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Indexing status', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Whether this page is currently indexed by search engines.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-index-status" id="cwpIndexStatus">
+        <div class="cwp-index-status-row">
+          <span class="cwp-index-label" id="cwpEngineIndexLabel"><?php esc_html_e('Google Index', 'mihdan-index-now'); ?></span>
+          <span class="cwp-chip is-muted" id="cwpEngineIndex"><?php esc_html_e('Checking…', 'mihdan-index-now'); ?></span>
+        </div>
+        <div class="cwp-index-status-row">
+          <span class="cwp-index-label"><?php esc_html_e('Last crawled', 'mihdan-index-now'); ?></span>
+          <span class="cwp-index-value" id="cwpLastCrawled">—</span>
+        </div>
+        <div class="cwp-index-status-row">
+          <span class="cwp-index-label"><?php esc_html_e('IndexNow submitted', 'mihdan-index-now'); ?></span>
+          <span class="cwp-index-value" id="cwpIndexNowStatus">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <?php endif; ?>
 
   <!-- FOOTER -->
   <div class="cwp-mb-foot">

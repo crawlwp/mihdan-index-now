@@ -293,6 +293,9 @@
   border:1px solid var(--cwp-line);
   background-size:cover;background-position:center;
 }
+.cwp-img-thumb.cwp-thumb-empty{
+  background:var(--cwp-accent);background-image:none;
+}
 .cwp-img-actions{display:flex;flex-direction:column;gap:7px;}
 .cwp-img-btns{display:flex;gap:7px;}
 
@@ -353,6 +356,22 @@
 .cwp-link-anchor{color:var(--cwp-ink-2);font-weight:500;}
 .cwp-link-side{display:flex;align-items:center;gap:8px;flex:none;}
 .cwp-link-item.is-inbound{padding-left:10px;}
+.cwp-link-item.is-suggested{padding-left:10px;}
+.cwp-link-hidden{display:none !important;}
+.cwp-show-all-link{
+  display:block;font-size:12px;color:var(--cwp-blue);text-decoration:none;
+  padding:8px 0 4px;cursor:pointer;font-weight:500;
+}
+.cwp-show-all-link:hover{text-decoration:underline;}
+.cwp-chip.is-info{background:#eef6ff;color:#3b82f6;border:1px solid #bfdbfe;}
+.cwp-copy-url-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border:1px solid var(--cwp-line);border-radius:5px;
+  background:var(--cwp-white);color:var(--cwp-ink-4);cursor:pointer;
+  transition:all .15s ease;
+}
+.cwp-copy-url-btn:hover{border-color:var(--cwp-blue);color:var(--cwp-blue);background:#f0f7ff;}
+.cwp-copy-url-btn.is-copied{border-color:var(--cwp-good);color:var(--cwp-good);background:var(--cwp-good-bg);}
 .cwp-empty-msg{font-size:12px;color:var(--cwp-ink-4);padding:8px 0;margin:0;}
 
 /* ---------- analysis list ---------- */
@@ -387,6 +406,62 @@
 .cwp-chip.is-warn{background:var(--cwp-warn-bg);color:var(--cwp-warn);}
 .cwp-chip.is-bad{background:var(--cwp-bad-bg);color:var(--cwp-bad);}
 .cwp-chip.is-muted{background:var(--cwp-bg);color:var(--cwp-ink-4);border:1px solid var(--cwp-line);}
+
+/* ---------- insights tab ---------- */
+.cwp-insights-engines{
+  display:flex;gap:6px;margin-bottom:14px;
+}
+.cwp-engine-tab{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 14px;border:1px solid var(--cwp-line);border-radius:6px;
+  background:var(--cwp-white);font-size:12px;font-weight:500;color:var(--cwp-ink-2);
+  cursor:pointer;transition:all .15s ease;
+}
+.cwp-engine-tab:hover{border-color:var(--cwp-blue);color:var(--cwp-blue);}
+.cwp-engine-tab.is-active{
+  background:var(--cwp-accent-soft);border-color:var(--cwp-accent);color:var(--cwp-accent);
+  font-weight:600;
+}
+.cwp-engine-tab svg{flex:none;}
+.cwp-insights-period{
+  display:flex;align-items:center;gap:10px;margin-bottom:16px;
+}
+.cwp-select-sm{width:auto;min-width:140px;padding:5px 10px;font-size:12px;}
+.cwp-insights-cards{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;
+}
+.cwp-insight-card{
+  border:1px solid var(--cwp-line-soft);border-radius:7px;background:var(--cwp-bg);
+  padding:12px 14px;text-align:center;
+}
+.cwp-insight-label{font-size:11px;color:var(--cwp-ink-4);display:block;margin-bottom:4px;}
+.cwp-insight-value{display:block;font-size:20px;font-weight:700;color:var(--cwp-ink);font-variant-numeric:tabular-nums;}
+.cwp-insights-table-wrap{overflow-x:auto;}
+.cwp-insights-table{
+  width:100%;border-collapse:collapse;font-size:12px;
+}
+.cwp-insights-table th{
+  text-align:left;font-weight:600;font-size:11px;color:var(--cwp-ink-4);
+  padding:8px 10px;border-bottom:2px solid var(--cwp-line);white-space:nowrap;
+}
+.cwp-insights-table td{
+  padding:9px 10px;border-bottom:1px solid var(--cwp-line-soft);color:var(--cwp-ink-2);
+}
+.cwp-insights-table tr:hover td{background:var(--cwp-bg);}
+.cwp-insights-table td:first-child{font-weight:500;color:var(--cwp-ink);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cwp-index-status{display:flex;flex-direction:column;gap:4px;}
+.cwp-index-status-row{
+  display:flex;align-items:center;gap:12px;padding:8px 10px;
+  border-bottom:1px solid var(--cwp-line-soft);
+}
+.cwp-index-status-row:last-child{border-bottom:0;}
+.cwp-index-label{font-size:12px;font-weight:500;color:var(--cwp-ink);min-width:140px;}
+.cwp-index-value{font-size:12px;color:var(--cwp-ink-2);}
+
+@media (max-width:600px){
+  .cwp-insights-cards{grid-template-columns:repeat(2,1fr);}
+  .cwp-insights-engines{flex-wrap:wrap;}
+}
 
 /* footer */
 .cwp-mb-foot{
