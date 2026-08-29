@@ -496,6 +496,29 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
         <p class="cwp-hint"><?php esc_html_e('Leave empty to use the post\'s own permalink.', 'mihdan-index-now'); ?></p>
       </div>
     </div>
+
+    <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Indexing', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Tell engines about this URL without waiting for the next crawl.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-notice" id="cwpIndexNowNotice">
+        <svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.6v4.2M8 11.2v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span id="cwpIndexNowNoticeText">
+          <?php
+          $last_pinged = $post instanceof \WP_Post ? get_post_meta($post->ID, '_crawlwp_last_indexnow', true) : '';
+          if ($last_pinged) {
+              printf(
+                  /* translators: %s: date string */
+                  esc_html__('Last submitted to IndexNow on %s.', 'mihdan-index-now'),
+                  esc_html(wp_date(get_option('date_format'), (int) $last_pinged))
+              );
+          } else {
+              esc_html_e('This URL has not been submitted to IndexNow yet.', 'mihdan-index-now');
+          }
+          ?>
+        </span>
+      </div>
+      <button class="cwp-btn cwp-btn-primary" type="button" id="cwpSubmitIndexNow"><?php esc_html_e('Submit to IndexNow', 'mihdan-index-now'); ?></button>
+    </div>
   </div>
 
   <!-- ANALYSIS -->

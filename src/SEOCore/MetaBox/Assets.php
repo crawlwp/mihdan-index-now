@@ -9,6 +9,8 @@ class Assets
 		add_action('admin_enqueue_scripts', [$this, 'enqueue']);
 		add_action('wp_ajax_crawlwp_load_insights', [$this, 'ajax_load_insights']);
 		add_action('wp_ajax_crawlwp_ai_generate', [$this, 'ajax_ai_generate']);
+		add_action('wp_ajax_crawlwp_submit_indexnow', [$this, 'ajax_submit_indexnow']);
+		add_action('crawlwp/index_pinged', [$this, 'store_last_pinged_time'], 10, 2);
 	}
 
 	public function enqueue(string $hook): void
@@ -81,6 +83,7 @@ class Assets
 			'ajaxUrl'     => admin_url('admin-ajax.php'),
 			'insightsNonce' => wp_create_nonce('crawlwp_insights'),
 			'aiNonce'       => wp_create_nonce('crawlwp_ai_generate'),
+			'indexNowNonce'  => wp_create_nonce('crawlwp_submit_indexnow'),
 			'postId'      => $post instanceof \WP_Post ? $post->ID : 0,
 			'featuredImageUrl' => $post instanceof \WP_Post ? (get_the_post_thumbnail_url($post->ID, 'medium') ?: '') : '',
 			'i18n'        => $this->get_i18n_strings(),
@@ -561,6 +564,62 @@ class Assets
 			'aiGenerate'       => __('Generate with AI', 'flavor'),
 			'aiGenerating'     => __('Generating…', 'flavor'),
 			'aiError'          => __('AI generation failed. Please try again.', 'flavor'),
+
+			/* IndexNow submit */
+			'submitIndexNow'   => __('Submit to IndexNow', 'flavor'),
+			'submitting'       => __('Submitting…', 'flavor'),
+			/* translators: %s: date string */
+			'lastSubmitted'    => __('Last submitted to IndexNow on %s.', 'flavor'),
+			'notSubmittedYet'  => __('This URL has not been submitted to IndexNow yet.', 'flavor'),
+			'submitSuccess'    => __('Successfully submitted to IndexNow!', 'flavor'),
+			'submitError'      => __('Failed to submit. Please try again.', 'flavor'),
+			'savePostFirst'    => __('Please save the post first before submitting to IndexNow.', 'flavor'),
 		];
+	}
+
+	public function ajax_submit_indexnow(): void
+	{
+		check_ajax_referer('crawlwp_submit_indexnow', 'nonce');
+
+		if (! current_user_can('edit_posts')) {
+			wp_send_json_error(['message' => 'Unauthorized'], 403);
+		}
+
+		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+		if (! $post_id) {
+			wp_send_json_error(['message' => 'Invalid post ID.']);
+		}
+
+		$post = get_post($post_id);
+
+		if (! $post instanceof \WP_Post) {
+			wp_send_json_error(['message' => 'Post not found.']);
+		}
+
+		/**
+		 * Trigger the same action the plugin fires when a post is updated,
+		 * so all registered IndexNow providers will ping the URL.
+		 */
+		do_action('crawlwp/post_added', $post->ID, $post);
+
+		$timestamp = time();
+		update_post_meta($post_id, '_crawlwp_last_indexnow', $timestamp);
+
+		wp_send_json_success([
+			'message'   => 'Submitted',
+			'timestamp' => $timestamp,
+			'date'      => wp_date(get_option('date_format'), $timestamp),
+		]);
+	}
+
+	/**
+	 * Store the last pinged timestamp whenever any IndexNow provider pings a post.
+	 */
+	public function store_last_pinged_time(string $type, int $object_id): void
+	{
+		if ($type === 'post') {
+			update_post_meta($object_id, '_crawlwp_last_indexnow', time());
+		}
 	}
 }

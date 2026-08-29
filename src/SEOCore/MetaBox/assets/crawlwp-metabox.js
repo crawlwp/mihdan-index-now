@@ -227,6 +227,11 @@
         var field = targetId === 'cwpTitle' ? 'title' : 'description';
         self.aiGenerate(field, $(this));
       });
+
+      /* IndexNow submit button */
+      $('#cwpSubmitIndexNow').on('click', function() {
+        self.submitIndexNow($(this));
+      });
     },
 
     /* ---------- pixel measurement ---------- */
@@ -533,6 +538,59 @@
       }
       $err.text(msg).show();
       setTimeout(function() { $err.fadeOut(300); }, 3000);
+    },
+
+    /* ---------- IndexNow submit ---------- */
+    submitIndexNow: function($btn) {
+      var self = this;
+      var L = crawlwpSEO.i18n;
+
+      if (!crawlwpSEO.postId) {
+        self.indexNowShowStatus(L.savePostFirst, 'warn');
+        return;
+      }
+
+      if ($btn.hasClass('is-loading')) return;
+
+      $btn.addClass('is-loading').prop('disabled', true).text(L.submitting);
+
+      $.ajax({
+        url: crawlwpSEO.ajaxUrl,
+        type: 'POST',
+        data: {
+          action: 'crawlwp_submit_indexnow',
+          nonce: crawlwpSEO.indexNowNonce,
+          post_id: crawlwpSEO.postId
+        },
+        success: function(resp) {
+          if (resp.success && resp.data) {
+            var msg = self.fmt(L.lastSubmitted, resp.data.date);
+            $('#cwpIndexNowNoticeText').text(msg);
+            self.indexNowShowStatus(L.submitSuccess, 'success');
+          } else {
+            self.indexNowShowStatus(L.submitError, 'error');
+          }
+        },
+        error: function() {
+          self.indexNowShowStatus(L.submitError, 'error');
+        },
+        complete: function() {
+          $btn.removeClass('is-loading').prop('disabled', false).text(L.submitIndexNow);
+        }
+      });
+    },
+
+    indexNowShowStatus: function(msg, type) {
+      var $notice = $('#cwpIndexNowNotice');
+      var $status = $notice.find('.cwp-indexnow-status');
+      if (!$status.length) {
+        $status = $('<div class="cwp-indexnow-status"></div>').insertAfter($notice);
+      }
+      $status.text(msg)
+        .removeClass('is-success is-error is-warn')
+        .addClass('is-' + type)
+        .show();
+      setTimeout(function() { $status.fadeOut(300); }, 4000);
     },
 
     /* ---------- image pickers (WP media) ---------- */

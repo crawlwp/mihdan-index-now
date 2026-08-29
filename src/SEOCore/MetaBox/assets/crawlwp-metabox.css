@@ -324,6 +324,15 @@
 .cwp-btn-link{border:0;background:none;color:var(--cwp-blue);padding:6px 0;}
 .cwp-btn-link:hover{background:none;text-decoration:underline;}
 .cwp-btn:focus-visible{outline:2px solid var(--cwp-blue);outline-offset:1px;}
+.cwp-btn-primary.is-loading{opacity:.7;cursor:wait;}
+
+/* IndexNow submit status */
+.cwp-indexnow-status{
+  margin-top:8px;padding:6px 10px;border-radius:5px;font-size:12px;font-weight:500;
+}
+.cwp-indexnow-status.is-success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;}
+.cwp-indexnow-status.is-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+.cwp-indexnow-status.is-warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
 
 /* preview when it sits at the end of a panel */
 .cwp-preview-last{margin:22px 0 0;}
