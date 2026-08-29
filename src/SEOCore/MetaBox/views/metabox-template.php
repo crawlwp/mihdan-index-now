@@ -51,6 +51,10 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
         <label class="cwp-label" for="cwpTitle"><?php esc_html_e('SEO title', 'mihdan-index-now'); ?></label>
         <span class="cwp-help" title="<?php esc_attr_e('Shown as the clickable headline in search results.', 'mihdan-index-now'); ?>">?</span>
         <span class="cwp-spacer"></span>
+        <button class="cwp-ai-btn" type="button" data-ai-target="cwpTitle" title="<?php esc_attr_e('Generate with AI', 'mihdan-index-now'); ?>">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/><path d="M19 2l.87 2.61L22.5 5.5l-2.63.89L19 9l-.87-2.61L15.5 5.5l2.63-.89z"/></svg>
+          <?php esc_html_e('AI', 'mihdan-index-now'); ?>
+        </button>
         <div class="cwp-var">
           <button class="cwp-var-btn" type="button" data-var-for="cwpTitle">
             <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -83,6 +87,10 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
         <label class="cwp-label" for="cwpDesc"><?php esc_html_e('Meta description', 'mihdan-index-now'); ?></label>
         <span class="cwp-help" title="<?php esc_attr_e('The snippet under your title. Google may replace it with page text.', 'mihdan-index-now'); ?>">?</span>
         <span class="cwp-spacer"></span>
+        <button class="cwp-ai-btn" type="button" data-ai-target="cwpDesc" title="<?php esc_attr_e('Generate with AI', 'mihdan-index-now'); ?>">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/><path d="M19 2l.87 2.61L22.5 5.5l-2.63.89L19 9l-.87-2.61L15.5 5.5l2.63-.89z"/></svg>
+          <?php esc_html_e('AI', 'mihdan-index-now'); ?>
+        </button>
         <div class="cwp-var">
           <button class="cwp-var-btn" type="button" data-var-for="cwpDesc">
             <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>

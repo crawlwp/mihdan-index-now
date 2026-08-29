@@ -139,6 +139,27 @@
 .cwp-meter-text{font-size:11px;color:var(--cwp-ink-4);font-variant-numeric:tabular-nums;white-space:nowrap;}
 .cwp-meter-text b{color:var(--cwp-ink-2);font-weight:600;}
 
+/* AI generate button */
+.cwp-ai-btn{
+  appearance:none;border:1px solid #7c3aed;background:linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%);border-radius:5px;
+  font:inherit;font-size:11px;font-weight:600;color:#fff;
+  padding:3px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+  transition:all .15s ease;white-space:nowrap;
+}
+.cwp-ai-btn:hover{background:linear-gradient(135deg,#6d28d9 0%,#5b21b6 100%);border-color:#5b21b6;box-shadow:0 1px 4px rgba(124,58,237,.25);}
+.cwp-ai-btn:active{transform:scale(.97);}
+.cwp-ai-btn.is-loading{opacity:.7;cursor:wait;}
+.cwp-ai-btn svg{flex-shrink:0;}
+.cwp-ai-spinner{
+  display:inline-block;width:12px;height:12px;
+  border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;
+  animation:cwpSpin .6s linear infinite;
+}
+@keyframes cwpSpin{to{transform:rotate(360deg);}}
+.cwp-ai-error{
+  font-size:11px;color:#dc2626;margin-left:6px;font-weight:500;
+}
+
 /* variable inserter */
 .cwp-var{position:relative;}
 .cwp-var-btn{

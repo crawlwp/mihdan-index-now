@@ -207,7 +207,7 @@
         $jsonBtn.on('click', function() {
           var open = $pre.prop('hidden');
           $pre.prop('hidden', !open);
-          $jsonBtn.text(open ? 'Hide JSON-LD' : 'Show JSON-LD');
+          $jsonBtn.text(open ? crawlwpSEO.i18n.hideJsonLd : crawlwpSEO.i18n.showJsonLd);
         });
       }
 
@@ -220,6 +220,13 @@
 
       /* image pickers */
       this.bindImagePickers();
+
+      /* AI generate buttons */
+      this.$mb.find('.cwp-ai-btn').on('click', function() {
+        var targetId = $(this).data('aiTarget');
+        var field = targetId === 'cwpTitle' ? 'title' : 'description';
+        self.aiGenerate(field, $(this));
+      });
     },
 
     /* ---------- pixel measurement ---------- */
@@ -230,7 +237,12 @@
 
     measure: function(el) {
       var $el = $(el);
-      var text  = this.resolve($el.val());
+      var raw = $el.val();
+      /* If this is the SEO title field and it is empty, assume the default template */
+      if (!raw && $el.attr('id') === 'cwpTitle') {
+        raw = '%%title%% %%sep%% %%sitename%%';
+      }
+      var text  = this.resolve(raw);
       var limit = parseInt($el.data('limit'), 10);
       var px    = this.widthOf(text, $el.data('font'));
       var pct   = Math.min(100, Math.round(px / limit * 100));
@@ -242,8 +254,9 @@
       if (px > limit) { $fill.addClass('is-over'); state = 'over'; }
       else if (pct >= 70) { $fill.addClass('is-good'); state = 'good'; }
 
-      var words = { short: 'Too short', good: 'Good length', over: 'Will be cut off' }[state];
-      $label.html('<b>' + words + '</b> \u00b7 ' + px + ' / ' + limit + ' px \u00b7 ' + text.length + ' chars');
+      var L = crawlwpSEO.i18n;
+      var words = { short: L.meterTooShort, good: L.meterGoodLength, over: L.meterWillBeCut }[state];
+      $label.html('<b>' + words + '</b> \u00b7 ' + this.fmt(L.meterDetail, px, limit, text.length));
     },
 
     measureAll: function() {
@@ -253,8 +266,10 @@
 
     /* ---------- live preview ---------- */
     sync: function() {
-      var t = this.resolve(this.$title.val()) || crawlwpSEO.postTitle || 'Enter a title';
-      var d = this.resolve(this.$desc.val())  || crawlwpSEO.excerpt || 'Add a meta description to control what appears here.';
+      var L = crawlwpSEO.i18n;
+      var titleVal = this.$title.val() || '%%title%% %%sep%% %%sitename%%';
+      var t = this.resolve(titleVal) || crawlwpSEO.postTitle || L.enterTitle;
+      var d = this.resolve(this.$desc.val())  || crawlwpSEO.excerpt || L.addMetaDesc;
 
       $('#cwpSerpTitle').text(t);
       $('#cwpSerpDesc').text(d);
@@ -285,7 +300,7 @@
       if (!this.$jsonPre.length) return;
       var type = this.$schemaType.length ? this.$schemaType.val() : 'Article';
       if (type === 'None \u2014 output nothing') {
-        this.$jsonPre.text('// No structured data will be output for this post.');
+        this.$jsonPre.text(crawlwpSEO.i18n.noStructuredData);
         return;
       }
       var headline = (this.$schemaHeadline.length && this.$schemaHeadline.val()) || this.resolve(this.$title.val()) || crawlwpSEO.postTitle;
@@ -458,6 +473,68 @@
       }
     },
 
+    /* ---------- AI generation ---------- */
+    aiGenerate: function(field, $btn) {
+      var self = this;
+      var L = crawlwpSEO.i18n;
+      var $target = field === 'title' ? this.$title : this.$desc;
+
+      if ($btn.hasClass('is-loading')) return;
+
+      $btn.addClass('is-loading').prop('disabled', true);
+      var origHtml = $btn.html();
+      $btn.html('<span class="cwp-ai-spinner"></span> ' + L.aiGenerating);
+
+      var postTitle = crawlwpSEO.postTitle || '';
+      if (typeof wp !== 'undefined' && wp.data && wp.data.select('core/editor')) {
+        var sel = wp.data.select('core/editor');
+        if (sel) postTitle = sel.getEditedPostAttribute('title') || postTitle;
+      } else {
+        var $wpTitle = $('#title');
+        if ($wpTitle.length) postTitle = $wpTitle.val() || postTitle;
+      }
+
+      var content = this.getEditorContent();
+      var keyword = $('#cwpKeyword').val() || '';
+
+      $.ajax({
+        url: crawlwpSEO.ajaxUrl,
+        type: 'POST',
+        data: {
+          action: 'crawlwp_ai_generate',
+          nonce: crawlwpSEO.aiNonce,
+          post_id: crawlwpSEO.postId,
+          field: field,
+          post_title: postTitle,
+          post_content: content,
+          focus_keyword: keyword
+        },
+        success: function(resp) {
+          if (resp.success && resp.data && resp.data.text) {
+            $target.val(resp.data.text).trigger('input');
+          } else {
+            self.aiShowError($btn, L.aiError);
+          }
+        },
+        error: function() {
+          self.aiShowError($btn, L.aiError);
+        },
+        complete: function() {
+          $btn.removeClass('is-loading').prop('disabled', false).html(origHtml);
+        }
+      });
+    },
+
+    aiShowError: function($btn, msg) {
+      var $row = $btn.closest('.cwp-label-row');
+      var $err = $row.find('.cwp-ai-error');
+      if (!$err.length) {
+        $err = $('<span class="cwp-ai-error"></span>').appendTo($row);
+      }
+      $err.text(msg).show();
+      setTimeout(function() { $err.fadeOut(300); }, 3000);
+    },
+
     /* ---------- image pickers (WP media) ---------- */
     bindImagePickers: function() {
       var self = this;
@@ -470,7 +547,7 @@
         var $thumbEl = $btn.closest('.cwp-img-picker').find('.cwp-img-thumb');
 
         var frame = wp.media({
-          title: 'Select Image',
+          title: crawlwpSEO.i18n.selectImage,
           multiple: false,
           library: { type: 'image' }
         });
@@ -604,6 +681,16 @@
     },
 
     /* ---------- helpers ---------- */
+    /* simple sprintf: replaces %s, %d, %1$s, %2$s … with positional args */
+    fmt: function(str) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      var i = 0;
+      return str.replace(/%(?:(\d+)\$)?[sd]/g, function(m, num) {
+        if (num) { var idx = parseInt(num, 10) - 1; return args[idx] !== undefined ? args[idx] : ''; }
+        return args[i] !== undefined ? args[i++] : '';
+      });
+    },
+
     escHtml: function(str) {
       return $('<div>').text(str).html();
     },
@@ -667,7 +754,7 @@
       var $btn = $('<a>', {
         href: '#',
         'class': 'cwp-show-all-link',
-        text: 'Show all ' + total + ' links'
+        text: this.fmt(crawlwpSEO.i18n.showAllLinks, total)
       }).on('click', function(e) {
         e.preventDefault();
         $container.find('.cwp-link-hidden').removeClass('cwp-link-hidden');
@@ -698,7 +785,7 @@
       var $linksDot = this.$mb.find('.cwp-dot-links');
       if (parsed.internal.length === 0) {
         $notice.prop('hidden', false);
-        $noticeText.text('This post links to nothing on your site. Adding two or three internal links helps crawlers reach related posts and passes ranking signals along.');
+        $noticeText.text(crawlwpSEO.i18n.noInternalLinks);
         $linksDot.prop('hidden', false);
       } else {
         $notice.prop('hidden', true);
@@ -718,7 +805,7 @@
           .concat(parsed.external.map(function(l) { l.type = 'external'; return l; }));
         $.each(all, function(idx, link) {
           var chipClass = link.type === 'internal' ? 'is-good' : 'is-muted';
-          var chipLabel = link.type === 'internal' ? 'Internal' : 'External';
+          var chipLabel = link.type === 'internal' ? crawlwpSEO.i18n.internal : crawlwpSEO.i18n.external;
           var $div = $('<div>', { 'class': 'cwp-link-item' });
           if (idx >= 6) $div.addClass('cwp-link-hidden');
           $div.html('<div class="cwp-link-main">' +
@@ -743,10 +830,10 @@
         $.each(inbound, function(idx, link) {
           var $div = $('<div>', { 'class': 'cwp-link-item is-inbound' });
           if (idx >= 6) $div.addClass('cwp-link-hidden');
-          var anchorInfo = link.anchor ? 'Anchor: "' + self.escHtml(link.anchor) + '" \u00b7 ' : '';
+          var anchorInfo = link.anchor ? self.fmt(crawlwpSEO.i18n.anchorLabel, self.escHtml(link.anchor)) + ' \u00b7 ' : '';
           $div.html('<div class="cwp-link-main">' +
             '<a class="cwp-link-title" href="' + self.escHtml(link.url) + '" target="_blank">' + self.escHtml(link.title) + '</a>' +
-            '<div class="cwp-link-meta">' + anchorInfo + 'published ' + self.escHtml(link.date) + '</div>' +
+            '<div class="cwp-link-meta">' + anchorInfo + self.fmt(crawlwpSEO.i18n.publishedDate, self.escHtml(link.date)) + '</div>' +
             '</div>');
           $inList.append($div);
         });
@@ -771,8 +858,8 @@
             '<div class="cwp-link-meta">' + self.escHtml(link.url) + ' \u00b7 ' + self.escHtml(link.date) + '</div>' +
             '</div>' +
             '<div class="cwp-link-side">' +
-              '<button class="cwp-copy-url-btn" type="button" data-url="' + self.escHtml(link.url) + '" title="Copy URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
-              '<span class="cwp-chip is-info">Suggested</span>' +
+              '<button class="cwp-copy-url-btn" type="button" data-url="' + self.escHtml(link.url) + '" title="' + crawlwpSEO.i18n.copyUrl + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+              '<span class="cwp-chip is-info">' + crawlwpSEO.i18n.suggested + '</span>' +
             '</div>');
           $sugList.append($div);
         });
@@ -785,16 +872,16 @@
           var url = $btn.attr('data-url');
           if (navigator.clipboard) {
             navigator.clipboard.writeText(url).then(function() {
-              $btn.addClass('is-copied').attr('title', 'Copied!');
-              setTimeout(function() { $btn.removeClass('is-copied').attr('title', 'Copy URL'); }, 1500);
+              $btn.addClass('is-copied').attr('title', crawlwpSEO.i18n.copied);
+              setTimeout(function() { $btn.removeClass('is-copied').attr('title', crawlwpSEO.i18n.copyUrl); }, 1500);
             });
           } else {
             var $ta = $('<textarea>').val(url).css({ position: 'fixed', left: '-9999px' }).appendTo('body');
             $ta[0].select();
             document.execCommand('copy');
             $ta.remove();
-            $btn.addClass('is-copied').attr('title', 'Copied!');
-            setTimeout(function() { $btn.removeClass('is-copied').attr('title', 'Copy URL'); }, 1500);
+            $btn.addClass('is-copied').attr('title', crawlwpSEO.i18n.copied);
+            setTimeout(function() { $btn.removeClass('is-copied').attr('title', crawlwpSEO.i18n.copyUrl); }, 1500);
           }
         });
       }
@@ -810,14 +897,16 @@
 
       $checklist.empty();
 
+      var L = crawlwpSEO.i18n;
+
       if (!keyword) {
-        $noticeText.text('Enter a focus keyword on the General tab to run the analysis.');
+        $noticeText.text(L.enterFocusKw);
         $analysisDot.prop('hidden', true);
         this.updateScore(0, 0);
         return;
       }
 
-      $noticeText.html('Scored against <b>' + this.escHtml(keyword) + '</b>. Change the focus keyword on the General tab to rescore.');
+      $noticeText.html(this.fmt(L.scoredAgainst, '<b>' + this.escHtml(keyword) + '</b>'));
 
       var seoTitle = this.resolve(this.$title.val() || '%%title%% %%sep%% %%sitename%%').toLowerCase();
       var seoDesc = this.resolve(this.$desc.val() || '').toLowerCase();
@@ -884,152 +973,152 @@
       if (seoTitle.indexOf(keyword) !== -1) {
         var pos = seoTitle.indexOf(keyword);
         if (pos < seoTitle.length / 3) {
-          addCheck('good', 'Keyword is in the SEO title.', 'It appears near the start, where it carries the most weight.');
+          addCheck('good', L.kwInTitleGood, L.kwInTitleStart);
         } else {
-          addCheck('good', 'Keyword is in the SEO title.', 'Try moving it closer to the beginning for more impact.');
+          addCheck('good', L.kwInTitleGood, L.kwInTitleMove);
         }
       } else {
-        addCheck('bad', 'Keyword is missing from the SEO title.', 'Add it to the title so search engines and users see it immediately.');
+        addCheck('bad', L.kwInTitleBad, L.kwInTitleFix);
       }
 
       /* 2. Keyword in URL slug */
       if (slugVal.indexOf(keyword.replace(/\s+/g, '-')) !== -1 || slugVal.indexOf(keyword.replace(/\s+/g, '')) !== -1) {
-        addCheck('good', 'Keyword is in the URL slug.', '');
+        addCheck('good', L.kwInSlugGood, '');
       } else {
-        addCheck('bad', 'Keyword is missing from the URL slug.', 'Include it in the slug for better URL relevance.');
+        addCheck('bad', L.kwInSlugBad, L.kwInSlugFix);
       }
 
       /* 3. Title length (pixel width) */
       var titleText = this.resolve(this.$title.val() || '%%title%% %%sep%% %%sitename%%');
       var titlePx = this.widthOf(titleText, 'bold 20px Arial');
       if (titlePx >= 200 && titlePx <= 580) {
-        addCheck('good', 'Title length fits.', titlePx + ' px of the 580 px Google shows.');
+        addCheck('good', L.titleLenGood, this.fmt(L.titleLenDetail, titlePx));
       } else if (titlePx > 580) {
-        addCheck('warn', 'Title is too long.', titlePx + ' px exceeds the 580 px limit \u2014 it will be cut off in search results.');
+        addCheck('warn', L.titleLenLong, this.fmt(L.titleLenLongD, titlePx));
       } else {
-        addCheck('warn', 'Title is too short.', titlePx + ' px of the 580 px Google shows. Aim for at least 200 px.');
+        addCheck('warn', L.titleLenShort, this.fmt(L.titleLenShortD, titlePx));
       }
 
       /* 4. Meta description */
       if (seoDesc.length > 0) {
         if (seoDesc.indexOf(keyword) !== -1) {
-          addCheck('good', 'Keyword is in the meta description.', '');
+          addCheck('good', L.kwInDescGood, '');
         } else {
-          addCheck('warn', 'Meta description does not contain the keyword.', 'Mentioning it helps bold the term in search results.');
+          addCheck('warn', L.kwInDescWarn, L.kwInDescWarnD);
         }
       } else {
-        addCheck('bad', 'No meta description set.', 'Write a compelling description that includes the keyword.');
+        addCheck('bad', L.noDescBad, L.noDescFix);
       }
 
       /* 5. Meta description length */
       if (seoDesc.length > 0) {
         var descPx = this.widthOf(this.resolve(this.$desc.val()), '14px Arial');
         if (descPx >= 400 && descPx <= 920) {
-          addCheck('good', 'Meta description length is good.', descPx + ' px of the 920 px limit.');
+          addCheck('good', L.descLenGood, this.fmt(L.descLenGoodD, descPx));
         } else if (descPx > 920) {
-          addCheck('warn', 'Meta description is too long.', descPx + ' px exceeds 920 px \u2014 it may be truncated.');
+          addCheck('warn', L.descLenLong, this.fmt(L.descLenLongD, descPx));
         } else {
-          addCheck('warn', 'Meta description is too short.', 'Aim for at least 400 px to use the available space.');
+          addCheck('warn', L.descLenShort, L.descLenShortD);
         }
       }
 
       /* 6. Keyword in first paragraph */
       if (firstParaText && firstParaText.indexOf(keyword) !== -1) {
-        addCheck('good', 'Keyword appears in the first paragraph.', '');
+        addCheck('good', L.kwFirstParaGood, '');
       } else if (plainText.length > 0) {
-        addCheck('warn', 'Keyword is missing from the first paragraph.', 'Introduce the topic early so readers and engines see it upfront.');
+        addCheck('warn', L.kwFirstParaWarn, L.kwFirstParaFix);
       }
 
       /* 7. Keyword in subheadings */
       if (headingsWithKw >= 2) {
-        addCheck('good', 'Keyword appears in ' + headingsWithKw + ' subheadings.', '');
+        addCheck('good', this.fmt(L.kwSubheadGood, headingsWithKw), '');
       } else if (headingsWithKw === 1) {
-        addCheck('warn', 'Only one subheading uses the keyword.', 'Work it into one or two more H2s where it reads naturally.');
+        addCheck('warn', L.kwSubheadOne, L.kwSubheadOneFix);
       } else if ($headings.length > 0) {
-        addCheck('bad', 'No subheading uses the keyword.', 'Add the keyword to at least one H2 or H3.');
+        addCheck('bad', L.kwSubheadBad, L.kwSubheadFix);
       }
 
       /* 8. H1 check */
       if ($h1s.length === 1) {
-        addCheck('good', 'Page has exactly one H1 tag.', '');
+        addCheck('good', L.h1Good, '');
       } else if ($h1s.length === 0) {
-        addCheck('warn', 'No H1 tag found in the content.', 'Add one H1 \u2014 it helps search engines understand the main topic.');
+        addCheck('warn', L.h1None, L.h1NoneFix);
       } else {
-        addCheck('warn', 'Multiple H1 tags found (' + $h1s.length + ').', 'Use only one H1 per page for best SEO practice.');
+        addCheck('warn', this.fmt(L.h1Multiple, $h1s.length), L.h1MultipleFix);
       }
 
       /* 9. Images alt text */
       if ($images.length === 0) {
-        addCheck('warn', 'No images found.', 'Adding relevant images can improve engagement and image search traffic.');
+        addCheck('warn', L.noImages, L.noImagesFix);
       } else if (imagesNoAlt === 0) {
-        addCheck('good', 'All images have alt text.', $images.length + ' image(s) found.');
+        addCheck('good', L.allImgAlt, this.fmt(L.imgAltDetail, $images.length));
       } else {
-        addCheck('bad', imagesNoAlt + ' image(s) missing alt text.', 'Describe what each one shows for accessibility and SEO.');
+        addCheck('bad', this.fmt(L.imgAltMissing, imagesNoAlt), L.imgAltFix);
       }
 
       /* 10. Keyword in image alt */
       if ($images.length > 0) {
         if (keywordInAlt) {
-          addCheck('good', 'Keyword found in an image alt attribute.', '');
+          addCheck('good', L.kwImgAltGood, '');
         } else {
-          addCheck('warn', 'No image alt text contains the keyword.', 'Add the keyword to at least one relevant image alt tag.');
+          addCheck('warn', L.kwImgAltWarn, L.kwImgAltFix);
         }
       }
 
       /* 11. Internal links */
       if (parsed.internal.length >= 2) {
-        addCheck('good', parsed.internal.length + ' internal links.', 'Good internal linking structure.');
+        addCheck('good', this.fmt(L.intLinksGood, parsed.internal.length), L.intLinksGoodD);
       } else if (parsed.internal.length === 1) {
-        addCheck('warn', 'Only 1 internal link.', 'Add at least one more internal link to improve crawlability.');
+        addCheck('warn', L.intLinksOne, L.intLinksOneFix);
       } else {
-        addCheck('bad', 'No internal links.', 'Link to at least two related posts so crawlers can reach them from here.');
+        addCheck('bad', L.intLinksNone, L.intLinksNoneFix);
       }
 
       /* 12. External links */
       if (parsed.external.length >= 1) {
-        addCheck('good', parsed.external.length + ' external link(s).', 'Linking to authoritative sources adds credibility.');
+        addCheck('good', this.fmt(L.extLinksGood, parsed.external.length), L.extLinksGoodD);
       } else {
-        addCheck('warn', 'No external links.', 'Consider linking to a relevant authoritative source to add context.');
+        addCheck('warn', L.extLinksNone, L.extLinksNoneFix);
       }
 
       /* 13. Content length */
       if (wordCount >= 300) {
-        addCheck('good', wordCount.toLocaleString() + ' words.', 'Long enough to cover the topic.');
+        addCheck('good', this.fmt(L.wordsLabel, wordCount.toLocaleString()), L.wordsEnough);
       } else if (wordCount >= 100) {
-        addCheck('warn', wordCount.toLocaleString() + ' words.', 'Aim for at least 300 words to provide enough depth.');
+        addCheck('warn', this.fmt(L.wordsLabel, wordCount.toLocaleString()), L.wordsAim300);
       } else {
-        addCheck('bad', wordCount.toLocaleString() + ' words.', 'Content is too thin. Search engines prefer in-depth articles.');
+        addCheck('bad', this.fmt(L.wordsLabel, wordCount.toLocaleString()), L.wordsThin);
       }
 
       /* 14. Keyword density */
       if (wordCount > 50) {
         if (density >= 0.5 && density <= 3.0) {
-          addCheck('good', 'Keyword density is ' + density.toFixed(1) + '%.', 'Within the recommended 0.5\u20133% range.');
+          addCheck('good', this.fmt(L.densityLabel, density.toFixed(1)), L.densityGoodD);
         } else if (density > 3.0) {
-          addCheck('warn', 'Keyword density is ' + density.toFixed(1) + '%.', 'This may look like keyword stuffing. Aim for 0.5\u20133%.');
+          addCheck('warn', this.fmt(L.densityLabel, density.toFixed(1)), L.densityHighD);
         } else {
-          addCheck('warn', 'Keyword density is ' + density.toFixed(1) + '%.', 'Try to mention the keyword a few more times naturally.');
+          addCheck('warn', this.fmt(L.densityLabel, density.toFixed(1)), L.densityLowD);
         }
       }
 
       /* 15. Readability: avg sentence length */
       if (sentences.length >= 3) {
         if (avgSentenceLen <= 20) {
-          addCheck('good', 'Average sentence length is ' + avgSentenceLen + ' words.', 'Easy to read.');
+          addCheck('good', this.fmt(L.readability, avgSentenceLen), L.readabilityGoodD);
         } else if (avgSentenceLen <= 25) {
-          addCheck('warn', 'Average sentence length is ' + avgSentenceLen + ' words.', 'Some sentences may be hard to follow. Try breaking them up.');
+          addCheck('warn', this.fmt(L.readability, avgSentenceLen), L.readabilityWarnD);
         } else {
-          addCheck('bad', 'Average sentence length is ' + avgSentenceLen + ' words.', 'Sentences are too long. Aim for under 20 words on average.');
+          addCheck('bad', this.fmt(L.readability, avgSentenceLen), L.readabilityBadD);
         }
       }
 
       /* 16. Heading hierarchy (uses H2s) */
       if ($h2s.length >= 2) {
-        addCheck('good', $h2s.length + ' H2 subheadings structure the content.', '');
+        addCheck('good', this.fmt(L.h2Good, $h2s.length), '');
       } else if ($h2s.length === 1) {
-        addCheck('warn', 'Only 1 H2 subheading found.', 'Adding more H2s improves readability and SEO.');
+        addCheck('warn', L.h2One, L.h2OneFix);
       } else if (wordCount > 300) {
-        addCheck('warn', 'No H2 subheadings found.', 'Break up long content with H2 headings for better structure.');
+        addCheck('warn', L.h2None, L.h2NoneFix);
       }
 
       /* render */
@@ -1046,7 +1135,7 @@
       var issues = total - passed;
       if ($analysisDot.length) {
         if (issues > 0) {
-          $analysisDot.prop('hidden', false).attr('title', issues + ' issue' + (issues > 1 ? 's' : ''));
+          $analysisDot.prop('hidden', false).attr('title', this.fmt(L.issueCount, issues));
         } else {
           $analysisDot.prop('hidden', true);
         }
@@ -1073,6 +1162,7 @@
       var _insightsCache = {};
       var _currentEngine = 'google';
       var engineLabels = { google: 'Google', bing: 'Bing', yandex: 'Yandex' };
+      var L = crawlwpSEO.i18n;
 
       function populateInsightsForEngine(data, engine) {
         var label = engineLabels[engine] || engine;
@@ -1082,7 +1172,7 @@
         $('#cwpInsCTR').text(data.ctr !== undefined ? (Number(data.ctr) * 100).toFixed(1) + '%' : '\u2014');
 
         /* Update keywords description */
-        $('#cwpKeywordsDesc').text('Search queries where this page appeared in ' + label + ' results.');
+        $('#cwpKeywordsDesc').text(self.fmt(L.insightsQueriesDesc, label));
 
         /* keywords table */
         var $tbody = $('#cwpInsightsKeywordsBody');
@@ -1099,14 +1189,14 @@
             $tbody.append($tr);
           });
         } else if ($tbody.length && (!data.keywords || data.keywords.length === 0)) {
-          $tbody.html('<tr><td colspan="5" class="cwp-empty-msg">No keyword data available for this period.</td></tr>');
+          $tbody.html('<tr><td colspan="5" class="cwp-empty-msg">' + L.insightsNoKw + '</td></tr>');
         }
 
         /* indexing status */
-        $('#cwpEngineIndexLabel').text(label + ' Index');
+        $('#cwpEngineIndexLabel').text(self.fmt(L.insightsIndex, label));
         var $engineIndex = $('#cwpEngineIndex');
         if ($engineIndex.length && data.indexStatus !== undefined) {
-          $engineIndex.text(data.indexStatus ? 'Indexed' : 'Not indexed')
+          $engineIndex.text(data.indexStatus ? L.indexed : L.notIndexed)
             .attr('class', 'cwp-chip ' + (data.indexStatus ? 'is-good' : 'is-warn'));
         }
         if (data.lastCrawled) $('#cwpLastCrawled').text(data.lastCrawled);
@@ -1116,7 +1206,7 @@
       function loadInsights(days) {
         var postId = crawlwpSEO.postId || 0;
         if (!postId) {
-          $('#cwpInsightsNoticeText').text('Save the post first to load search performance data.');
+          $('#cwpInsightsNoticeText').text(L.savPostFirst);
           return;
         }
 
