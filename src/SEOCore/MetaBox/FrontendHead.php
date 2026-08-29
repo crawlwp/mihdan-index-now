@@ -26,12 +26,12 @@ class FrontendHead
 		$site_name = get_bloginfo('name');
 
 		$seo_title = $this->resolve_variables(
-			$data['seo_title'] ?: '%%title%% %%sep%% %%sitename%%',
+			$data['seo_title'] ?: '{{title}} {{sep}} {{sitename}}',
 			$post
 		);
 
 		$seo_desc = $this->resolve_variables(
-			$data['seo_description'] ?: '%%excerpt%%',
+			$data['seo_description'] ?: '{{excerpt}}',
 			$post
 		);
 
@@ -53,13 +53,13 @@ class FrontendHead
 		$excerpt    = $post->post_excerpt ?: wp_trim_words(wp_strip_all_tags($post->post_content), 30, '...');
 
 		$tokens = [
-			'%%title%%'       => $post->post_title,
-			'%%sitename%%'    => get_bloginfo('name'),
-			'%%sep%%'         => '—',
-			'%%category%%'    => $category,
-			'%%excerpt%%'     => $excerpt,
-			'%%currentyear%%' => gmdate('Y'),
-			'%%author%%'      => $author,
+			'{{title}}'       => $post->post_title,
+			'{{sitename}}'    => get_bloginfo('name'),
+			'{{sep}}'         => '—',
+			'{{category}}'    => $category,
+			'{{excerpt}}'     => $excerpt,
+			'{{currentyear}}' => gmdate('Y'),
+			'{{author}}'      => $author,
 		];
 
 		return str_replace(array_keys($tokens), array_values($tokens), $template);

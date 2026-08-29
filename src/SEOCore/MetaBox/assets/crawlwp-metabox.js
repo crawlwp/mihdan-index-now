@@ -67,13 +67,13 @@
 
     setupTokens: function() {
       this.TOKENS = {
-        '%%title%%':       crawlwpSEO.postTitle || '',
-        '%%sitename%%':    crawlwpSEO.siteName || '',
-        '%%sep%%':         crawlwpSEO.separator || '\u2014',
-        '%%category%%':    crawlwpSEO.category || '',
-        '%%excerpt%%':     crawlwpSEO.excerpt || '',
-        '%%currentyear%%': crawlwpSEO.currentYear || '',
-        '%%author%%':      crawlwpSEO.author || ''
+        '{{title}}':       crawlwpSEO.postTitle || '',
+        '{{sitename}}':    crawlwpSEO.siteName || '',
+        '{{sep}}':         crawlwpSEO.separator || '\u2014',
+        '{{category}}':    crawlwpSEO.category || '',
+        '{{excerpt}}':     crawlwpSEO.excerpt || '',
+        '{{currentyear}}': crawlwpSEO.currentYear || '',
+        '{{author}}':      crawlwpSEO.author || ''
       };
     },
 
@@ -112,7 +112,7 @@
 
     resolve: function(str) {
       var tokens = this.TOKENS;
-      return str.replace(/%%[a-z]+%%/g, function(m) {
+      return str.replace(/\{\{[a-z]+\}\}/g, function(m) {
         return tokens[m] !== undefined ? tokens[m] : m;
       });
     },
@@ -240,7 +240,7 @@
       var raw = $el.val();
       /* If this is the SEO title field and it is empty, assume the default template */
       if (!raw && $el.attr('id') === 'cwpTitle') {
-        raw = '%%title%% %%sep%% %%sitename%%';
+        raw = '{{title}} {{sep}} {{sitename}}';
       }
       var text  = this.resolve(raw);
       var limit = parseInt($el.data('limit'), 10);
@@ -267,7 +267,7 @@
     /* ---------- live preview ---------- */
     sync: function() {
       var L = crawlwpSEO.i18n;
-      var titleVal = this.$title.val() || '%%title%% %%sep%% %%sitename%%';
+      var titleVal = this.$title.val() || '{{title}} {{sep}} {{sitename}}';
       var t = this.resolve(titleVal) || crawlwpSEO.postTitle || L.enterTitle;
       var d = this.resolve(this.$desc.val())  || crawlwpSEO.excerpt || L.addMetaDesc;
 
@@ -338,7 +338,7 @@
       var $wpTitle = $('#title');
       if ($wpTitle.length) {
         $wpTitle.on('input', function() {
-          self.TOKENS['%%title%%'] = $wpTitle.val();
+          self.TOKENS['{{title}}'] = $wpTitle.val();
           crawlwpSEO.postTitle = $wpTitle.val();
           self.emit('measure');
           self.emit('sync');
@@ -348,14 +348,14 @@
 
       /* Gutenberg */
       if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe && wp.data.select('core/editor')) {
-        var lastTitle = this.TOKENS['%%title%%'];
+        var lastTitle = this.TOKENS['{{title}}'];
         wp.data.subscribe(function() {
           var sel = wp.data.select('core/editor');
           if (!sel) return;
           var newTitle = sel.getEditedPostAttribute('title');
           if (newTitle !== undefined && newTitle !== lastTitle) {
             lastTitle = newTitle;
-            self.TOKENS['%%title%%'] = newTitle;
+            self.TOKENS['{{title}}'] = newTitle;
             crawlwpSEO.postTitle = newTitle;
             self.emit('measure');
             self.emit('sync');
@@ -908,7 +908,7 @@
 
       $noticeText.html(this.fmt(L.scoredAgainst, '<b>' + this.escHtml(keyword) + '</b>'));
 
-      var seoTitle = this.resolve(this.$title.val() || '%%title%% %%sep%% %%sitename%%').toLowerCase();
+      var seoTitle = this.resolve(this.$title.val() || '{{title}} {{sep}} {{sitename}}').toLowerCase();
       var seoDesc = this.resolve(this.$desc.val() || '').toLowerCase();
       var slugVal = (this.$slug.val() || '').toLowerCase();
       var html = this.getEditorContent();
@@ -989,7 +989,7 @@
       }
 
       /* 3. Title length (pixel width) */
-      var titleText = this.resolve(this.$title.val() || '%%title%% %%sep%% %%sitename%%');
+      var titleText = this.resolve(this.$title.val() || '{{title}} {{sep}} {{sitename}}');
       var titlePx = this.widthOf(titleText, 'bold 20px Arial');
       if (titlePx >= 200 && titlePx <= 580) {
         addCheck('good', L.titleLenGood, this.fmt(L.titleLenDetail, titlePx));

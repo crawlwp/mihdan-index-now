@@ -61,19 +61,19 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
             <?php esc_html_e('Insert variable', 'mihdan-index-now'); ?>
           </button>
           <div class="cwp-var-menu">
-            <button class="cwp-var-item" type="button" data-token="%%title%%"><code>%%title%%</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%sitename%%"><code>%%sitename%%</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%sep%%"><code>%%sep%%</code><span><?php esc_html_e('Separator', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%category%%"><code>%%category%%</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%excerpt%%"><code>%%excerpt%%</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%currentyear%%"><code>%%currentyear%%</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%author%%"><code>%%author%%</code><span><?php esc_html_e('Author name', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{title}}"><code>{{title}}</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{sitename}}"><code>{{sitename}}</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{sep}}"><code>{{sep}}</code><span><?php esc_html_e('Separator', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{category}}"><code>{{category}}</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{excerpt}}"><code>{{excerpt}}</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{currentyear}}"><code>{{currentyear}}</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{author}}"><code>{{author}}</code><span><?php esc_html_e('Author name', 'mihdan-index-now'); ?></span></button>
           </div>
         </div>
       </div>
       <input class="cwp-input" id="cwpTitle" name="<?php echo esc_attr(MetaFields::SEO_TITLE); ?>" type="text"
              value="<?php echo esc_attr($data['seo_title']); ?>"
-             placeholder="%%title%% %%sep%% %%sitename%%"
+             placeholder="{{title}} {{sep}} {{sitename}}"
              data-meter="cwpTitleMeter" data-limit="580" data-font="bold 20px Arial">
       <div class="cwp-meter">
         <div class="cwp-meter-bar"><div class="cwp-meter-fill" id="cwpTitleMeterFill"></div></div>
@@ -97,11 +97,11 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
             <?php esc_html_e('Insert variable', 'mihdan-index-now'); ?>
           </button>
           <div class="cwp-var-menu">
-            <button class="cwp-var-item" type="button" data-token="%%excerpt%%"><code>%%excerpt%%</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%title%%"><code>%%title%%</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%sitename%%"><code>%%sitename%%</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%category%%"><code>%%category%%</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
-            <button class="cwp-var-item" type="button" data-token="%%currentyear%%"><code>%%currentyear%%</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{excerpt}}"><code>{{excerpt}}</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{title}}"><code>{{title}}</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{sitename}}"><code>{{sitename}}</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{category}}"><code>{{category}}</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
+            <button class="cwp-var-item" type="button" data-token="{{currentyear}}"><code>{{currentyear}}</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
           </div>
         </div>
       </div>
