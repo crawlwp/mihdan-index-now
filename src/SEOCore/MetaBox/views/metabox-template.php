@@ -28,15 +28,15 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
 
   <div class="cwp-tabs" role="tablist">
     <button class="cwp-tab is-active" role="tab" aria-selected="true" data-panel="general" type="button"><?php esc_html_e('General', 'mihdan-index-now'); ?></button>
+    <button class="cwp-tab" role="tab" aria-selected="false" data-panel="analysis" type="button">
+      <?php esc_html_e('Analysis', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-analysis" title="" hidden></span>
+    </button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="social" type="button"><?php esc_html_e('Social', 'mihdan-index-now'); ?></button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="schema" type="button"><?php esc_html_e('Schema', 'mihdan-index-now'); ?></button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="links" type="button">
       <?php esc_html_e('Links', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-links" title="<?php esc_attr_e('No internal links yet', 'mihdan-index-now'); ?>" hidden></span>
     </button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="advanced" type="button"><?php esc_html_e('Advanced', 'mihdan-index-now'); ?></button>
-    <button class="cwp-tab" role="tab" aria-selected="false" data-panel="analysis" type="button">
-      <?php esc_html_e('Analysis', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-analysis" title="" hidden></span>
-    </button>
     <?php if (defined('CRAWLWP_PRO_VERSION')) : ?>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="insights" type="button">
       <?php esc_html_e('Insights', 'mihdan-index-now'); ?>
@@ -121,14 +121,6 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
       <p class="cwp-hint"><?php echo esc_url($site_url); ?><b id="cwpSlugEcho"><?php echo esc_html($data['seo_slug'] ?: sanitize_title($post->post_title)); ?></b></p>
     </div>
 
-    <div class="cwp-field">
-      <div class="cwp-label-row">
-        <label class="cwp-label" for="cwpKeyword"><?php esc_html_e('Focus keyword', 'mihdan-index-now'); ?></label>
-        <span class="cwp-help" title="<?php esc_attr_e('The phrase you want this post to rank for.', 'mihdan-index-now'); ?>">?</span>
-      </div>
-      <input class="cwp-input" id="cwpKeyword" name="<?php echo esc_attr(MetaFields::FOCUS_KEYWORD); ?>" type="text" value="<?php echo esc_attr($data['focus_keyword']); ?>">
-    </div>
-
     <!-- Search Preview -->
     <div class="cwp-preview cwp-preview-last">
       <div class="cwp-preview-bar">
@@ -194,12 +186,46 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
       </div>
 
       <div class="cwp-field">
-        <div class="cwp-label-row"><label class="cwp-label" for="cwpFbTitle"><?php esc_html_e('Open Graph title', 'mihdan-index-now'); ?></label></div>
+        <div class="cwp-label-row">
+          <label class="cwp-label" for="cwpFbTitle"><?php esc_html_e('Open Graph title', 'mihdan-index-now'); ?></label>
+          <span class="cwp-spacer"></span>
+          <div class="cwp-var">
+            <button class="cwp-var-btn" type="button" data-var-for="cwpFbTitle">
+              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <?php esc_html_e('Insert variable', 'mihdan-index-now'); ?>
+            </button>
+            <div class="cwp-var-menu">
+              <button class="cwp-var-item" type="button" data-token="{{title}}"><code>{{title}}</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{sitename}}"><code>{{sitename}}</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{sep}}"><code>{{sep}}</code><span><?php esc_html_e('Separator', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{category}}"><code>{{category}}</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{excerpt}}"><code>{{excerpt}}</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{currentyear}}"><code>{{currentyear}}</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{author}}"><code>{{author}}</code><span><?php esc_html_e('Author name', 'mihdan-index-now'); ?></span></button>
+            </div>
+          </div>
+        </div>
         <input class="cwp-input" id="cwpFbTitle" name="<?php echo esc_attr(MetaFields::OG_TITLE); ?>" type="text" value="<?php echo esc_attr($data['og_title']); ?>" <?php disabled($data['og_sync'], '1'); ?>>
       </div>
 
       <div class="cwp-field">
-        <div class="cwp-label-row"><label class="cwp-label" for="cwpFbDesc"><?php esc_html_e('Open Graph description', 'mihdan-index-now'); ?></label></div>
+        <div class="cwp-label-row">
+          <label class="cwp-label" for="cwpFbDesc"><?php esc_html_e('Open Graph description', 'mihdan-index-now'); ?></label>
+          <span class="cwp-spacer"></span>
+          <div class="cwp-var">
+            <button class="cwp-var-btn" type="button" data-var-for="cwpFbDesc">
+              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <?php esc_html_e('Insert variable', 'mihdan-index-now'); ?>
+            </button>
+            <div class="cwp-var-menu">
+              <button class="cwp-var-item" type="button" data-token="{{excerpt}}"><code>{{excerpt}}</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{title}}"><code>{{title}}</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{sitename}}"><code>{{sitename}}</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{category}}"><code>{{category}}</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{currentyear}}"><code>{{currentyear}}</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
+            </div>
+          </div>
+        </div>
         <textarea class="cwp-textarea" id="cwpFbDesc" name="<?php echo esc_attr(MetaFields::OG_DESCRIPTION); ?>" <?php disabled($data['og_sync'], '1'); ?>><?php echo esc_textarea($data['og_description']); ?></textarea>
       </div>
 
@@ -263,12 +289,46 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
       </div>
 
       <div class="cwp-field">
-        <div class="cwp-label-row"><label class="cwp-label" for="cwpXTitle"><?php esc_html_e('X title', 'mihdan-index-now'); ?></label></div>
+        <div class="cwp-label-row">
+          <label class="cwp-label" for="cwpXTitle"><?php esc_html_e('X title', 'mihdan-index-now'); ?></label>
+          <span class="cwp-spacer"></span>
+          <div class="cwp-var">
+            <button class="cwp-var-btn" type="button" data-var-for="cwpXTitle">
+              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <?php esc_html_e('Insert variable', 'mihdan-index-now'); ?>
+            </button>
+            <div class="cwp-var-menu">
+              <button class="cwp-var-item" type="button" data-token="{{title}}"><code>{{title}}</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{sitename}}"><code>{{sitename}}</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{sep}}"><code>{{sep}}</code><span><?php esc_html_e('Separator', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{category}}"><code>{{category}}</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{excerpt}}"><code>{{excerpt}}</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{currentyear}}"><code>{{currentyear}}</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{author}}"><code>{{author}}</code><span><?php esc_html_e('Author name', 'mihdan-index-now'); ?></span></button>
+            </div>
+          </div>
+        </div>
         <input class="cwp-input" id="cwpXTitle" name="<?php echo esc_attr(MetaFields::X_TITLE); ?>" type="text" value="<?php echo esc_attr($data['x_title']); ?>" <?php disabled($data['x_sync'], '1'); ?>>
       </div>
 
       <div class="cwp-field">
-        <div class="cwp-label-row"><label class="cwp-label" for="cwpXDesc"><?php esc_html_e('X description', 'mihdan-index-now'); ?></label></div>
+        <div class="cwp-label-row">
+          <label class="cwp-label" for="cwpXDesc"><?php esc_html_e('X description', 'mihdan-index-now'); ?></label>
+          <span class="cwp-spacer"></span>
+          <div class="cwp-var">
+            <button class="cwp-var-btn" type="button" data-var-for="cwpXDesc">
+              <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <?php esc_html_e('Insert variable', 'mihdan-index-now'); ?>
+            </button>
+            <div class="cwp-var-menu">
+              <button class="cwp-var-item" type="button" data-token="{{excerpt}}"><code>{{excerpt}}</code><span><?php esc_html_e('Post excerpt', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{title}}"><code>{{title}}</code><span><?php esc_html_e('Post title', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{sitename}}"><code>{{sitename}}</code><span><?php esc_html_e('Site name', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{category}}"><code>{{category}}</code><span><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></span></button>
+              <button class="cwp-var-item" type="button" data-token="{{currentyear}}"><code>{{currentyear}}</code><span><?php esc_html_e('Current year', 'mihdan-index-now'); ?></span></button>
+            </div>
+          </div>
+        </div>
         <textarea class="cwp-textarea" id="cwpXDesc" name="<?php echo esc_attr(MetaFields::X_DESCRIPTION); ?>" <?php disabled($data['x_sync'], '1'); ?>><?php echo esc_textarea($data['x_description']); ?></textarea>
       </div>
 
@@ -459,9 +519,17 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
 
   <!-- ANALYSIS -->
   <div class="cwp-panel" id="cwp-panel-analysis" role="tabpanel">
+    <div class="cwp-field">
+      <div class="cwp-label-row">
+        <label class="cwp-label" for="cwpKeyword"><?php esc_html_e('Focus keyword', 'mihdan-index-now'); ?></label>
+        <span class="cwp-help" title="<?php esc_attr_e('The phrase you want this post to rank for.', 'mihdan-index-now'); ?>">?</span>
+      </div>
+      <input class="cwp-input" id="cwpKeyword" name="<?php echo esc_attr(MetaFields::FOCUS_KEYWORD); ?>" type="text" value="<?php echo esc_attr($data['focus_keyword']); ?>">
+    </div>
+
     <div class="cwp-notice" id="cwpAnalysisNotice">
       <svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.6v4.2M8 11.2v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <span id="cwpAnalysisNoticeText"><?php esc_html_e('Enter a focus keyword on the General tab to run the analysis.', 'mihdan-index-now'); ?></span>
+      <span id="cwpAnalysisNoticeText"><?php esc_html_e('Enter a focus keyword above to run the analysis.', 'mihdan-index-now'); ?></span>
     </div>
 
     <div class="cwp-checklist" id="cwpChecklist"></div>

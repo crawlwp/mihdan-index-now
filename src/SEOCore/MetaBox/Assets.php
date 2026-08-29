@@ -418,9 +418,9 @@ class Assets
 			'copied'           => __('Copied!', 'flavor'),
 
 			/* Analysis notice */
-			'enterFocusKw'     => __('Enter a focus keyword on the General tab to run the analysis.', 'flavor'),
+			'enterFocusKw'     => __('Enter a focus keyword above to run the analysis.', 'flavor'),
 			/* translators: %s: keyword */
-			'scoredAgainst'    => __('Scored against %s. Change the focus keyword on the General tab to rescore.', 'flavor'),
+			'scoredAgainst'    => __('Scored against %s. Change the focus keyword above to rescore.', 'flavor'),
 
 			/* Analysis: 1 – Keyword in title */
 			'kwInTitleGood'    => __('Keyword is in the SEO title.', 'flavor'),
