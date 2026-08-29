@@ -45,20 +45,12 @@
   line-height:1.5;
 }
 
-.cwp-mb-head{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 16px;
-  border-bottom:1px solid var(--cwp-line);
-  background:linear-gradient(180deg,#fff,#fcfdfd);
-}
-.cwp-logo{
-  width:26px;height:26px;border-radius:7px;flex:none;
-  background:linear-gradient(135deg,var(--cwp-accent),#14b8a6);
-  display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;letter-spacing:-.02em;
-}
-.cwp-mb-title{font-size:13px;font-weight:600;margin:0;}
-.cwp-mb-sub{font-size:11px;color:var(--cwp-ink-4);margin:1px 0 0;}
-.cwp-mb-head-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+/* title-bar: score ring sits beside the WP metabox heading */
+.cwp-mb-title-wrap{display:inline-flex;align-items:center;gap:10px;}
+.cwp-mb-title-wrap .cwp-score{margin-left:4px;}
+.cwp-mb-title-wrap .cwp-score-ring{width:28px;height:28px;}
+.cwp-mb-title-wrap .cwp-score-ring svg{width:28px;height:28px;}
+.cwp-mb-title-wrap .cwp-score-num{font-size:10px;}
 
 /* score gauge */
 .cwp-score{display:flex;align-items:center;gap:9px;}
@@ -494,7 +486,6 @@
 
 @media (max-width:600px){
   .cwp-grid-2{grid-template-columns:1fr;}
-  .cwp-mb-head{flex-wrap:wrap;}
   .cwp-preview-body{padding:12px;}
   .cwp-img-picker{flex-direction:column;}
 }

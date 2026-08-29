@@ -7,25 +7,6 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
 ?>
 <div class="cwp-metabox" id="crawlwp-seo-metabox-inner">
 
-  <div class="cwp-mb-head">
-    <div class="cwp-logo">C</div>
-    <div>
-      <h3 class="cwp-mb-title"><?php esc_html_e('CrawlWP SEO', 'mihdan-index-now'); ?></h3>
-      <p class="cwp-mb-sub"><?php echo esc_html($type_name); ?></p>
-    </div>
-    <div class="cwp-mb-head-right">
-      <div class="cwp-score">
-        <div class="cwp-score-ring">
-          <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
-            <circle class="cwp-track" cx="19" cy="19" r="16" fill="none" stroke-width="3.5"/>
-            <circle class="cwp-fill" cx="19" cy="19" r="16" fill="none" stroke-width="3.5" stroke-dasharray="0 100" pathLength="100"/>
-          </svg>
-          <div class="cwp-score-num">—</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="cwp-tabs" role="tablist">
     <button class="cwp-tab is-active" role="tab" aria-selected="true" data-panel="general" type="button"><?php esc_html_e('General', 'mihdan-index-now'); ?></button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="analysis" type="button">

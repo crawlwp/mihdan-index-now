@@ -1146,8 +1146,10 @@
 
     updateScore: function(passed, total) {
       var pct = total > 0 ? Math.round(passed / total * 100) : 0;
-      var $ring = this.$mb.find('.cwp-fill');
-      var $num = this.$mb.find('.cwp-score-num');
+      var $wrap = this.$mb.closest('#crawlwp-seo-metabox');
+      if (!$wrap.length) $wrap = this.$mb;
+      var $ring = $wrap.find('.cwp-fill');
+      var $num = $wrap.find('.cwp-score-num');
       if ($ring.length) $ring.attr('stroke-dasharray', pct + ' 100');
       if ($num.length) $num.text(total > 0 ? pct : '\u2014');
     },
