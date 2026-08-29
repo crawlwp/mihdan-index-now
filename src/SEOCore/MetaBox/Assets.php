@@ -10,6 +10,7 @@ class Assets
 		add_action('wp_ajax_crawlwp_load_insights', [$this, 'ajax_load_insights']);
 		add_action('wp_ajax_crawlwp_ai_generate', [$this, 'ajax_ai_generate']);
 		add_action('wp_ajax_crawlwp_submit_indexnow', [$this, 'ajax_submit_indexnow']);
+		add_action('wp_ajax_crawlwp_check_duplicate_keyword', [$this, 'ajax_check_duplicate_keyword']);
 		add_action('crawlwp/index_pinged', [$this, 'store_last_pinged_time'], 10, 2);
 	}
 
@@ -80,6 +81,8 @@ class Assets
 			'inboundLinks' => $inbound,
 			'suggestedLinks' => $suggested ?? [],
 			'isProActive' => defined('CRAWLWP_PRO_VERSION'),
+			'kwCheckNonce'  => wp_create_nonce('crawlwp_check_keyword'),
+			'breadcrumbs' => $this->get_breadcrumb_trail($post),
 			'ajaxUrl'     => admin_url('admin-ajax.php'),
 			'insightsNonce' => wp_create_nonce('crawlwp_insights'),
 			'aiNonce'       => wp_create_nonce('crawlwp_ai_generate'),
@@ -574,6 +577,30 @@ class Assets
 			'submitSuccess'    => __('Successfully submitted to IndexNow!', 'flavor'),
 			'submitError'      => __('Failed to submit. Please try again.', 'flavor'),
 			'savePostFirst'    => __('Please save the post first before submitting to IndexNow.', 'flavor'),
+
+			/* Readability badge */
+			'readabilityGood'       => __('Good readability', 'flavor'),
+			'readabilityOk'         => __('Fairly readable', 'flavor'),
+			'readabilityPoor'       => __('Needs improvement', 'flavor'),
+			'readabilityNA'         => __('Readability analysis will run when content is available.', 'flavor'),
+			/* translators: %1$s: Flesch score, %2$s: avg sentence length, %3$s: percentage of long sentences */
+			'readabilityDetail'     => __('Flesch score %1$s · avg. sentence %2$s words · %3$s%% long sentences', 'flavor'),
+
+			/* Focus keyword duplicate warning */
+			/* translators: %1$s: post title, %2$s: edit link */
+			'kwDuplicateWarn'       => __('This keyword is already used by "%1$s". Using the same keyword on multiple posts may cause keyword cannibalization.', 'flavor'),
+			'kwChecking'            => __('Checking…', 'flavor'),
+
+			/* Breadcrumb preview */
+			'breadcrumbHome'        => __('Home', 'flavor'),
+
+			/* Social image dimensions */
+			/* translators: %1$s: actual width, %2$s: actual height */
+			'imgDimensions'         => __('%1$s × %2$s px', 'flavor'),
+			'imgTooSmall'           => __('Image is too small. Minimum recommended:', 'flavor'),
+			'imgSizeGood'           => __('Image meets the recommended size.', 'flavor'),
+			'imgOgMin'              => __('1200 × 630 px', 'flavor'),
+			'imgXMin'               => __('800 × 418 px', 'flavor'),
 		];
 	}
 
@@ -621,5 +648,81 @@ class Assets
 		if ($type === 'post') {
 			update_post_meta($object_id, '_crawlwp_last_indexnow', time());
 		}
+	}
+
+	/**
+	 * Build the breadcrumb trail array for a post.
+	 */
+	private function get_breadcrumb_trail(?\WP_Post $post): array
+	{
+		if (! $post instanceof \WP_Post) {
+			return [];
+		}
+
+		$crumbs = [get_bloginfo('name')];
+
+		$terms = get_the_terms($post->ID, 'category');
+		if (! empty($terms) && ! is_wp_error($terms)) {
+			/* Build the category hierarchy */
+			$primary = $terms[0];
+			$ancestors = get_ancestors($primary->term_id, 'category', 'taxonomy');
+			$ancestors = array_reverse($ancestors);
+			foreach ($ancestors as $anc_id) {
+				$anc = get_term($anc_id, 'category');
+				if ($anc && ! is_wp_error($anc)) {
+					$crumbs[] = $anc->name;
+				}
+			}
+			$crumbs[] = $primary->name;
+		}
+
+		return $crumbs;
+	}
+
+	/**
+	 * AJAX: Check if a focus keyword is already used by another published post.
+	 */
+	public function ajax_check_duplicate_keyword(): void
+	{
+		check_ajax_referer('crawlwp_check_keyword', 'nonce');
+
+		if (! current_user_can('edit_posts')) {
+			wp_send_json_error(['message' => 'Unauthorized'], 403);
+		}
+
+		$keyword = isset($_POST['keyword']) ? sanitize_text_field(wp_unslash($_POST['keyword'])) : '';
+		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+		if (empty($keyword)) {
+			wp_send_json_success(['duplicate' => false]);
+		}
+
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT p.ID, p.post_title
+				 FROM {$wpdb->postmeta} pm
+				 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+				 WHERE pm.meta_key = %s
+				   AND LOWER(pm.meta_value) = LOWER(%s)
+				   AND p.post_status = 'publish'
+				   AND p.ID != %d
+				 LIMIT 1",
+				MetaFields::FOCUS_KEYWORD,
+				$keyword,
+				$post_id
+			)
+		);
+
+		if ($row) {
+			wp_send_json_success([
+				'duplicate' => true,
+				'postTitle' => $row->post_title,
+				'editUrl'   => get_edit_post_link($row->ID, 'raw'),
+			]);
+		}
+
+		wp_send_json_success(['duplicate' => false]);
 	}
 }

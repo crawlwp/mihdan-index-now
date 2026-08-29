@@ -485,6 +485,51 @@
   .cwp-insights-engines{flex-wrap:wrap;}
 }
 
+/* ---------- readability badge ---------- */
+.cwp-readability-badge{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:8px;font-size:12px;line-height:1.45;
+  background:var(--cwp-bg);border:1px solid var(--cwp-line-soft);
+  margin-top:14px;
+}
+.cwp-readability-badge.is-good{background:#ecfdf5;border-color:#a7f3d0;}
+.cwp-readability-badge.is-ok{background:#fffbeb;border-color:#fde68a;}
+.cwp-readability-badge.is-poor{background:#fef2f2;border-color:#fecaca;}
+.cwp-readability-icon{
+  width:32px;height:32px;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-size:13px;font-weight:700;
+  background:var(--cwp-line-soft);color:var(--cwp-ink-2);
+}
+.cwp-readability-badge.is-good .cwp-readability-icon{background:#d1fae5;color:#065f46;}
+.cwp-readability-badge.is-ok .cwp-readability-icon{background:#fef3c7;color:#92400e;}
+.cwp-readability-badge.is-poor .cwp-readability-icon{background:#fee2e2;color:#991b1b;}
+.cwp-readability-text{color:var(--cwp-ink-2);font-size:12px;}
+.cwp-readability-text b{font-weight:600;color:var(--cwp-ink);}
+
+/* ---------- keyword duplicate warning ---------- */
+.cwp-kw-warning{
+  gap:8px;align-items:flex-start;
+  padding:8px 12px;margin-top:6px;border-radius:6px;font-size:12px;line-height:1.45;
+  background:#fffbeb;color:#92400e;border:1px solid #fde68a;
+}
+.cwp-kw-warning svg{flex:none;margin-top:1px;color:#f59e0b;}
+.cwp-kw-warning a{color:#b45309;font-weight:500;}
+
+/* ---------- breadcrumb preview ---------- */
+.cwp-breadcrumb-preview{
+  margin-top:8px;padding:8px 12px;border-radius:6px;
+  background:var(--cwp-bg);border:1px solid var(--cwp-line-soft);
+  font-size:12px;color:var(--cwp-ink-2);line-height:1.6;
+}
+.cwp-bc-sep{color:var(--cwp-ink-4);margin:0 2px;}
+.cwp-bc-item{color:var(--cwp-ink-2);}
+.cwp-bc-item.is-current{font-weight:600;color:var(--cwp-ink);}
+
+/* ---------- social image dimensions ---------- */
+.cwp-img-dimensions{margin-top:6px;font-size:12px;line-height:1.4;}
+.cwp-img-dim-warn{color:#dc2626;}
+.cwp-img-dim-good{color:var(--cwp-good);}
+
 /* footer */
 .cwp-mb-foot{
   display:flex;align-items:center;gap:10px;

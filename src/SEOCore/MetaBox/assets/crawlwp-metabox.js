@@ -60,7 +60,9 @@
       this.emit('sync');
       this.toggleSync();
       this.updateSchemaPreview();
+      this.updateBreadcrumbPreview();
       this.initSocialImagePlaceholders();
+      this.validateExistingImages();
       this.emit('renderLinks');
       this.emit('analyze');
     },
@@ -195,9 +197,19 @@
       });
 
       /* focus keyword drives both analysis and suggested links */
+      var _kwDebounce = null;
       $('#cwpKeyword').on('input', function() {
         self.emit('analyze');
         self.emit('renderLinks');
+        clearTimeout(_kwDebounce);
+        _kwDebounce = setTimeout(function() {
+          self.checkDuplicateKeyword();
+        }, 600);
+      });
+
+      /* breadcrumb label updates preview */
+      $('#cwpBreadcrumb').on('input', function() {
+        self.updateBreadcrumbPreview();
       });
 
       /* JSON-LD toggle */
@@ -218,7 +230,7 @@
       if (this.$schemaHeadline.length) this.$schemaHeadline.on('input', function() { self.updateSchemaPreview(); });
       if (this.$schemaSection.length) this.$schemaSection.on('input', function() { self.updateSchemaPreview(); });
 
-      /* image pickers */
+      /* image pickers (with dimension validation) */
       this.bindImagePickers();
 
       /* AI generate buttons */
@@ -617,6 +629,7 @@
             $thumbEl.css('backgroundImage', 'url(' + attachment.url + ')').removeClass('cwp-thumb-empty');
           }
           self.updateSocialPreviewImage(target, attachment.url);
+          self.validateImageDimensions(attachment.id, target);
         });
 
         frame.open();
@@ -638,6 +651,9 @@
           }
         }
         self.updateSocialPreviewImage(target, '');
+        /* Hide dimension validation when image removed */
+        var dimId = target === 'cwpOgImage' ? 'cwpOgImgDimensions' : 'cwpXImgDimensions';
+        $('#' + dimId).prop('hidden', true);
       });
     },
 
@@ -945,6 +961,143 @@
       }
     },
 
+    /* ---------- readability badge ---------- */
+    updateReadability: function(plainText, wordCount, sentences) {
+      var L = crawlwpSEO.i18n;
+      var $badge = $('#cwpReadabilityBadge');
+      var $icon  = $('#cwpReadabilityIcon');
+      var $text  = $('#cwpReadabilityText');
+      if (!$badge.length) return;
+
+      if (wordCount < 50) {
+        $badge.attr('class', 'cwp-readability-badge');
+        $icon.text('\u2014');
+        $text.text(L.readabilityNA);
+        return;
+      }
+
+      /* Flesch Reading Ease (approximation) */
+      var syllableCount = 0;
+      var words = plainText.split(/\s+/).filter(function(w) { return w.length > 0; });
+      $.each(words, function(i, w) {
+        var m = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/i, '').replace(/^y/i, '').match(/[aeiouy]{1,2}/gi);
+        syllableCount += Math.max(1, m ? m.length : 1);
+      });
+      var flesch = 206.835 - (1.015 * (wordCount / sentences.length)) - (84.6 * (syllableCount / wordCount));
+      flesch = Math.max(0, Math.min(100, Math.round(flesch)));
+
+      /* long sentences (>20 words) percentage */
+      var longSentences = 0;
+      $.each(sentences, function(i, s) {
+        var sw = $.trim(s).split(/\s+/).filter(function(w) { return w.length > 0; }).length;
+        if (sw > 20) longSentences++;
+      });
+      var longPct = Math.round(longSentences / sentences.length * 100);
+      var avgLen = Math.round(wordCount / sentences.length);
+
+      var label, cls;
+      if (flesch >= 60) {
+        label = L.readabilityGood; cls = 'is-good';
+      } else if (flesch >= 40) {
+        label = L.readabilityOk; cls = 'is-ok';
+      } else {
+        label = L.readabilityPoor; cls = 'is-poor';
+      }
+
+      $badge.attr('class', 'cwp-readability-badge ' + cls);
+      $icon.text(flesch);
+      $text.html('<b>' + label + '</b> \u2014 ' + this.fmt(L.readabilityDetail, flesch, avgLen, longPct));
+    },
+
+    /* ---------- breadcrumb preview ---------- */
+    updateBreadcrumbPreview: function() {
+      var $el = $('#cwpBreadcrumbPreview');
+      if (!$el.length) return;
+      var crumbs = crawlwpSEO.breadcrumbs || [];
+      var label = $.trim($('#cwpBreadcrumb').val()) || crawlwpSEO.postTitle || '';
+      var trail = crumbs.concat([label]);
+      var html = '';
+      for (var i = 0; i < trail.length; i++) {
+        if (i > 0) html += ' <span class="cwp-bc-sep">\u203a</span> ';
+        html += '<span class="cwp-bc-item' + (i === trail.length - 1 ? ' is-current' : '') + '">' + this.escHtml(trail[i]) + '</span>';
+      }
+      $el.html(html);
+    },
+
+    /* ---------- focus keyword duplicate check ---------- */
+    checkDuplicateKeyword: function() {
+      var self = this;
+      var keyword = $.trim($('#cwpKeyword').val());
+      var $warning = $('#cwpKwWarning');
+      var $text = $('#cwpKwWarningText');
+      var L = crawlwpSEO.i18n;
+
+      if (!keyword) {
+        $warning.hide();
+        return;
+      }
+
+      $.ajax({
+        url: crawlwpSEO.ajaxUrl,
+        type: 'POST',
+        data: {
+          action: 'crawlwp_check_duplicate_keyword',
+          nonce: crawlwpSEO.kwCheckNonce,
+          keyword: keyword,
+          post_id: crawlwpSEO.postId
+        },
+        success: function(resp) {
+          if (resp.success && resp.data && resp.data.duplicate) {
+            $text.html(self.fmt(L.kwDuplicateWarn, '<b>' + self.escHtml(resp.data.postTitle) + '</b>') +
+              (resp.data.editUrl ? ' <a href="' + resp.data.editUrl + '" target="_blank">\u2192 ' + self.escHtml(resp.data.postTitle) + '</a>' : ''));
+            $warning.css('display', 'flex');
+          } else {
+            $warning.hide();
+          }
+        }
+      });
+    },
+
+    /* ---------- social image dimension validation ---------- */
+    validateImageDimensions: function(attachmentId, targetId) {
+      if (!attachmentId) return;
+      var self = this;
+      var isOg = (targetId === 'cwpOgImage');
+      var minW = isOg ? 1200 : 800;
+      var minH = isOg ? 630 : 418;
+      var $dim = $('#' + (isOg ? 'cwpOgImgDimensions' : 'cwpXImgDimensions'));
+      if (!$dim.length) return;
+
+      /* Use wp.media attachment model to get dimensions */
+      if (typeof wp !== 'undefined' && wp.media && wp.media.attachment) {
+        var att = wp.media.attachment(attachmentId);
+        att.fetch().then(function() {
+          var w = att.get('width') || 0;
+          var h = att.get('height') || 0;
+          self.showImageDimensionResult($dim, w, h, minW, minH);
+        });
+      }
+    },
+
+    showImageDimensionResult: function($dim, w, h, minW, minH) {
+      var L = crawlwpSEO.i18n;
+      if (!w || !h) { $dim.prop('hidden', true); return; }
+      var sizeStr = this.fmt(L.imgDimensions, w, h);
+      if (w < minW || h < minH) {
+        var minStr = (minW === 1200) ? L.imgOgMin : L.imgXMin;
+        $dim.html('<span class="cwp-img-dim-warn">\u26a0 ' + sizeStr + ' \u2014 ' + L.imgTooSmall + ' ' + minStr + '</span>').prop('hidden', false);
+      } else {
+        $dim.html('<span class="cwp-img-dim-good">\u2713 ' + sizeStr + ' \u2014 ' + L.imgSizeGood + '</span>').prop('hidden', false);
+      }
+    },
+
+    validateExistingImages: function() {
+      var ogVal = $('#cwpOgImage').val();
+      var xVal = $('#cwpXImage').val();
+      if (ogVal) this.validateImageDimensions(parseInt(ogVal, 10), 'cwpOgImage');
+      if (xVal) this.validateImageDimensions(parseInt(xVal, 10), 'cwpXImage');
+    },
+
     /* ---------- analysis panel ---------- */
     runAnalysis: function() {
       var self = this;
@@ -956,6 +1109,13 @@
       $checklist.empty();
 
       var L = crawlwpSEO.i18n;
+
+      /* always update readability badge regardless of keyword */
+      var html = this.getEditorContent();
+      var plainText = this.stripTags(html).toLowerCase();
+      var wordCount = this.getWordCount(plainText);
+      var sentences = plainText.split(/[.!?]+/).filter(function(s) { return $.trim(s).length > 5; });
+      this.updateReadability(plainText, wordCount, sentences);
 
       if (!keyword) {
         $noticeText.text(L.enterFocusKw);
@@ -969,9 +1129,6 @@
       var seoTitle = this.resolve(this.$title.val() || '{{title}} {{sep}} {{sitename}}').toLowerCase();
       var seoDesc = this.resolve(this.$desc.val() || '').toLowerCase();
       var slugVal = (this.$slug.val() || '').toLowerCase();
-      var html = this.getEditorContent();
-      var plainText = this.stripTags(html).toLowerCase();
-      var wordCount = this.getWordCount(plainText);
       var parsed = this.parseLinks(html);
 
       /* extract headings */
@@ -1013,8 +1170,7 @@
       }
       var density = wordCount > 0 ? (kwCount / wordCount * 100) : 0;
 
-      /* sentence count & avg length for readability */
-      var sentences = plainText.split(/[.!?]+/).filter(function(s) { return $.trim(s).length > 5; });
+      /* avg sentence length for readability check */
       var avgSentenceLen = sentences.length > 0 ? Math.round(wordCount / sentences.length) : 0;
 
       var checks = [];

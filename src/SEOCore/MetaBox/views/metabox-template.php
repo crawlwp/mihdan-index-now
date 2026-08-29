@@ -102,6 +102,12 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
       <p class="cwp-hint"><?php echo esc_url($site_url); ?><b id="cwpSlugEcho"><?php echo esc_html($data['seo_slug'] ?: sanitize_title($post->post_title)); ?></b></p>
     </div>
 
+    <!-- Readability badge -->
+    <div class="cwp-readability-badge" id="cwpReadabilityBadge">
+      <span class="cwp-readability-icon" id="cwpReadabilityIcon">—</span>
+      <span class="cwp-readability-text" id="cwpReadabilityText"><?php esc_html_e('Readability analysis will run when content is available.', 'mihdan-index-now'); ?></span>
+    </div>
+
     <!-- Search Preview -->
     <div class="cwp-preview cwp-preview-last">
       <div class="cwp-preview-bar">
@@ -224,6 +230,7 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
               <button class="cwp-btn cwp-btn-link cwp-img-remove-btn" type="button" data-target="cwpOgImage"><?php esc_html_e('Remove', 'mihdan-index-now'); ?></button>
             </div>
             <p class="cwp-hint" style="margin:0;"><?php esc_html_e('Recommended 1200 × 630 px, under 5 MB.', 'mihdan-index-now'); ?></p>
+          <div class="cwp-img-dimensions" id="cwpOgImgDimensions" hidden></div>
           </div>
         </div>
       </div>
@@ -324,6 +331,7 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
               <button class="cwp-btn cwp-btn-link cwp-img-remove-btn" type="button" data-target="cwpXImage"><?php esc_html_e('Remove', 'mihdan-index-now'); ?></button>
             </div>
             <p class="cwp-hint" style="margin:0;"><?php esc_html_e('Recommended 1200 × 675 px.', 'mihdan-index-now'); ?></p>
+          <div class="cwp-img-dimensions" id="cwpXImgDimensions" hidden></div>
           </div>
         </div>
       </div>
@@ -355,6 +363,7 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
           <div class="cwp-label-row"><label class="cwp-label" for="cwpBreadcrumb"><?php esc_html_e('Breadcrumb label', 'mihdan-index-now'); ?></label></div>
           <input class="cwp-input" id="cwpBreadcrumb" name="<?php echo esc_attr(MetaFields::SCHEMA_BREADCRUMB); ?>" type="text" value="<?php echo esc_attr($data['schema_breadcrumb']); ?>" placeholder="<?php echo esc_attr($post->post_title); ?>">
           <p class="cwp-hint"><?php esc_html_e('Shown in the breadcrumb trail. Defaults to the post title.', 'mihdan-index-now'); ?></p>
+          <div class="cwp-breadcrumb-preview" id="cwpBreadcrumbPreview"></div>
         </div>
       </div>
 
@@ -489,6 +498,27 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
     </div>
 
     <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Redirect', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Redirect this post to a different URL. Useful when you change slugs or deprecate content.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-grid-2">
+        <div class="cwp-field">
+          <div class="cwp-label-row"><label class="cwp-label" for="cwpRedirectUrl"><?php esc_html_e('Redirect URL', 'mihdan-index-now'); ?></label></div>
+          <input class="cwp-input" id="cwpRedirectUrl" name="<?php echo esc_attr(MetaFields::REDIRECT_URL); ?>" type="url" value="<?php echo esc_attr($data['redirect_url']); ?>" placeholder="https://">
+        </div>
+        <div class="cwp-field">
+          <div class="cwp-label-row"><label class="cwp-label" for="cwpRedirectType"><?php esc_html_e('Redirect type', 'mihdan-index-now'); ?></label></div>
+          <select class="cwp-select" id="cwpRedirectType" name="<?php echo esc_attr(MetaFields::REDIRECT_TYPE); ?>">
+            <option value="301" <?php selected($data['redirect_type'], '301'); ?>><?php esc_html_e('301 — Permanent', 'mihdan-index-now'); ?></option>
+            <option value="302" <?php selected($data['redirect_type'], '302'); ?>><?php esc_html_e('302 — Temporary', 'mihdan-index-now'); ?></option>
+            <option value="307" <?php selected($data['redirect_type'], '307'); ?>><?php esc_html_e('307 — Temporary (strict)', 'mihdan-index-now'); ?></option>
+            <option value="410" <?php selected($data['redirect_type'], '410'); ?>><?php esc_html_e('410 — Content deleted', 'mihdan-index-now'); ?></option>
+          </select>
+        </div>
+      </div>
+      <p class="cwp-hint"><?php esc_html_e('Leave the URL empty to disable the redirect.', 'mihdan-index-now'); ?></p>
+    </div>
+
+    <div class="cwp-section">
       <h4 class="cwp-section-title"><?php esc_html_e('Canonical URL', 'mihdan-index-now'); ?></h4>
       <p class="cwp-section-desc"><?php esc_html_e('Point engines at the original when this content exists elsewhere.', 'mihdan-index-now'); ?></p>
       <div class="cwp-field">
@@ -529,6 +559,10 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
         <span class="cwp-help" title="<?php esc_attr_e('The phrase you want this post to rank for.', 'mihdan-index-now'); ?>">?</span>
       </div>
       <input class="cwp-input" id="cwpKeyword" name="<?php echo esc_attr(MetaFields::FOCUS_KEYWORD); ?>" type="text" value="<?php echo esc_attr($data['focus_keyword']); ?>">
+      <div class="cwp-kw-warning" id="cwpKwWarning" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1l7 14H1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.5v3.5M8 12v.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span id="cwpKwWarningText"></span>
+      </div>
     </div>
 
     <div class="cwp-notice" id="cwpAnalysisNotice">

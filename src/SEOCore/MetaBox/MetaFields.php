@@ -16,6 +16,9 @@ class MetaFields
 	public const MAX_SNIPPET     = '_crawlwp_max_snippet';
 	public const MAX_IMAGE       = '_crawlwp_max_image_preview';
 
+	public const REDIRECT_URL    = '_crawlwp_redirect_url';
+	public const REDIRECT_TYPE   = '_crawlwp_redirect_type';
+
 	public const OG_TITLE       = '_crawlwp_og_title';
 	public const OG_DESCRIPTION = '_crawlwp_og_description';
 	public const OG_IMAGE       = '_crawlwp_og_image';
@@ -50,6 +53,7 @@ class MetaFields
 		self::SCHEMA_HEADLINE,
 		self::SCHEMA_BREADCRUMB,
 		self::SCHEMA_SECTION,
+		self::REDIRECT_URL,
 	];
 
 	private static array $select_fields = [
@@ -59,6 +63,7 @@ class MetaFields
 		self::MAX_IMAGE,
 		self::X_CARD_TYPE,
 		self::SCHEMA_TYPE,
+		self::REDIRECT_TYPE,
 	];
 
 	private static array $checkbox_fields = [
@@ -124,7 +129,7 @@ class MetaFields
 		}
 	}
 
-	public static function get(int $post_id, string $key, mixed $default = ''): mixed
+	public static function get(int $post_id, string $key, $default = '')
 	{
 		$value = get_post_meta($post_id, $key, true);
 
@@ -158,6 +163,8 @@ class MetaFields
 			'schema_headline' => self::get($post_id, self::SCHEMA_HEADLINE),
 			'schema_breadcrumb' => self::get($post_id, self::SCHEMA_BREADCRUMB),
 			'schema_section'  => self::get($post_id, self::SCHEMA_SECTION),
+			'redirect_url'    => self::get($post_id, self::REDIRECT_URL),
+			'redirect_type'   => self::get($post_id, self::REDIRECT_TYPE, '301'),
 		];
 	}
 }
