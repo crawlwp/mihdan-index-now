@@ -4,7 +4,7 @@ namespace Mihdan\IndexNow\SEOCore\MetaBox;
 
 class FrontendHead
 {
-	public function Link__construct()
+	public function __construct()
 	{
 		add_action('wp_head', [$this, 'output_meta_tags'], 1);
 		add_action('template_redirect', [$this, 'handle_redirect']);

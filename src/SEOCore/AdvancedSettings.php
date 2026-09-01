@@ -2,7 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore;
 
-class CoreSettings
+class AdvancedSettings
 {
 	public function __construct()
 	{
