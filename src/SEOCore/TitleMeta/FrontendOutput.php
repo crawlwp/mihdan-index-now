@@ -405,10 +405,8 @@ class FrontendOutput
 		$directives[] = $noindex ? 'noindex' : 'index';
 		$directives[] = $nofollow ? 'nofollow' : 'follow';
 
-		foreach (['noarchive', 'nosnippet', 'noimageindex', 'notranslate'] as $directive) {
-			if (Options::is_on($entity_key, $directive)) {
-				$directives[] = $directive;
-			}
+		if (Options::is_on($entity_key, 'noarchive')) {
+			$directives[] = 'noarchive';
 		}
 
 		if ($post !== null) {
@@ -421,21 +419,6 @@ class FrontendOutput
 					}
 				}
 			}
-		}
-
-		$max_snippet = (string) Options::get($entity_key, 'max_snippet', '');
-		if ($max_snippet !== '') {
-			$directives[] = 'max-snippet:' . (int) $max_snippet;
-		}
-
-		$max_image = (string) Options::get($entity_key, 'max_image_preview', 'large');
-		if ($max_image !== '') {
-			$directives[] = 'max-image-preview:' . $max_image;
-		}
-
-		$max_video = (string) Options::get($entity_key, 'max_video_preview', '');
-		if ($max_video !== '') {
-			$directives[] = 'max-video-preview:' . (int) $max_video;
 		}
 
 		$directives = array_values(array_unique($directives));

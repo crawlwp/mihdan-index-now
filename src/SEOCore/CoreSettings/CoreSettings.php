@@ -135,15 +135,15 @@ class CoreSettings
 		$wposa->add_field($section, [
 			'id'   => $prefix . 'og_image',
 			'type' => 'image',
-			'name' => __('Facebook image', 'mihdan-index-now'),
-			'desc' => esc_html__('Recommended size: 1200x630 px. Should have a 1.91:1 aspect ratio with width of at least 600 px.', 'mihdan-index-now') . $featured_note,
+			'name' => __('Social image (OG)', 'mihdan-index-now'),
+			'desc' => esc_html__('Used as og:image for Facebook, LinkedIn and other Open Graph consumers. Recommended size: 1200×630 px (1.91:1 ratio, min 600 px wide).', 'mihdan-index-now') . $featured_note,
 		]);
 
 		$wposa->add_field($section, [
 			'id'   => $prefix . 'x_image',
 			'type' => 'image',
-			'name' => __('X image', 'mihdan-index-now'),
-			'desc' => esc_html__('Recommended size: 1200x600 px. Should have a 2:1 aspect ratio with width between 300 px and 4096 px.', 'mihdan-index-now') . $featured_note,
+			'name' => __('X/Twitter image', 'mihdan-index-now'),
+			'desc' => esc_html__('Used as twitter:image. Recommended size: 1200×600 px (2:1 ratio, 300–4096 px wide). Falls back to the OG image when empty.', 'mihdan-index-now') . $featured_note,
 		]);
 	}
 
