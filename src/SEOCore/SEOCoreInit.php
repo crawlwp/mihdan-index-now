@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore;
 
 use Mihdan\IndexNow\SEOCore\MetaBox\Assets;
+use Mihdan\IndexNow\SEOCore\MetaBox\PostListColumn;
 use Mihdan\IndexNow\SEOCore\MetaBox\FrontendHead;
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaBox;
 use Mihdan\IndexNow\SEOCore\SiteVerification\SiteVerificationFrontendOutput;
@@ -31,6 +32,7 @@ class SEOCoreInit
 
 		new MetaBox();
 		new Assets();
+		new PostListColumn();
 		new FrontendHead();
 
 		new FrontendOutput();
