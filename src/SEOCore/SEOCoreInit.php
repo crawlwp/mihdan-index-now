@@ -14,6 +14,7 @@ class SEOCoreInit
 
 	public function __construct()
 	{
+		new CoreSettings\CoreSettings();
 		new AdvancedSettings();
 
 		new SiteVerificationSettings();
