@@ -91,14 +91,6 @@ class SocialSettings
 		);
 
 		$wposa->add_field(self::SECTION, [
-			'id'      => 'multi_og_image',
-			'type'    => 'switch',
-			'name'    => __('Output multiple Open Graph image tags?', 'mihdan-index-now'),
-			'default' => 'off',
-			'desc'    => $this->description(__('This enables users to select any image attached to the page shared on social networks, like Facebook.', 'mihdan-index-now')),
-		]);
-
-		$wposa->add_field(self::SECTION, [
 			'id'   => 'social_image_fallback',
 			'type' => 'image',
 			'name' => __('Social Image Fallback', 'mihdan-index-now'),
@@ -132,7 +124,7 @@ class SocialSettings
 			'type'        => 'text',
 			'name'        => __('Facebook Author Fallback Page', 'mihdan-index-now'),
 			'placeholder' => 'https://www.facebook.com/YourPersonalProfile',
-			'desc'        => esc_html__('Authors can override this option on their profile page.', 'mihdan-index-now'),
+			'desc'        => esc_html__('Used as the article:author Open Graph tag. Authors can override this on their profile page.', 'mihdan-index-now'),
 		]);
 	}
 

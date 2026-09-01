@@ -178,28 +178,34 @@
 
 .cwp-tm-heading-row td {
 	padding-left: 0;
-	padding-bottom: 0;
+	padding-top: 28px;
+	padding-bottom: 4px;
 }
 
+/* Card-style section heading with a colored left accent bar. */
 .cwp-tm-subheading {
-	margin: 0 0 4px;
-	padding: 24px 0 0;
-	border-top: 1px solid #dcdcde;
-	font-size: 15px;
+	display: inline-flex;
+	align-items: center;
+	margin: 0;
+	padding: 8px 14px;
+	background: #f6f7f7;
+	border-left: 3px solid var(--wp-admin-theme-color, #2271b1);
+	border-radius: 0 3px 3px 0;
+	font-size: 13px;
 	font-weight: 600;
 	line-height: 1.4;
 	color: #1d2327;
-	text-transform: uppercase;
-	letter-spacing: .03em;
+	letter-spacing: .02em;
 }
 
-/* First subheading on a screen has no preceding content to separate from */
-.cwp-tm-heading-row:first-child .cwp-tm-subheading,
-.cwp-tm-heading-row:first-of-type .cwp-tm-subheading {
+/* First subheading on a screen gets no extra top padding */
+.cwp-tm-heading-row:first-child td,
+.cwp-tm-heading-row:first-of-type td {
 	padding-top: 0;
-	border-top: 0;
 }
 
 .cwp-tm-heading-row td > .description {
-	margin-top: 0;
+	margin-top: 8px;
+	margin-bottom: 0;
+	max-width: 640px;
 }

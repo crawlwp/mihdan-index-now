@@ -4,6 +4,7 @@ namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
+use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
 
 /**
  * Emits the document title and meta tags for every front end request.
@@ -608,6 +609,20 @@ class FrontendOutput
 			echo '<meta property="og:image" content="' . esc_url($og_image) . '" />' . "\n";
 		}
 
+		/* article:author for posts — per-author Facebook URL overrides the global fallback. */
+		if ($data['post'] instanceof \WP_Post) {
+			$author_id      = (int) $data['post']->post_author;
+			$facebook_author = $author_id > 0 ? UserProfile::get($author_id, UserProfile::META_FACEBOOK) : '';
+
+			if ($facebook_author === '') {
+				$facebook_author = (string) SocialSettings::get('facebook_author', '');
+			}
+
+			if ($facebook_author !== '') {
+				echo '<meta property="article:author" content="' . esc_url($facebook_author) . '" />' . "\n";
+			}
+		}
+
 		/* article:published_time / article:modified_time for posts. */
 		if ($data['og_type'] === 'article' && $data['post'] instanceof \WP_Post) {
 			if (SocialSettings::get('post_publish_time', 'on') !== 'off') {
@@ -678,7 +693,12 @@ class FrontendOutput
 		if ($data['post'] instanceof \WP_Post) {
 			$creator = MetaFields::get($data['post']->ID, MetaFields::X_CREATOR);
 
-			/* Fall back to global twitter:creator from Social Networks settings. */
+			/* Fall back to per-author user profile setting, then global Social Networks setting. */
+			if (empty($creator)) {
+				$author_id = (int) $data['post']->post_author;
+				$creator   = $author_id > 0 ? UserProfile::get($author_id, UserProfile::META_TWITTER) : '';
+			}
+
 			if (empty($creator)) {
 				$creator = (string) SocialSettings::get('twitter_creator', '');
 			}
