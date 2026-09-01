@@ -52,10 +52,24 @@ class WPOSA
 			'selected' => true,
 		],
 		'div'      => [
-			'id'     => true,
-			'style'  => true,
-			'class'  => true,
-			'data-w' => true,
+			'id'         => true,
+			'style'      => true,
+			'class'      => true,
+			'data-w'     => true,
+			'data-group' => true,
+			'data-*'     => true,
+		],
+		'button'   => [
+			'id'            => true,
+			'class'         => true,
+			'type'          => true,
+			'style'         => true,
+			'title'         => true,
+			'aria-expanded' => true,
+			'aria-controls' => true,
+			'aria-label'    => true,
+			'data-group'    => true,
+			'data-*'        => true,
 		],
 		'a'        => [
 			'id'      => true,
@@ -91,8 +105,11 @@ class WPOSA
 			'aria-label' => true,
 		],
 		'span'     => [
-			'class' => true,
-			'style' => true,
+			'id'          => true,
+			'class'       => true,
+			'style'       => true,
+			'aria-hidden' => true,
+			'data-*'      => true,
 		],
 		'table'    => [
 			'class' => true,
@@ -116,43 +133,64 @@ class WPOSA
 			'class' => true,
 		],
 		'textarea' => [
-			'name'  => true,
-			'class' => true,
-			'id'    => true,
-			'rows'  => true,
-			'cols'  => true,
+			'name'            => true,
+			'class'           => true,
+			'id'              => true,
+			'rows'            => true,
+			'cols'            => true,
+			'style'           => true,
+			'placeholder'     => true,
+			'readonly'        => true,
+			'disabled'        => true,
+			'data-cwp-tm'     => true,
+			'data-cwp-entity' => true,
+			'data-*'          => true,
 		],
 		'input'    => [
-			'id'          => true,
-			'class'       => true,
-			'type'        => true,
-			'name'        => true,
-			'value'       => true,
-			'placeholder' => true,
-			'checked'     => true,
-			'readonly'    => true,
-			'onclick'     => true,
-			'disabled'    => true,
+			'id'                 => true,
+			'class'              => true,
+			'type'               => true,
+			'name'               => true,
+			'value'              => true,
+			'placeholder'        => true,
+			'checked'            => true,
+			'readonly'           => true,
+			'onclick'            => true,
+			'disabled'           => true,
+			'style'              => true,
+			'data-default-color' => true,
+			'data-cwp-tm'        => true,
+			'data-cwp-entity'    => true,
+			'data-*'             => true,
 		],
 		'script'   => [
 			'src'   => true,
 			'async' => true,
 		],
 		'svg'      => array(
-			'class'   => true,
-			'xmlns'   => true,
-			'width'   => true,
-			'height'  => true,
-			'viewBox' => true,
-			'fill'    => true,
+			'class'       => true,
+			'xmlns'       => true,
+			'width'       => true,
+			'height'      => true,
+			'viewBox'     => true,
+			'viewbox'     => true,
+			'fill'        => true,
+			'stroke'      => true,
+			'aria-hidden' => true,
+			'focusable'   => true,
 		),
 		'g'        => array(
 			'clip-path' => true,
 		),
 		'path'     => array(
-			'd'            => true,
-			'stroke'       => true,
-			'stroke-width' => true,
+			'd'               => true,
+			'fill'            => true,
+			'stroke'          => true,
+			'stroke-width'    => true,
+			'stroke-linecap'  => true,
+			'stroke-linejoin' => true,
+			'fill-rule'       => true,
+			'clip-rule'       => true,
 		),
 		'defs'     => true,
 		'clipPath' => array(
@@ -651,6 +689,7 @@ class WPOSA
 					'options'           => $options,
 					'std'               => $default,
 					'placeholder'       => $placeholder,
+					'rows'              => $field['rows'] ?? null,
 					'sanitize_callback' => $sanitize_callback,
 					'attributes'        => [
 						'readonly' => $readonly,
@@ -974,8 +1013,20 @@ class WPOSA
 
 		$value = esc_textarea($this->get_option($args['id'], $args['section'], $args['std']));
 		$size  = isset($args['size']) && ! is_null($args['size']) ? $args['size'] : 'regular';
+		$rows  = isset($args['rows']) && ! is_null($args['rows']) ? absint($args['rows']) : 5;
 
-		$html = sprintf('<textarea rows="5" cols="55" class="%1$s-text" id="%2$s[%3$s]" name="%2$s[%3$s]">%4$s</textarea>', $size, $args['section'], $args['id'], $value);
+		$attributes = $this->convert_array_to_attributes($args['attributes'] ?? []);
+
+		$html = sprintf(
+			'<textarea rows="%1$s" cols="55" class="%2$s-text" id="%3$s[%4$s]" name="%3$s[%4$s]" placeholder="%5$s" %6$s>%7$s</textarea>',
+			esc_attr($rows),
+			esc_attr($size),
+			esc_attr($args['section']),
+			esc_attr($args['id']),
+			esc_attr($args['placeholder'] ?? ''),
+			$attributes,
+			$value
+		);
 		$html .= $this->get_field_description($args);
 
 		echo wp_kses($html, self::ALLOWED_HTML);
@@ -1026,10 +1077,15 @@ class WPOSA
 		$id    = $args['section'] . '[' . $args['id'] . ']';
 		$label = $args['options']['button_label'] ?? __('Choose Image');
 
-		$html = sprintf('<input type="text" class="%1$s-text wpsa-url" id="%2$s[%3$s]" name="%2$s[%3$s]" value="%4$s"/>', $size, $args['section'], $args['id'], $value);
+		$attributes = $this->convert_array_to_attributes($args['attributes'] ?? []);
+
+		$html = sprintf('<input type="text" class="%1$s-text wpsa-url" id="%2$s[%3$s]" name="%2$s[%3$s]" value="%4$s" %5$s/>', $size, $args['section'], $args['id'], $value, $attributes);
 		$html .= '<input type="button" class="button wpsa-browse" value="' . $label . '" />';
 		$html .= $this->get_field_description($args);
-		$html .= '<p class="wpsa-image-preview"><img src=""/></p>';
+
+		if ($value !== '') {
+			$html .= sprintf('<p class="wpsa-image-preview"><img src="%s"/></p>', esc_url($value));
+		}
 
 		echo wp_kses($html, self::ALLOWED_HTML);
 	}
@@ -1323,21 +1379,76 @@ class WPOSA
 			esc_html__('Secondary Navigation', 'wposa')
 		);
 
+		$groups = array();
+
 		foreach ($this->sections_array as $tab) {
-			if (isset($tab['disabled']) && $tab['disabled'] === true) {
-				if (isset($tab['badge'])) {
-					$html .= sprintf('<span class="wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s <span class="wposa-badge">%3$s</span></span>', $tab['id'], $tab['title'], $tab['badge']);
-				} else {
-					$html .= sprintf('<span class="wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s</span>', $tab['id'], $tab['title']);
-				}
-			} else {
-				$html .= sprintf('<a href="#%1$s" class="wposa-nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title']);
+
+			$group_id = ! empty($tab['nav_group']) ? $tab['nav_group'] : '';
+
+			// Ungrouped sections keep rendering exactly as before.
+			if ($group_id === '') {
+				$html .= $this->get_navigation_item($tab);
+				continue;
 			}
+
+			if ( ! isset($groups[$group_id])) {
+				$groups[$group_id] = array(
+					'label' => $tab['nav_group_label'] ?? $group_id,
+					'items' => '',
+				);
+			}
+
+			if (empty($groups[$group_id]['label']) && ! empty($tab['nav_group_label'])) {
+				$groups[$group_id]['label'] = $tab['nav_group_label'];
+			}
+
+			$groups[$group_id]['items'] .= $this->get_navigation_item($tab);
+		}
+
+		foreach ($groups as $group_id => $group) {
+			$html .= sprintf('<div class="wposa-nav-group" data-group="%s">', esc_attr($group_id));
+			$html .= sprintf(
+				'<button type="button" class="wposa-nav-group__toggle" aria-expanded="true">%1$s<span class="wposa-nav-group__chevron" aria-hidden="true">%2$s</span></button>',
+				esc_html($group['label']),
+				$this->get_navigation_group_chevron()
+			);
+			$html .= '<div class="wposa-nav-group__items">' . $group['items'] . '</div>';
+			$html .= '</div>';
 		}
 
 		$html .= '</nav>';
 
 		echo wp_kses($html, self::ALLOWED_HTML);
+	}
+
+	/**
+	 * Build the markup of a single navigation item.
+	 *
+	 * @param array $tab Section array.
+	 *
+	 * @return string
+	 */
+	private function get_navigation_item($tab): string
+	{
+		if (isset($tab['disabled']) && $tab['disabled'] === true) {
+			if (isset($tab['badge'])) {
+				return sprintf('<span class="wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s <span class="wposa-badge">%3$s</span></span>', $tab['id'], $tab['title'], $tab['badge']);
+			}
+
+			return sprintf('<span class="wposa-nav-tab wposa-nav-tab--disabled" id="%1$s-tab">%2$s</span>', $tab['id'], $tab['title']);
+		}
+
+		return sprintf('<a href="#%1$s" class="wposa-nav-tab" id="%1$s-tab">%2$s</a>', $tab['id'], $tab['title']);
+	}
+
+	/**
+	 * Chevron icon used by the navigation group toggle.
+	 *
+	 * @return string
+	 */
+	private function get_navigation_group_chevron(): string
+	{
+		return '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 	}
 
 	public function blank_mode_do_settings_sections($page)
@@ -1533,6 +1644,78 @@ class WPOSA
 						$('.group').hide();
 						$(clicked_group).fadeIn();
 						evt.preventDefault();
+					});
+
+					// Collapsible navigation groups.
+					var navGroupKey = function ($group) {
+						return 'wposa-navgroup-' + $group.data('group');
+					};
+
+					var setNavGroupCollapsed = function ($group, collapsed, store) {
+						var $items = $group.children('.wposa-nav-group__items');
+
+						$group.toggleClass('wposa-nav-group--collapsed', collapsed);
+						$group
+							.children('.wposa-nav-group__toggle')
+							.attr('aria-expanded', collapsed ? 'false' : 'true');
+
+						$items.stop(true, true).css('display', '');
+
+						if (store && 'undefined' != typeof localStorage) {
+							localStorage.setItem(navGroupKey($group), collapsed ? '1' : '0');
+						}
+					};
+
+					// Restore the saved state of every group, default is expanded.
+					$('.wposa-nav-group').each(function () {
+						var $group = $(this);
+
+						if ('undefined' == typeof localStorage) {
+							return;
+						}
+
+						if ('1' === localStorage.getItem(navGroupKey($group))) {
+							setNavGroupCollapsed($group, true, false);
+						}
+					});
+
+					// Keep the active item visible even when its group was collapsed.
+					if ('' != activetab && $(activetab + '-tab').length) {
+						var $active_group = $(activetab + '-tab').closest('.wposa-nav-group');
+
+						if ($active_group.hasClass('wposa-nav-group--collapsed')) {
+							setNavGroupCollapsed($active_group, false, true);
+						}
+					}
+
+					$(document).on('click', '.wposa-nav-group__toggle', function (evt) {
+						evt.preventDefault();
+
+						var $toggle = $(this),
+							$group = $toggle.closest('.wposa-nav-group'),
+							$items = $group.children('.wposa-nav-group__items'),
+							collapse = !$group.hasClass('wposa-nav-group--collapsed');
+
+						$toggle.attr('aria-expanded', collapse ? 'false' : 'true');
+
+						if ('undefined' != typeof localStorage) {
+							localStorage.setItem(navGroupKey($group), collapse ? '1' : '0');
+						}
+
+						if (collapse) {
+							$items.stop(true, true).slideUp(150, function () {
+								$group.addClass('wposa-nav-group--collapsed');
+								$items.css('display', '');
+							});
+						} else {
+							$group.removeClass('wposa-nav-group--collapsed');
+							$items
+								.hide()
+								.stop(true, true)
+								.slideDown(150, function () {
+									$items.css('display', '');
+								});
+						}
 					});
 
 					$('.wpsa-browse').on('click', function (event) {
@@ -2134,12 +2317,66 @@ class WPOSA
 				width: 75%;
 			}
 
-			.wposa-nav-tab-wrapper .wposa-nav-tab:first-child {
+			.wposa-nav-tab-wrapper > .wposa-nav-tab:first-child {
 				padding-top: 24px;
 			}
 
-			.wposa-nav-tab-wrapper .wposa-nav-tab:last-child {
+			.wposa-nav-tab-wrapper > .wposa-nav-tab:last-child,
+			.wposa-nav-tab-wrapper > .wposa-nav-group:last-child .wposa-nav-group__items > .wposa-nav-tab:last-child {
 				padding-bottom: 24px;
+			}
+
+			/* Grouped vertical sub navigation */
+			.wposa-nav-group {
+				display: block;
+			}
+
+			.wposa-nav-group__items {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+			}
+
+			.wposa-nav-group__toggle {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				width: 100%;
+				margin: 0;
+				padding: 12px 24px 6px;
+				background: transparent;
+				border: 0;
+				box-shadow: none;
+				cursor: pointer;
+				text-align: left;
+				text-transform: uppercase;
+				font-size: 11px;
+				font-weight: 600;
+				letter-spacing: .04em;
+				color: #646970;
+			}
+
+			.wposa-nav-group__toggle:hover,
+			.wposa-nav-group__toggle:focus {
+				color: var(--wp-admin-theme-color, #2271b1);
+			}
+
+			.wposa-nav-group__chevron {
+				display: inline-flex;
+				align-items: center;
+				transition: transform .15s ease-in-out;
+			}
+
+			.wposa-nav-group--collapsed .wposa-nav-group__items {
+				display: none;
+			}
+
+			.wposa-nav-group--collapsed .wposa-nav-group__chevron {
+				transform: rotate(-90deg);
+			}
+
+			.wposa-nav-group__items .wposa-nav-tab {
+				padding-left: 36px;
 			}
 
 			.crawlwp-license-page {

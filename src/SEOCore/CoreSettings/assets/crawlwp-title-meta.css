@@ -1,0 +1,236 @@
+/**
+ * CrawlWP SEO "Title & Meta" settings screen.
+ *
+ * Everything here is scoped to the cwp-tm-* classes injected by
+ * crawlwp-title-meta.js so it cannot leak into the rest of wp-admin.
+ */
+
+/* ---------- field wrapper ---------- */
+
+.cwp-tm-field {
+	position: relative;
+	display: block;
+	max-width: 640px;
+}
+
+.cwp-tm-field input[type="text"],
+.cwp-tm-field input[type="url"],
+.cwp-tm-field textarea {
+	width: 100%;
+	padding-right: 34px;
+	box-sizing: border-box;
+}
+
+.cwp-tm-field textarea {
+	min-height: 72px;
+}
+
+/* ---------- insert variable trigger ---------- */
+
+.cwp-tm-vars {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	margin: 0;
+	padding: 0 4px;
+	min-height: 22px;
+	line-height: 20px;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: #646970;
+	font-size: 16px;
+	letter-spacing: 1px;
+	cursor: pointer;
+	border-radius: 3px;
+}
+
+/* textareas are tall: pin the trigger to the top right corner instead */
+.cwp-tm-field textarea ~ .cwp-tm-vars {
+	top: 4px;
+	transform: none;
+}
+
+.cwp-tm-vars:hover,
+.cwp-tm-vars:focus {
+	background: #f0f0f1;
+	color: #1d2327;
+	box-shadow: none;
+	outline: none;
+}
+
+/* ---------- preview + character count ---------- */
+
+.cwp-tm-readout {
+	margin-top: 6px;
+	max-width: 640px;
+}
+
+.cwp-tm-preview {
+	color: #1d2327;
+	font-size: 13px;
+	line-height: 1.5;
+	word-wrap: break-word;
+}
+
+.cwp-tm-preview__label {
+	font-weight: 400;
+}
+
+.cwp-tm-preview__empty {
+	color: #8c8f94;
+	font-style: italic;
+}
+
+.cwp-tm-count {
+	margin-top: 2px;
+	color: #646970;
+	font-size: 12px;
+	font-style: italic;
+	line-height: 1.5;
+}
+
+/* ---------- quality dot ---------- */
+
+.cwp-tm-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	margin-left: 6px;
+	border-radius: 50%;
+	vertical-align: middle;
+	background: #c3c4c7;
+}
+
+.cwp-tm-dot.is-good {
+	background: #00a32a;
+}
+
+.cwp-tm-dot.is-warn {
+	background: #dba617;
+}
+
+.cwp-tm-dot.is-bad {
+	background: #d63638;
+}
+
+.cwp-tm-dot.is-empty {
+	background: #c3c4c7;
+}
+
+/* ---------- variables dropdown ---------- */
+
+.cwp-tm-panel {
+	position: absolute;
+	top: 100%;
+	right: 0;
+	z-index: 100;
+	width: 340px;
+	max-height: 320px;
+	overflow-y: auto;
+	margin-top: 4px;
+	padding: 8px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+	box-sizing: border-box;
+	text-align: left;
+}
+
+.cwp-tm-panel__search {
+	width: 100%;
+	margin: 0 0 8px;
+	box-sizing: border-box;
+}
+
+.cwp-tm-panel__group {
+	margin-bottom: 8px;
+}
+
+.cwp-tm-panel__group:last-child {
+	margin-bottom: 0;
+}
+
+.cwp-tm-panel__label {
+	margin: 0 0 4px;
+	padding: 0 8px;
+	color: #646970;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: .5px;
+	text-transform: uppercase;
+}
+
+.cwp-tm-panel__item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 100%;
+	margin: 0;
+	padding: 6px 8px;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	border-radius: 3px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.cwp-tm-panel__item:hover,
+.cwp-tm-panel__item:focus,
+.cwp-tm-panel__item.is-active {
+	background: #f0f0f1;
+	box-shadow: none;
+	outline: none;
+}
+
+.cwp-tm-panel__item code {
+	padding: 0;
+	background: transparent;
+	color: #2271b1;
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
+
+.cwp-tm-panel__item span {
+	color: #646970;
+	font-size: 11px;
+	line-height: 1.4;
+}
+
+.cwp-tm-panel__empty {
+	padding: 6px 8px;
+	color: #646970;
+	font-size: 12px;
+	font-style: italic;
+}
+
+/* Section sub-headings injected as full-width rows in the settings tables. */
+.cwp-tm-heading-row th {
+	display: none;
+}
+
+.cwp-tm-heading-row td {
+	padding-left: 0;
+	padding-bottom: 0;
+}
+
+.cwp-tm-subheading {
+	margin: 24px 0 4px;
+	padding: 0;
+	font-size: 18px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #1d2327;
+}
+
+.cwp-tm-heading-row:first-child .cwp-tm-subheading,
+.cwp-tm-heading-row:first-of-type .cwp-tm-subheading {
+	margin-top: 0;
+}
+
+.cwp-tm-heading-row td > .description {
+	margin-top: 0;
+}
