@@ -8,6 +8,7 @@ use Mihdan\IndexNow\SEOCore\MetaBox\FrontendHead;
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaBox;
 use Mihdan\IndexNow\SEOCore\SiteVerification\SiteVerificationFrontendOutput;
 use Mihdan\IndexNow\SEOCore\SiteVerification\SiteVerificationSettings;
+use Mihdan\IndexNow\SEOCore\RssSettings\RssSettings;
 use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
@@ -25,6 +26,7 @@ class SEOCoreInit
 		new AdvancedSettings();
 		new SiteInfoSettings();
 		new SocialSettings();
+		new RssSettings();
 		new UserProfile();
 
 		new SiteVerificationSettings();

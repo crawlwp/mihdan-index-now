@@ -21,9 +21,13 @@ class PostListColumn
 	private const DESC_MIN  = 50;
 	private const DESC_MAX  = 160;
 
+	/** AJAX action name for saving inline SEO fields. */
+	const AJAX_ACTION = 'crawlwp_inline_seo_save';
+
 	public function __construct()
 	{
 		add_action('init', [$this, 'register_hooks'], 20);
+		add_action('wp_ajax_' . self::AJAX_ACTION, [$this, 'ajax_save']);
 	}
 
 	/**
@@ -39,7 +43,9 @@ class PostListColumn
 		/* Sort support. */
 		add_filter('request', [$this, 'sort_query']);
 
-		add_action('admin_head', [$this, 'print_styles']);
+		add_action('admin_head',           [$this, 'print_styles']);
+		add_action('admin_footer',         [$this, 'print_inline_edit_js']);
+		add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
 	}
 
 	/**
@@ -107,7 +113,10 @@ class PostListColumn
 		$score  = $this->calculate_score($post_id);
 		$state  = $this->score_state($score);
 		$label  = $this->state_label($state, $score);
-		$title  = $this->tooltip($post_id);
+		$tip    = $this->tooltip($post_id);
+
+		$seo_title = (string) MetaFields::get($post_id, MetaFields::SEO_TITLE, '');
+		$seo_desc  = (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION, '');
 
 		printf(
 			'<span class="cwp-seo-score cwp-seo-score--%s" title="%s" aria-label="%s">' .
@@ -115,10 +124,46 @@ class PostListColumn
 			'<span class="cwp-seo-score__label">%s</span>' .
 			'</span>',
 			esc_attr($state),
-			esc_attr($title),
+			esc_attr($tip),
 			esc_attr($label),
 			(int) $score,
 			esc_html($label)
+		);
+
+		/* Inline-edit trigger + hidden form. */
+		printf(
+			'<button type="button" class="cwp-seo-inline-edit__trigger button-link" ' .
+			'data-post-id="%d" aria-expanded="false" aria-label="%s">%s</button>',
+			(int) $post_id,
+			esc_attr__('Edit SEO fields', 'mihdan-index-now'),
+			esc_html__('Edit SEO', 'mihdan-index-now')
+		);
+
+		printf(
+			'<div class="cwp-seo-inline-edit" id="cwp-seo-inline-edit-%d" hidden>' .
+			'<label class="cwp-seo-inline-edit__label">%s' .
+			'<input type="text" class="cwp-seo-inline-edit__title" value="%s" ' .
+			'placeholder="%s" maxlength="200" />' .
+			'</label>' .
+			'<label class="cwp-seo-inline-edit__label">%s' .
+			'<textarea class="cwp-seo-inline-edit__desc" rows="3" ' .
+			'placeholder="%s" maxlength="500">%s</textarea>' .
+			'</label>' .
+			'<div class="cwp-seo-inline-edit__actions">' .
+			'<button type="button" class="cwp-seo-inline-edit__save button button-primary button-small">%s</button>' .
+			'<button type="button" class="cwp-seo-inline-edit__cancel button button-small">%s</button>' .
+			'<span class="cwp-seo-inline-edit__spinner spinner"></span>' .
+			'</div>' .
+			'</div>',
+			(int) $post_id,
+			esc_html__('SEO Title', 'mihdan-index-now'),
+			esc_attr($seo_title),
+			esc_attr__('Leave blank to use global template', 'mihdan-index-now'),
+			esc_html__('Meta Description', 'mihdan-index-now'),
+			esc_attr__('Leave blank to use global template', 'mihdan-index-now'),
+			esc_textarea($seo_desc),
+			esc_html__('Save', 'mihdan-index-now'),
+			esc_html__('Cancel', 'mihdan-index-now')
 		);
 	}
 
@@ -303,6 +348,70 @@ class PostListColumn
 	}
 
 	// -------------------------------------------------------------------------
+	// AJAX save handler
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Handle the AJAX request to save inline SEO fields.
+	 */
+	public function ajax_save(): void
+	{
+		check_ajax_referer('crawlwp_inline_seo_save', 'nonce');
+
+		$post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
+
+		if (! $post_id || ! current_user_can('edit_post', $post_id)) {
+			wp_send_json_error(['message' => __('Permission denied.', 'mihdan-index-now')], 403);
+		}
+
+		$seo_title = isset($_POST['seo_title']) ? sanitize_text_field(wp_unslash($_POST['seo_title'])) : '';
+		$seo_desc  = isset($_POST['seo_desc'])  ? sanitize_textarea_field(wp_unslash($_POST['seo_desc'])) : '';
+
+		if ($seo_title !== '') {
+			update_post_meta($post_id, MetaFields::SEO_TITLE, $seo_title);
+		} else {
+			delete_post_meta($post_id, MetaFields::SEO_TITLE);
+		}
+
+		if ($seo_desc !== '') {
+			update_post_meta($post_id, MetaFields::SEO_DESCRIPTION, $seo_desc);
+		} else {
+			delete_post_meta($post_id, MetaFields::SEO_DESCRIPTION);
+		}
+
+		/* Return updated score data so JS can refresh the cell. */
+		$score = $this->calculate_score($post_id);
+		$state = $this->score_state($score);
+		$label = $this->state_label($state, $score);
+		$tip   = $this->tooltip($post_id);
+
+		wp_send_json_success([
+			'score' => (int) $score,
+			'state' => $state,
+			'label' => $label,
+			'tip'   => $tip,
+		]);
+	}
+
+	/**
+	 * Enqueue admin assets needed only on post list screens.
+	 */
+	public function enqueue_assets(): void
+	{
+		$screen = get_current_screen();
+
+		if (! $screen || $screen->base !== 'edit') {
+			return;
+		}
+
+		wp_localize_script('jquery', 'crawlwpInlineEdit', [
+			'ajaxUrl' => admin_url('admin-ajax.php'),
+			'nonce'   => wp_create_nonce(self::AJAX_ACTION),
+			'action'  => self::AJAX_ACTION,
+		]);
+	}
+
+	// -------------------------------------------------------------------------
 	// Sort support
 	// -------------------------------------------------------------------------
 
@@ -328,11 +437,11 @@ class PostListColumn
 	}
 
 	// -------------------------------------------------------------------------
-	// Inline CSS
+	// Inline CSS + JS
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Print minimal inline styles for the SEO score column.
+	 * Print minimal inline styles for the SEO score column and inline edit UI.
 	 * Only emitted on post list screens.
 	 */
 	public function print_styles(): void
@@ -346,7 +455,7 @@ class PostListColumn
 		?>
 		<style id="cwp-seo-score-styles">
 			/* SEO Score column — CrawlWP */
-			.column-crawlwp_seo_score { width: 90px; }
+			.column-crawlwp_seo_score { width: 120px; }
 
 			.cwp-seo-score {
 				display: inline-flex;
@@ -383,7 +492,174 @@ class PostListColumn
 			.cwp-seo-score--ok    .cwp-seo-score__label { color: #a07000; }
 			.cwp-seo-score--poor  .cwp-seo-score__label { color: #d63638; }
 			.cwp-seo-score--noindex .cwp-seo-score__label { color: #8c8f94; }
+
+			/* Inline edit trigger */
+			.cwp-seo-inline-edit__trigger {
+				display: block;
+				margin-top: 4px;
+				font-size: 11px;
+				color: #2271b1;
+				text-decoration: none;
+				cursor: pointer;
+			}
+			.cwp-seo-inline-edit__trigger:hover { color: #135e96; text-decoration: underline; }
+
+			/* Inline edit panel */
+			.cwp-seo-inline-edit {
+				position: absolute;
+				left: 0;
+				z-index: 200;
+				background: #fff;
+				border: 1px solid #c3c4c7;
+				border-radius: 4px;
+				box-shadow: 0 3px 10px rgba(0,0,0,.12);
+				padding: 12px 14px;
+				width: 380px;
+				max-width: 90vw;
+			}
+
+			.cwp-seo-inline-edit__label {
+				display: block;
+				margin-bottom: 10px;
+				font-size: 12px;
+				font-weight: 600;
+				color: #1d2327;
+			}
+
+			.cwp-seo-inline-edit__title,
+			.cwp-seo-inline-edit__desc {
+				display: block;
+				width: 100%;
+				margin-top: 4px;
+				box-sizing: border-box;
+				font-size: 13px;
+			}
+
+			.cwp-seo-inline-edit__actions {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-top: 8px;
+			}
+
+			.cwp-seo-inline-edit__spinner {
+				float: none;
+				visibility: hidden;
+			}
+			.cwp-seo-inline-edit__spinner.is-active { visibility: visible; }
 		</style>
+		<?php
+	}
+
+	/**
+	 * Print the inline JS for the inline-edit panel.
+	 * Only emitted on post list screens.
+	 */
+	public function print_inline_edit_js(): void
+	{
+		$screen = get_current_screen();
+
+		if (! $screen || $screen->base !== 'edit') {
+			return;
+		}
+
+		?>
+		<script id="cwp-seo-inline-edit-js">
+		(function($) {
+			'use strict';
+
+			var cfg = window.crawlwpInlineEdit || {};
+			if (!cfg.ajaxUrl) { return; }
+
+			/* Close any open panel. */
+			function closeAll() {
+				$('.cwp-seo-inline-edit').attr('hidden', '');
+				$('.cwp-seo-inline-edit__trigger').attr('aria-expanded', 'false');
+			}
+
+			/* Open / toggle the panel for a trigger button. */
+			$(document).on('click', '.cwp-seo-inline-edit__trigger', function(e) {
+				e.stopPropagation();
+				var $btn   = $(this);
+				var postId = $btn.data('post-id');
+				var $panel = $('#cwp-seo-inline-edit-' + postId);
+
+				if (!$panel.attr('hidden') && $panel.attr('hidden') !== undefined) {
+					closeAll();
+					return;
+				}
+
+				var alreadyOpen = !$panel.is('[hidden]') && $panel.is(':visible');
+
+				closeAll();
+
+				if (alreadyOpen) { return; }
+
+				/* Position relative to the cell. */
+				var $cell = $btn.closest('td');
+				$cell.css('position', 'relative');
+
+				$panel.removeAttr('hidden');
+				$btn.attr('aria-expanded', 'true');
+				$panel.find('.cwp-seo-inline-edit__title').trigger('focus');
+			});
+
+			/* Close on outside click or Escape. */
+			$(document).on('click', function() { closeAll(); });
+			$(document).on('keydown', function(e) {
+				if (e.key === 'Escape') { closeAll(); }
+			});
+			$('.cwp-seo-inline-edit').on('click', function(e) { e.stopPropagation(); });
+
+			/* Cancel button. */
+			$(document).on('click', '.cwp-seo-inline-edit__cancel', function() {
+				closeAll();
+			});
+
+			/* Save button — AJAX. */
+			$(document).on('click', '.cwp-seo-inline-edit__save', function() {
+				var $btn    = $(this);
+				var $panel  = $btn.closest('.cwp-seo-inline-edit');
+				var postId  = $panel.attr('id').replace('cwp-seo-inline-edit-', '');
+				var $spin   = $panel.find('.cwp-seo-inline-edit__spinner');
+				var title   = $panel.find('.cwp-seo-inline-edit__title').val();
+				var desc    = $panel.find('.cwp-seo-inline-edit__desc').val();
+
+				$btn.prop('disabled', true);
+				$spin.addClass('is-active');
+
+				$.post(cfg.ajaxUrl, {
+					action:    cfg.action,
+					nonce:     cfg.nonce,
+					post_id:   postId,
+					seo_title: title,
+					seo_desc:  desc
+				}, function(res) {
+					$btn.prop('disabled', false);
+					$spin.removeClass('is-active');
+
+					if (!res.success) {
+						alert(res.data && res.data.message ? res.data.message : 'Save failed.');
+						return;
+					}
+
+					/* Update the score cell without a page reload. */
+					var d      = res.data;
+					var $score = $panel.closest('td').find('.cwp-seo-score');
+
+					$score
+						.attr('class', 'cwp-seo-score cwp-seo-score--' + d.state)
+						.attr('title', d.tip)
+						.attr('aria-label', d.label);
+
+					$score.find('.cwp-seo-score__bar').css('width', d.score + '%');
+					$score.find('.cwp-seo-score__label').text(d.label);
+
+					closeAll();
+				});
+			});
+		}(jQuery));
+		</script>
 		<?php
 	}
 }
