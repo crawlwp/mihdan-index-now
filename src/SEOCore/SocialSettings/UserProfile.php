@@ -7,13 +7,15 @@ namespace Mihdan\IndexNow\SEOCore\SocialSettings;
  * and outputs per-author Open Graph / Twitter Card meta overrides.
  *
  * Stored user meta keys:
- *   _crawlwp_facebook_author  — personal Facebook page URL
- *   _crawlwp_twitter_creator  — X (Twitter) @handle
+ *   _crawlwp_facebook_author      — personal Facebook page URL
+ *   _crawlwp_twitter_creator      — X (Twitter) @handle
+ *   _crawlwp_additional_profiles  — additional profile URLs (one per line, used as sameAs)
  */
 class UserProfile
 {
-	const META_FACEBOOK = '_crawlwp_facebook_author';
-	const META_TWITTER  = '_crawlwp_twitter_creator';
+	const META_FACEBOOK            = '_crawlwp_facebook_author';
+	const META_TWITTER             = '_crawlwp_twitter_creator';
+	const META_ADDITIONAL_PROFILES = '_crawlwp_additional_profiles';
 
 	public function __construct()
 	{
@@ -37,8 +39,9 @@ class UserProfile
 	 */
 	public function render_fields(\WP_User $user): void
 	{
-		$facebook = (string) get_user_meta($user->ID, self::META_FACEBOOK, true);
-		$twitter  = (string) get_user_meta($user->ID, self::META_TWITTER, true);
+		$facebook   = (string) get_user_meta($user->ID, self::META_FACEBOOK, true);
+		$twitter    = (string) get_user_meta($user->ID, self::META_TWITTER, true);
+		$additional = (string) get_user_meta($user->ID, self::META_ADDITIONAL_PROFILES, true);
 		?>
 		<h2><?php esc_html_e('CrawlWP SEO — Social Profiles', 'mihdan-index-now'); ?></h2>
 		<p class="description">
@@ -81,6 +84,24 @@ class UserProfile
 					</p>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row">
+					<label for="cwpwp_additional_profiles"><?php esc_html_e('Additional Profile URLs', 'mihdan-index-now'); ?></label>
+				</th>
+				<td>
+					<textarea
+						id="cwpwp_additional_profiles"
+						name="<?php echo esc_attr(self::META_ADDITIONAL_PROFILES); ?>"
+						class="large-text"
+						rows="5"
+						placeholder="https://www.linkedin.com/in/yourprofile
+https://github.com/yourprofile"
+					><?php echo esc_textarea($additional); ?></textarea>
+					<p class="description">
+						<?php esc_html_e('Additional profile URLs to include in the sameAs Schema property. Enter one URL per line.', 'mihdan-index-now'); ?>
+					</p>
+				</td>
+			</tr>
 		</table>
 		<?php
 	}
@@ -100,16 +121,22 @@ class UserProfile
 			return;
 		}
 
-		$facebook = isset($_POST[self::META_FACEBOOK]) ? esc_url_raw(wp_unslash((string) $_POST[self::META_FACEBOOK])) : '';
-		$twitter  = isset($_POST[self::META_TWITTER])  ? sanitize_text_field(wp_unslash((string) $_POST[self::META_TWITTER])) : '';
+		$facebook   = isset($_POST[self::META_FACEBOOK]) ? esc_url_raw(wp_unslash((string) $_POST[self::META_FACEBOOK])) : '';
+		$twitter    = isset($_POST[self::META_TWITTER])  ? sanitize_text_field(wp_unslash((string) $_POST[self::META_TWITTER])) : '';
+		$additional = isset($_POST[self::META_ADDITIONAL_PROFILES]) ? sanitize_textarea_field(wp_unslash((string) $_POST[self::META_ADDITIONAL_PROFILES])) : '';
 
 		/* Ensure @handle always starts with @. */
 		if ($twitter !== '' && strncmp($twitter, '@', 1) !== 0) {
 			$twitter = '@' . ltrim($twitter, '@');
 		}
 
+		/* Sanitize each additional profile URL individually. */
+		$additional_lines = array_filter(array_map('esc_url_raw', array_map('trim', explode("\n", $additional))));
+		$additional       = implode("\n", $additional_lines);
+
 		update_user_meta($user_id, self::META_FACEBOOK, $facebook);
 		update_user_meta($user_id, self::META_TWITTER, $twitter);
+		update_user_meta($user_id, self::META_ADDITIONAL_PROFILES, $additional);
 	}
 
 	/**
@@ -123,5 +150,23 @@ class UserProfile
 	public static function get(int $user_id, string $meta_key): string
 	{
 		return (string) get_user_meta($user_id, $meta_key, true);
+	}
+
+	/**
+	 * Return the additional profile URLs for a given user as an array.
+	 *
+	 * @param int $user_id WordPress user ID.
+	 *
+	 * @return string[]
+	 */
+	public static function get_additional_profiles(int $user_id): array
+	{
+		$raw = (string) get_user_meta($user_id, self::META_ADDITIONAL_PROFILES, true);
+
+		if ($raw === '') {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('trim', explode("\n", $raw))));
 	}
 }

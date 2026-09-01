@@ -108,16 +108,8 @@ class SocialSettings
 			$wposa,
 			'heading_facebook',
 			__('Facebook Integration Settings', 'mihdan-index-now'),
-			__('Facebook post sharing works mostly through Open Graph. However, you can also link your Business and Personal Facebook pages, among various other options. When these options are filled in, Facebook might link the Facebook profile to be followed and liked when your post or page is shared.', 'mihdan-index-now')
+			__('Facebook post sharing works mostly through Open Graph. Configure the Facebook page URL in Site Information (under Advanced settings).', 'mihdan-index-now')
 		);
-
-		$wposa->add_field(self::SECTION, [
-			'id'          => 'facebook_publisher',
-			'type'        => 'text',
-			'name'        => __('Facebook Publisher Page', 'mihdan-index-now'),
-			'placeholder' => 'https://www.facebook.com/YourBusinessProfile',
-			'desc'        => esc_html__('Only Facebook Business Pages are accepted.', 'mihdan-index-now'),
-		]);
 
 		$wposa->add_field(self::SECTION, [
 			'id'          => 'facebook_author',
@@ -159,14 +151,6 @@ class SocialSettings
 			__('Card and Content Attribution', 'mihdan-index-now'),
 			__('X (formerly Twitter) claims users will be able to follow and view the profiles of attributed accounts directly from the card when these fields are filled in.', 'mihdan-index-now')
 		);
-
-		$wposa->add_field(self::SECTION, [
-			'id'          => 'twitter_site',
-			'type'        => 'text',
-			'name'        => __('Website X Profile', 'mihdan-index-now'),
-			'placeholder' => '@your-site-username',
-			'desc'        => esc_html__('The X (Twitter) @username for the website.', 'mihdan-index-now'),
-		]);
 
 		$wposa->add_field(self::SECTION, [
 			'id'          => 'twitter_creator',

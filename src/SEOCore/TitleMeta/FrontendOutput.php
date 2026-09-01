@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
 
@@ -29,6 +30,7 @@ class FrontendOutput
 		add_filter('pre_get_document_title', [$this, 'filter_document_title'], 15);
 		add_filter('wp_robots', [$this, 'filter_robots'], 20);
 		add_action('wp_head', [$this, 'output'], 1);
+		add_action('wp_head', [$this, 'output_site_graph'], 2);
 		add_action('template_redirect', [$this, 'unhook_core_canonical']);
 	}
 
@@ -660,8 +662,23 @@ class FrontendOutput
 
 		echo '<meta name="twitter:card" content="' . esc_attr($card_type) . '" />' . "\n";
 
-		/* Global site @username from Social Networks settings. */
-		$twitter_site = (string) SocialSettings::get('twitter_site', '');
+		/* Global site @username: read from Site Information profile_x field. */
+		$twitter_site_url = (string) SiteInfoSettings::get('profile_x', '');
+		/* Extract @handle from a full URL (https://x.com/handle) or use as-is if already a handle. */
+		$twitter_site = '';
+
+		if ($twitter_site_url !== '') {
+			if (str_starts_with($twitter_site_url, '@')) {
+				$twitter_site = $twitter_site_url;
+			} else {
+				$parsed = parse_url($twitter_site_url, PHP_URL_PATH);
+				$handle = $parsed ? ltrim(trim($parsed, '/'), '@') : '';
+
+				if ($handle !== '') {
+					$twitter_site = '@' . $handle;
+				}
+			}
+		}
 
 		if ($twitter_site !== '') {
 			echo '<meta name="twitter:site" content="' . esc_attr($twitter_site) . '" />' . "\n";
@@ -781,10 +798,19 @@ class FrontendOutput
 		}
 
 		if ($author_name !== '') {
-			$schema['author'] = [
+			$author_schema = [
 				'@type' => 'Person',
 				'name'  => $author_name,
 			];
+
+			/* Add sameAs from the author's additional profile URLs. */
+			$same_as = UserProfile::get_additional_profiles((int) $post->post_author);
+
+			if (! empty($same_as)) {
+				$author_schema['sameAs'] = $same_as;
+			}
+
+			$schema['author'] = $author_schema;
 		}
 
 		if ($data['og_image'] !== '') {
@@ -804,6 +830,142 @@ class FrontendOutput
 
 		echo '<script type="application/ld+json">' . "\n";
 		echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		echo "\n" . '</script>' . "\n";
+	}
+
+	/**
+	 * Output the site-wide WebSite + Organization/Person JSON-LD @graph.
+	 *
+	 * Emitted on every public front-end page. The graph matches the structure
+	 * produced by Yoast SEO:
+	 *
+	 *  - WebSite node  (@id #website)  — site name, url, description, language,
+	 *                                    optional SearchAction potentialAction.
+	 *  - Organization  (@id #organization)  — or Person (@id #person) based on
+	 *    the "Site type" setting — with name, url, logo ImageObject, and sameAs.
+	 */
+	public function output_site_graph(): void
+	{
+		if (is_admin() || is_feed() || is_trackback() || is_robots()) {
+			return;
+		}
+
+		$home_url = home_url('/');
+		$lang     = get_bloginfo('language');
+
+		/* --- identity node --- */
+		$site_type = (string) SiteInfoSettings::get('site_type', 'organization');
+		$is_org    = $site_type !== 'person';
+
+		$entity_type = $is_org ? 'Organization' : 'Person';
+		$entity_id   = $home_url . '#' . ($is_org ? 'organization' : 'person');
+
+		$name = (string) SiteInfoSettings::get('site_name', '');
+		if ($name === '') {
+			$name = get_bloginfo('name');
+		}
+
+		$description = (string) SiteInfoSettings::get('site_description', '');
+		if ($description === '') {
+			$description = get_bloginfo('description');
+		}
+
+		/* --- logo --- */
+		$logo_id  = (int) SiteInfoSettings::get('logo', 0);
+		$logo_url = $logo_id > 0 ? (string) wp_get_attachment_image_url($logo_id, 'full') : '';
+
+		/* --- sameAs --- */
+		$same_as = SiteInfoSettings::get_same_as();
+
+		/* --- build entity node --- */
+		$entity_node = [
+			'@type' => $entity_type,
+			'@id'   => $entity_id,
+			'name'  => $name,
+			'url'   => $home_url,
+		];
+
+		if ($logo_url !== '') {
+			$logo_meta = wp_get_attachment_metadata($logo_id);
+			$logo_node = [
+				'@type'      => 'ImageObject',
+				'inLanguage' => $lang,
+				'@id'        => $home_url . '#/schema/logo/image/',
+				'url'        => $logo_url,
+				'contentUrl' => $logo_url,
+			];
+
+			if (is_array($logo_meta) && isset($logo_meta['width'], $logo_meta['height'])) {
+				$logo_node['width']  = (int) $logo_meta['width'];
+				$logo_node['height'] = (int) $logo_meta['height'];
+			}
+
+			if ($name !== '') {
+				$logo_node['caption'] = $name;
+			}
+
+			$entity_node['logo']  = $logo_node;
+			$entity_node['image'] = ['@id' => $home_url . '#/schema/logo/image/'];
+		}
+
+		if (! empty($same_as)) {
+			$entity_node['sameAs'] = $same_as;
+		}
+
+		/* --- website node --- */
+		$website_node = [
+			'@type'       => 'WebSite',
+			'@id'         => $home_url . '#website',
+			'url'         => $home_url,
+			'name'        => $name,
+			'publisher'   => ['@id' => $entity_id],
+			'inLanguage'  => $lang,
+		];
+
+		if ($description !== '') {
+			$website_node['description'] = $description;
+		}
+
+		/* SearchAction (Sitelinks Search Box). */
+		if (SiteInfoSettings::get('search_action', 'on') !== 'off') {
+			$website_node['potentialAction'] = [
+				[
+					'@type'       => 'SearchAction',
+ 				'target'      => [
+						'@type'       => 'EntryPoint',
+						'urlTemplate' => str_replace(
+							urlencode( '{search_term_string}' ),
+							'{search_term_string}',
+							get_search_link( '{search_term_string}' )
+						),
+					],
+					'query-input' => [
+						'@type'         => 'PropertyValueSpecification',
+						'valueRequired' => true,
+						'valueName'     => 'search_term_string',
+					],
+				],
+			];
+		}
+
+		/* --- assemble and print --- */
+		$graph = [
+			'@context' => 'https://schema.org',
+			'@graph'   => [
+				$website_node,
+				$entity_node,
+			],
+		];
+
+		/**
+		 * Filter the site graph before it is printed.
+		 *
+		 * @param array $graph The @graph array (WebSite + Organization/Person nodes).
+		 */
+		$graph = apply_filters('crawlwp_site_graph', $graph);
+
+		echo '<script type="application/ld+json">' . "\n";
+		echo wp_json_encode($graph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 		echo "\n" . '</script>' . "\n";
 	}
 
