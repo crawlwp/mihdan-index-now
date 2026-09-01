@@ -70,14 +70,11 @@ class RssSettings
 			__('Automatically add content to your RSS. This enables you to add links back to your blog and your blog posts, helping search engines identify you as the original source of the content.', 'mihdan-index-now')
 		);
 
-		$vars_desc = $this->variables_hint();
-
 		$wposa->add_field(self::SECTION, [
 			'id'         => 'rss_before_content',
 			'type'       => 'textarea',
 			'name'       => __('Content to put before each post in the feed', 'mihdan-index-now'),
 			'rows'       => 5,
-			'desc'       => $vars_desc,
 			'attributes' => ['data-cwp-rss' => 'before'],
 		]);
 
@@ -87,32 +84,9 @@ class RssSettings
 			'name'       => __('Content to put after each post in the feed', 'mihdan-index-now'),
 			'rows'       => 5,
 			'default'    => self::DEFAULT_AFTER,
-			'desc'       => $vars_desc,
 			'attributes' => ['data-cwp-rss' => 'after'],
 		]);
 	}
-
-	/**
-	 * Build a compact inline hint listing the available variables.
-	 */
-	private function variables_hint(): string
-	{
-		$vars = [
-			'{{ authorlink }}'   => __('Author archive link', 'mihdan-index-now'),
-			'{{ postlink }}'     => __('Post link', 'mihdan-index-now'),
-			'{{ bloglink }}'     => __('Site home link', 'mihdan-index-now'),
-			'{{ blogdesclink }}' => __('Site home link with description', 'mihdan-index-now'),
-		];
-
-		$parts = [];
-
-		foreach ($vars as $token => $desc) {
-			$parts[] = '<code>' . esc_html($token) . '</code> &ndash; ' . esc_html($desc);
-		}
-
-		return implode(' &nbsp;&middot;&nbsp; ', $parts);
-	}
-
 
 	// -------------------------------------------------------------------------
 	// Variable inserter UI

@@ -28,6 +28,13 @@ class PostListColumn
 	{
 		add_action('init', [$this, 'register_hooks'], 20);
 		add_action('wp_ajax_' . self::AJAX_ACTION, [$this, 'ajax_save']);
+
+		/*
+		 * Persist the score to post meta whenever a post is saved via the normal
+		 * metabox form.  Priority 20 ensures MetaFields::save() has already run
+		 * and the fresh field values are in the database before we calculate.
+		 */
+		add_action('save_post', [$this, 'persist_score'], 20);
 	}
 
 	/**
@@ -110,7 +117,8 @@ class PostListColumn
 			return;
 		}
 
-		$score  = $this->calculate_score($post_id);
+	$cached = get_post_meta($post_id, MetaFields::SEO_SCORE, true);
+		$score  = ($cached !== '' && $cached !== false) ? (float) $cached : $this->calculate_score($post_id);
 		$state  = $this->score_state($score);
 		$label  = $this->state_label($state, $score);
 		$tip    = $this->tooltip($post_id);
@@ -379,8 +387,9 @@ class PostListColumn
 			delete_post_meta($post_id, MetaFields::SEO_DESCRIPTION);
 		}
 
-		/* Return updated score data so JS can refresh the cell. */
+		/* Calculate, persist, and return the updated score. */
 		$score = $this->calculate_score($post_id);
+		update_post_meta($post_id, MetaFields::SEO_SCORE, (string) $score);
 		$state = $this->score_state($score);
 		$label = $this->state_label($state, $score);
 		$tip   = $this->tooltip($post_id);

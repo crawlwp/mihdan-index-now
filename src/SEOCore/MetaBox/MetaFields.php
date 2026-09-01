@@ -38,6 +38,9 @@ class MetaFields
 	public const SCHEMA_BREADCRUMB   = '_crawlwp_schema_breadcrumb';
 	public const SCHEMA_SECTION      = '_crawlwp_schema_section';
 
+	/** Cached SEO score (0–100 float stored as string). Updated on each metabox/inline save. */
+	public const SEO_SCORE = '_crawlwp_seo_score';
+
 	public const NONCE_ACTION = 'crawlwp_seo_metabox';
 	public const NONCE_NAME   = '_crawlwp_seo_nonce';
 
