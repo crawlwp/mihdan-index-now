@@ -44,25 +44,14 @@ class Assets
 
 		wp_localize_script('crawlwp-title-meta', 'crawlwpTitleMeta', [
 			'separator' => Variables::separator(),
-			/* Pixel budgets and fonts, mirroring the post edit screen meter. */
-			'limits'    => [
-				'title'       => ['px' => 580, 'font' => 'bold 20px Arial'],
-				'description' => ['px' => 920, 'font' => '14px Arial'],
-			],
 			'variables' => $this->variables(),
 			'samples'   => $this->samples(),
 			'i18n'      => [
-				'previewLabel'     => __('Preview:', 'mihdan-index-now'),
-				'insertVariable'   => __('Insert variable', 'mihdan-index-now'),
-				'searchVariables'  => __('Search variables…', 'mihdan-index-now'),
-				'noVariables'      => __('No matching variables.', 'mihdan-index-now'),
-				'emptyPreview'     => __('Nothing will be output.', 'mihdan-index-now'),
-				'meterEmpty'       => __('Nothing to measure', 'mihdan-index-now'),
-				'meterTooShort'    => __('Too short', 'mihdan-index-now'),
-				'meterGoodLength'  => __('Good length', 'mihdan-index-now'),
-				'meterWillBeCut'   => __('Will be cut off', 'mihdan-index-now'),
-				/* translators: %1$s: rendered width, %2$s: maximum width, %3$s: character count. */
-				'meterDetail'      => __('%1$s / %2$s px · %3$s chars', 'mihdan-index-now'),
+				'previewLabel'    => __('Preview:', 'mihdan-index-now'),
+				'insertVariable'  => __('Insert variable', 'mihdan-index-now'),
+				'searchVariables' => __('Search variables…', 'mihdan-index-now'),
+				'noVariables'     => __('No matching variables.', 'mihdan-index-now'),
+				'emptyPreview'    => __('Nothing will be output.', 'mihdan-index-now'),
 			],
 		]);
 	}

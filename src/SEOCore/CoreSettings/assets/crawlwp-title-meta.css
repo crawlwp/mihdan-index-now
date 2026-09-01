@@ -60,7 +60,7 @@
 	outline: none;
 }
 
-/* ---------- preview + length meter ---------- */
+/* ---------- preview ---------- */
 
 .cwp-tm-readout {
 	margin-top: 6px;
@@ -81,51 +81,6 @@
 .cwp-tm-preview__empty {
 	color: #8c8f94;
 	font-style: italic;
-}
-
-/* ---------- length meter (mirrors the post edit screen) ---------- */
-
-.cwp-tm-meter {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-top: 7px;
-}
-
-.cwp-tm-meter__bar {
-	flex: 1;
-	height: 4px;
-	overflow: hidden;
-	border-radius: 2px;
-	background: #f0f0f1;
-}
-
-.cwp-tm-meter__fill {
-	width: 0;
-	height: 100%;
-	border-radius: 2px;
-	background: #dba617;
-	transition: width .18s ease, background-color .18s ease;
-}
-
-.cwp-tm-meter__fill.is-good {
-	background: #00a32a;
-}
-
-.cwp-tm-meter__fill.is-over {
-	background: #d63638;
-}
-
-.cwp-tm-meter__text {
-	color: #646970;
-	font-size: 11px;
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-
-.cwp-tm-meter__text b {
-	color: #1d2327;
-	font-weight: 600;
 }
 
 /* ---------- variables dropdown ---------- */

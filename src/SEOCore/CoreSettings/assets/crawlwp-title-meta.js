@@ -9,7 +9,6 @@
 	 * the WordPress Settings API. For each field we add:
 	 *
 	 *   - a live resolved preview of the template,
-	 *   - a pixel width progress bar, identical to the post edit screen meter,
 	 *   - an "insert variable" dropdown anchored inside the field.
 	 *
 	 * The script never throws: a missing or malformed window.crawlwpTitleMeta
@@ -30,31 +29,11 @@
 			return null;
 		}
 
-		var limits = raw.limits && typeof raw.limits === 'object' ? raw.limits : {};
-
 		return {
 			separator: typeof raw.separator === 'string' && raw.separator !== '' ? raw.separator : '-',
-			limits: {
-				title: normalizeLimit(limits.title, 580, 'bold 20px Arial'),
-				description: normalizeLimit(limits.description, 920, '14px Arial')
-			},
 			variables: Array.isArray(raw.variables) ? raw.variables : [],
 			samples: raw.samples && typeof raw.samples === 'object' ? raw.samples : {},
 			i18n: raw.i18n && typeof raw.i18n === 'object' ? raw.i18n : {}
-		};
-	}
-
-	/**
-	 * A limit is a pixel budget plus the font search engines render the text in.
-	 */
-	function normalizeLimit(limit, px, font) {
-		if (!limit || typeof limit !== 'object') {
-			return { px: px, font: font };
-		}
-
-		return {
-			px: typeof limit.px === 'number' && limit.px > 0 ? limit.px : px,
-			font: typeof limit.font === 'string' && limit.font !== '' ? limit.font : font
 		};
 	}
 
@@ -120,82 +99,6 @@
 		return value.trim();
 	}
 
-	/* ---------- pixel measurement ---------- */
-
-	var measureContext = null;
-
-	function limitsFor(config, kind) {
-		if (/description$/.test(kind)) {
-			return config.limits.description;
-		}
-
-		return config.limits.title;
-	}
-
-	/**
-	 * Rendered width of a string, in CSS pixels, for the given font shorthand.
-	 *
-	 * Search engines truncate titles and descriptions by width rather than by
-	 * character count, so the meter tracks pixels the same way the post edit
-	 * screen does. Returns 0 when canvas is unavailable.
-	 */
-	function widthOf(value, font) {
-		if (measureContext === null) {
-			measureContext = false;
-
-			try {
-				var canvas = document.createElement('canvas');
-
-				if (canvas && canvas.getContext) {
-					measureContext = canvas.getContext('2d') || false;
-				}
-			} catch (error) {
-				measureContext = false;
-			}
-		}
-
-		if (!measureContext) {
-			return 0;
-		}
-
-		measureContext.font = font;
-
-		return Math.round(measureContext.measureText(value).width);
-	}
-
-	/** 'empty' | 'short' | 'good' | 'over', mirroring the metabox thresholds. */
-	function stateFor(px, percent, limits) {
-		if (px === 0) {
-			return 'empty';
-		}
-
-		if (px > limits.px) {
-			return 'over';
-		}
-
-		if (percent >= 70) {
-			return 'good';
-		}
-
-		return 'short';
-	}
-
-	function stateLabel(config, state) {
-		if (state === 'empty') {
-			return text(config, 'meterEmpty', 'Nothing to measure');
-		}
-
-		if (state === 'over') {
-			return text(config, 'meterWillBeCut', 'Will be cut off');
-		}
-
-		if (state === 'good') {
-			return text(config, 'meterGoodLength', 'Good length');
-		}
-
-		return text(config, 'meterTooShort', 'Too short');
-	}
-
 	/* ---------- DOM helpers ---------- */
 
 	function el(tag, className) {
@@ -219,9 +122,7 @@
 		control[INIT_FLAG] = true;
 		control.setAttribute('data-cwp-tm-ready', '1');
 
-		var kind   = control.getAttribute(DATA_ATTR) || 'title';
 		var entity = control.getAttribute('data-cwp-entity') || '';
-		var limits = limitsFor(config, kind);
 
 		/* 1. wrap the control so the trigger button can be positioned inside it */
 		var field  = el('div', 'cwp-tm-field');
@@ -243,23 +144,10 @@
 		field.appendChild(trigger);
 
 		/* 2. readout goes right after the field, before any p.description hint */
-		var readout   = el('div', 'cwp-tm-readout');
-		var preview   = el('div', 'cwp-tm-preview');
-		var meter     = el('div', 'cwp-tm-meter');
-		var meterBar  = el('div', 'cwp-tm-meter__bar');
-		var meterFill = el('div', 'cwp-tm-meter__fill');
-		var meterText = el('div', 'cwp-tm-meter__text');
-
-		meterBar.appendChild(meterFill);
-		meter.appendChild(meterBar);
-		meter.appendChild(meterText);
-
-		meterBar.setAttribute('role', 'progressbar');
-		meterBar.setAttribute('aria-valuemin', '0');
-		meterBar.setAttribute('aria-valuemax', String(limits.px));
+		var readout = el('div', 'cwp-tm-readout');
+		var preview = el('div', 'cwp-tm-preview');
 
 		readout.appendChild(preview);
-		readout.appendChild(meter);
 
 		if (field.nextSibling) {
 			parent.insertBefore(readout, field.nextSibling);
@@ -284,29 +172,6 @@
 			} else {
 				preview.appendChild(document.createTextNode(resolved));
 			}
-
-			/* the bar fills with the rendered width, capped at the pixel budget */
-			var px      = widthOf(resolved, limits.font);
-			var percent = Math.min(100, Math.round(px / limits.px * 100));
-			var state   = stateFor(px, percent, limits);
-
-			meterFill.style.width = percent + '%';
-			meterFill.className = 'cwp-tm-meter__fill' + (state === 'good' ? ' is-good' : (state === 'over' ? ' is-over' : ''));
-
-			meterBar.setAttribute('aria-valuenow', String(px));
-
-			meterText.innerHTML = '';
-
-			var stateNode = el('b');
-			stateNode.appendChild(document.createTextNode(stateLabel(config, state)));
-			meterText.appendChild(stateNode);
-
-			var detail = text(config, 'meterDetail', '%1$s / %2$s px \u00b7 %3$s chars')
-				.replace('%1$s', String(px))
-				.replace('%2$s', String(limits.px))
-				.replace('%3$s', String(length));
-
-			meterText.appendChild(document.createTextNode(' \u00b7 ' + detail));
 		}
 
 		control.addEventListener('input', recompute);

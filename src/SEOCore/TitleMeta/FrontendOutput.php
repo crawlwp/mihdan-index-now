@@ -184,23 +184,14 @@ class FrontendOutput
 			$context
 		);
 
-		$og_title = Variables::replace(
-			$overrides['og_title'] ?? (string) Options::get($entity_key, 'og_title', ''),
+		/* Unified social override: one title/description shared by OG and X/Twitter. */
+		$social_title = Variables::replace(
+			$overrides['og_title'] ?? (string) Options::get($entity_key, 'social_title', ''),
 			$context
 		);
 
-		$og_description = Variables::replace(
-			$overrides['og_description'] ?? (string) Options::get($entity_key, 'og_description', ''),
-			$context
-		);
-
-		$x_title = Variables::replace(
-			$overrides['x_title'] ?? (string) Options::get($entity_key, 'x_title', ''),
-			$context
-		);
-
-		$x_description = Variables::replace(
-			$overrides['x_description'] ?? (string) Options::get($entity_key, 'x_description', ''),
+		$social_description = Variables::replace(
+			$overrides['og_description'] ?? (string) Options::get($entity_key, 'social_description', ''),
 			$context
 		);
 
@@ -213,11 +204,11 @@ class FrontendOutput
 			'description'    => $description,
 			'robots'         => $this->robots($entity_key, $prefix, $post),
 			'canonical'      => $this->canonical($post, $overrides),
-			'og_title'       => $og_title !== '' ? $og_title : $title,
-			'og_description' => $og_description !== '' ? $og_description : $description,
+			'og_title'       => $social_title !== '' ? $social_title : $title,
+			'og_description' => $social_description !== '' ? $social_description : $description,
 			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post),
-			'x_title'        => $x_title !== '' ? $x_title : ($og_title !== '' ? $og_title : $title),
-			'x_description'  => $x_description !== '' ? $x_description : ($og_description !== '' ? $og_description : $description),
+			'x_title'        => $social_title !== '' ? $social_title : $title,
+			'x_description'  => $social_description !== '' ? $social_description : $description,
 			'x_image'        => $this->image($entity_key, $prefix, 'x_image', $post),
 			'og_type'        => $post !== null && ! is_front_page() ? 'article' : 'website',
 		];

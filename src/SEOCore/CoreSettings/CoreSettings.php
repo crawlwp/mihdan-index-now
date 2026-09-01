@@ -110,7 +110,6 @@ class CoreSettings
 			'type'       => 'text',
 			'name'       => __('Meta title', 'mihdan-index-now'),
 			'default'    => Entities::default_value($entity['key'], $prefix . 'title'),
-			'desc'       => esc_html__('Google cuts titles by width, not character count — the bar tracks rendered pixels.', 'mihdan-index-now'),
 			'attributes' => $this->template_attributes($entity['key'], $prefix . 'title'),
 		]);
 
@@ -119,7 +118,6 @@ class CoreSettings
 			'type'       => 'textarea',
 			'name'       => __('Meta description', 'mihdan-index-now'),
 			'default'    => Entities::default_value($entity['key'], $prefix . 'description'),
-			'desc'       => esc_html__('Descriptions are also cut by width — aim to fill the bar without overflowing it.', 'mihdan-index-now'),
 			'rows'       => 4,
 			'attributes' => $this->template_attributes($entity['key'], $prefix . 'description'),
 		]);
@@ -150,7 +148,7 @@ class CoreSettings
 	}
 
 	/**
-	 * Optional per-network title/description overrides.
+	 * Unified social title/description overrides (used for both OG and X/Twitter).
 	 */
 	private function add_social_override_fields(WPOSA $wposa, string $section, array $entity): void
 	{
@@ -159,32 +157,23 @@ class CoreSettings
 			$section,
 			'heading_social',
 			__('Social overrides', 'mihdan-index-now'),
-			__('Leave these empty to reuse the meta title and meta description above.', 'mihdan-index-now')
+			__('Leave these empty to reuse the meta title and meta description above. Applied to both Facebook (OG) and X/Twitter cards.', 'mihdan-index-now')
 		);
 
-		$networks = [
-			'og' => __('Facebook', 'mihdan-index-now'),
-			'x'  => __('X', 'mihdan-index-now'),
-		];
+		$wposa->add_field($section, [
+			'id'         => 'social_title',
+			'type'       => 'text',
+			'name'       => __('Social title', 'mihdan-index-now'),
+			'attributes' => $this->template_attributes($entity['key'], 'social_title'),
+		]);
 
-		foreach ($networks as $network => $label) {
-			$wposa->add_field($section, [
-				'id'         => $network . '_title',
-				'type'       => 'text',
-				/* translators: %s: social network name. */
-				'name'       => sprintf(__('%s title', 'mihdan-index-now'), $label),
-				'attributes' => $this->template_attributes($entity['key'], $network . '_title'),
-			]);
-
-			$wposa->add_field($section, [
-				'id'         => $network . '_description',
-				'type'       => 'textarea',
-				/* translators: %s: social network name. */
-				'name'       => sprintf(__('%s description', 'mihdan-index-now'), $label),
-				'rows'       => 3,
-				'attributes' => $this->template_attributes($entity['key'], $network . '_description'),
-			]);
-		}
+		$wposa->add_field($section, [
+			'id'         => 'social_description',
+			'type'       => 'textarea',
+			'name'       => __('Social description', 'mihdan-index-now'),
+			'rows'       => 3,
+			'attributes' => $this->template_attributes($entity['key'], 'social_description'),
+		]);
 	}
 
 	/**
