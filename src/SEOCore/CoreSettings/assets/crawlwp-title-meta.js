@@ -32,6 +32,7 @@
 		return {
 			separator: typeof raw.separator === 'string' && raw.separator !== '' ? raw.separator : '-',
 			variables: Array.isArray(raw.variables) ? raw.variables : [],
+			entityVariables: raw.entityVariables && typeof raw.entityVariables === 'object' ? raw.entityVariables : {},
 			samples: raw.samples && typeof raw.samples === 'object' ? raw.samples : {},
 			i18n: raw.i18n && typeof raw.i18n === 'object' ? raw.i18n : {}
 		};
@@ -180,7 +181,7 @@
 		trigger.addEventListener('click', function (event) {
 			event.preventDefault();
 			event.stopPropagation();
-			togglePanel(config, field, control, trigger, recompute);
+			togglePanel(config, field, control, trigger, entity, recompute);
 		});
 
 		recompute();
@@ -188,7 +189,7 @@
 
 	/* ---------- variables dropdown ---------- */
 
-	function togglePanel(config, field, control, trigger, recompute) {
+	function togglePanel(config, field, control, trigger, entity, recompute) {
 		if (openPanel && openPanel.trigger === trigger) {
 			closePanel();
 
@@ -200,7 +201,7 @@
 		var panel = trigger[INIT_FLAG + 'Panel'];
 
 		if (!panel) {
-			panel = buildPanel(config, control, trigger, recompute);
+			panel = buildPanel(config, control, trigger, entity, recompute);
 			trigger[INIT_FLAG + 'Panel'] = panel;
 			field.appendChild(panel.root);
 		}
@@ -233,7 +234,7 @@
 		}
 	}
 
-	function buildPanel(config, control, trigger, recompute) {
+	function buildPanel(config, control, trigger, entity, recompute) {
 		var root = el('div', 'cwp-tm-panel');
 		root.style.display = 'none';
 
@@ -249,7 +250,12 @@
 		var groups = [];
 		var items  = [];
 
-		config.variables.forEach(function (group) {
+		/* Use entity-specific variable groups when available; fall back to the global list. */
+		var variableList = (entity && config.entityVariables[entity] && Array.isArray(config.entityVariables[entity]))
+			? config.entityVariables[entity]
+			: config.variables;
+
+		variableList.forEach(function (group) {
 			if (!group || typeof group !== 'object') {
 				return;
 			}

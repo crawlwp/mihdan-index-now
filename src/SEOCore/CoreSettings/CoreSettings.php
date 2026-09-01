@@ -103,14 +103,14 @@ class CoreSettings
 	 *
 	 * @param string $prefix Field id prefix, e.g. `archive_`.
 	 */
-	private function add_template_fields(WPOSA $wposa, string $section, array $entity, string $prefix): void
+	private function add_template_fields(WPOSA $wposa, string $section, array $entity, string $prefix, string $entity_override = null): void
 	{
 		$wposa->add_field($section, [
 			'id'         => $prefix . 'title',
 			'type'       => 'text',
 			'name'       => __('Meta title', 'mihdan-index-now'),
 			'default'    => Entities::default_value($entity['key'], $prefix . 'title'),
-			'attributes' => $this->template_attributes($entity['key'], $prefix . 'title'),
+			'attributes' => $this->template_attributes($entity['key'], $prefix . 'title', $entity_override),
 		]);
 
 		$wposa->add_field($section, [
@@ -119,7 +119,7 @@ class CoreSettings
 			'name'       => __('Meta description', 'mihdan-index-now'),
 			'default'    => Entities::default_value($entity['key'], $prefix . 'description'),
 			'rows'       => 4,
-			'attributes' => $this->template_attributes($entity['key'], $prefix . 'description'),
+			'attributes' => $this->template_attributes($entity['key'], $prefix . 'description', $entity_override),
 		]);
 	}
 
@@ -177,7 +177,8 @@ class CoreSettings
 	}
 
 	/**
-	 * Advanced robots directives.
+	 * Robots directives visible to the user (nofollow + noarchive only).
+	 * All other directives use their built-in defaults in FrontendOutput.
 	 */
 	private function add_robots_fields(WPOSA $wposa, string $section, array $entity): void
 	{
@@ -185,80 +186,23 @@ class CoreSettings
 			$wposa,
 			$section,
 			'heading_robots',
-			__('Advanced robots directives', 'mihdan-index-now')
+			__('Robots directives', 'mihdan-index-now')
 		);
 
-		$toggles = [
-			'nofollow'     => [
-				'name' => __('No follow', 'mihdan-index-now'),
-				'desc' => __('Tell search engines not to follow links on these pages.', 'mihdan-index-now'),
-			],
-			'noarchive'    => [
-				'name' => __('No archive', 'mihdan-index-now'),
-				'desc' => __('Prevent search engines from showing a cached copy of these pages.', 'mihdan-index-now'),
-			],
-			'nosnippet'    => [
-				'name' => __('No snippet', 'mihdan-index-now'),
-				'desc' => __('Prevent search engines from showing a text snippet for these pages.', 'mihdan-index-now'),
-			],
-			'noimageindex' => [
-				'name' => __('No image index', 'mihdan-index-now'),
-				'desc' => __('Prevent search engines from indexing images on these pages.', 'mihdan-index-now'),
-			],
-			'notranslate'  => [
-				'name' => __('No translate', 'mihdan-index-now'),
-				'desc' => __('Prevent search engines from offering a translation of these pages.', 'mihdan-index-now'),
-			],
-		];
-
-		foreach ($toggles as $id => $toggle) {
-			$wposa->add_field($section, [
-				'id'      => $id,
-				'type'    => 'switch',
-				'name'    => $toggle['name'],
-				'default' => 'off',
-				'desc'    => $this->description($toggle['desc']),
-			]);
-		}
-
 		$wposa->add_field($section, [
-			'id'      => 'max_snippet',
-			'type'    => 'select',
-			'name'    => __('Max snippet length', 'mihdan-index-now'),
-			'default' => '',
-			'options' => [
-				''    => __('Default (no limit)', 'mihdan-index-now'),
-				'0'   => __('No snippet', 'mihdan-index-now'),
-				'50'  => __('50 characters', 'mihdan-index-now'),
-				'100' => __('100 characters', 'mihdan-index-now'),
-				'160' => __('160 characters', 'mihdan-index-now'),
-			],
+			'id'      => 'nofollow',
+			'type'    => 'switch',
+			'name'    => __('No follow', 'mihdan-index-now'),
+			'default' => 'off',
+			'desc'    => $this->description(__('Tell search engines not to follow links on these pages.', 'mihdan-index-now')),
 		]);
 
 		$wposa->add_field($section, [
-			'id'      => 'max_image_preview',
-			'type'    => 'select',
-			'name'    => __('Max image preview', 'mihdan-index-now'),
-			'default' => 'large',
-			'options' => [
-				''         => __('Default', 'mihdan-index-now'),
-				'none'     => __('None', 'mihdan-index-now'),
-				'standard' => __('Standard', 'mihdan-index-now'),
-				'large'    => __('Large', 'mihdan-index-now'),
-			],
-		]);
-
-		$wposa->add_field($section, [
-			'id'      => 'max_video_preview',
-			'type'    => 'select',
-			'name'    => __('Max video preview', 'mihdan-index-now'),
-			'default' => '',
-			'options' => [
-				''   => __('Default (no limit)', 'mihdan-index-now'),
-				'0'  => __('No video preview', 'mihdan-index-now'),
-				'15' => __('15 seconds', 'mihdan-index-now'),
-				'30' => __('30 seconds', 'mihdan-index-now'),
-			],
+			'id'      => 'noarchive',
+			'type'    => 'switch',
+			'name'    => __('No archive', 'mihdan-index-now'),
+			'default' => 'off',
+			'desc'    => $this->description(__('Prevent search engines from showing a cached copy of these pages.', 'mihdan-index-now')),
 		]);
 	}
 
@@ -316,7 +260,7 @@ class CoreSettings
 			'desc'    => $this->description(__('This setting will apply the noindex robots tag to the archive listing page only.', 'mihdan-index-now')),
 		]);
 
-		$this->add_template_fields($wposa, $section, $entity, 'archive_');
+		$this->add_template_fields($wposa, $section, $entity, 'archive_', $entity['key'] . '_archive');
 		$this->add_social_image_fields($wposa, $section, $entity, 'archive_');
 	}
 
@@ -342,12 +286,16 @@ class CoreSettings
 
 	/**
 	 * Data attributes consumed by the live preview script.
+	 *
+	 * @param string      $entity_key  Entity key (e.g. `pt_post`).
+	 * @param string      $field       Field id used as the `data-cwp-tm` value.
+	 * @param string|null $entity_override  Override the entity key sent to JS (used for archive sub-sections).
 	 */
-	private function template_attributes(string $entity_key, string $field): array
+	private function template_attributes(string $entity_key, string $field, string $entity_override = null): array
 	{
 		return [
 			'data-cwp-tm'     => $field,
-			'data-cwp-entity' => $entity_key,
+			'data-cwp-entity' => $entity_override !== null ? $entity_override : $entity_key,
 		];
 	}
 

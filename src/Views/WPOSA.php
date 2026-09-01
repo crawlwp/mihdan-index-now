@@ -320,9 +320,6 @@ class WPOSA
 
 		// Menu.
 		add_action('admin_menu', array($this, 'admin_menu'));
-
-		// Ajax.
-		add_action('wp_ajax_' . Utils::get_plugin_prefix() . '_reset_form', [$this, 'reset_form']);
 	}
 
 	/**
@@ -1522,16 +1519,6 @@ class WPOSA
 									<input type="hidden" name="crawlwp_options_save" value="true">
 									<?php submit_button($form['label_submit'], $form['submit_type'], 'submit_' . $form['id'], $form['wrap'], $form['attributes']); ?>
 								</div>
-								<div class="wposa-footer__column wposa-footer__column--right">
-									<?php if ($form['reset_button']) : ?>
-										<input type="button"
-											   class="button-danger button-link"
-											   data-section="<?php echo esc_attr($form['id']); ?>"
-											   id="<?php echo esc_attr($form['id']); ?>_reset_form"
-											   value="<?php echo esc_attr(__('Reset Form', 'mihdan-index-now')); ?>"
-										/>
-									<?php endif; ?>
-								</div>
 							</div>
 						</form>
 					</div>
@@ -1771,30 +1758,6 @@ class WPOSA
 							var CLIENT_ID = document.getElementById('crawlwp_yandex_webmaster[client_id]').value;
 
 							window.location.href = CODE_ENDPOINT + CLIENT_ID;
-						}
-					);
-
-					$('input:button[id$="_reset_form"]').on(
-						'click',
-						function () {
-							var $button = $(this),
-								$nonce = $(this).parents('form').find('#_wpnonce');
-
-							if (confirm('<?php echo esc_attr(__('Are you sure?', 'mihdan-index-now')); ?>')) {
-								wp.ajax.post(
-									'<?php echo esc_html(Utils::get_plugin_prefix()); ?>_reset_form',
-									{
-										section: $button.data('section'),
-										nonce: $nonce.val(),
-									}
-								).always(function (response) {
-									if (response === 'ok') {
-										document.location.reload();
-									} else {
-										console.log(response);
-									}
-								});
-							}
 						}
 					);
 				});
@@ -2520,45 +2483,5 @@ class WPOSA
 			}
 		</style>
 		<?php
-	}
-
-	/**
-	 * Reset settings for given section.
-	 *
-	 * @return void
-	 * @link https://wpmag.ru/2015/nonces-wordpress-security/
-	 */
-	public function reset_form(): void
-	{
-		if ( ! current_user_can('manage_options')) {
-			wp_send_json_error(
-				__('You have no rights to do this', 'mihdan-index-now')
-			);
-		}
-
-		$nonce   = sanitize_text_field(wp_unslash($_POST['nonce'] ?? ''));
-		$section = sanitize_text_field(wp_unslash($_POST['section'] ?? ''));
-
-		if ( ! $section) {
-			wp_send_json_error(
-				__('Invalid section name', 'mihdan-index-now')
-			);
-		}
-
-		if ( ! $nonce) {
-			wp_send_json_error(
-				__('Invalid nonce', 'mihdan-index-now')
-			);
-		}
-
-		if ( ! wp_verify_nonce($nonce, $section . '-options')) {
-			wp_send_json_error(
-				__('Invalid nonce', 'mihdan-index-now')
-			);
-		}
-
-		delete_option($section);
-
-		wp_send_json_success('ok');
 	}
 }

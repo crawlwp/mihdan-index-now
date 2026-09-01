@@ -43,10 +43,11 @@ class Assets
 		);
 
 		wp_localize_script('crawlwp-title-meta', 'crawlwpTitleMeta', [
-			'separator' => Variables::separator(),
-			'variables' => $this->variables(),
-			'samples'   => $this->samples(),
-			'i18n'      => [
+			'separator'       => Variables::separator(),
+			'variables'       => $this->variables(),
+			'entityVariables' => $this->entity_variables(),
+			'samples'         => $this->samples(),
+			'i18n'            => [
 				'previewLabel'    => __('Preview:', 'mihdan-index-now'),
 				'insertVariable'  => __('Insert variable', 'mihdan-index-now'),
 				'searchVariables' => __('Search variables…', 'mihdan-index-now'),
@@ -80,6 +81,89 @@ class Assets
 		}
 
 		return $groups;
+	}
+
+	/**
+	 * Per-entity variable groups, keyed by entity key.
+	 *
+	 * Only the groups relevant to each entity type are included, so the
+	 * insert-variable dropdown shows contextually useful tokens only.
+	 *
+	 * @return array<string, array>
+	 */
+	private function entity_variables(): array
+	{
+		$defs    = Variables::definitions();
+		$general = isset($defs['general']) ? [$defs['general']] : [];
+		$post    = isset($defs['post'])    ? [$defs['post']]    : [];
+		$term    = isset($defs['term'])    ? [$defs['term']]    : [];
+		$author  = isset($defs['author'])  ? [$defs['author']]  : [];
+		$archive = isset($defs['archive']) ? [$defs['archive']] : [];
+
+		$map = [];
+
+		/* Homepage: site-level tokens only */
+		$map['home'] = $this->format_variables(array_merge($general));
+
+		foreach (Entities::post_types() as $post_type) {
+			$key = Entities::post_type_key($post_type->name);
+
+			/* Singular post type: post tokens + general */
+			$map[$key] = $this->format_variables(array_merge($post, $general));
+
+			/* Archive sub-section uses a synthetic _archive entity key */
+			$map[$key . '_archive'] = $this->format_variables(array_merge($archive, $general));
+		}
+
+		foreach (Entities::taxonomies() as $taxonomy) {
+			$key = Entities::taxonomy_key($taxonomy->name);
+
+			/* Taxonomy archive: term tokens + general */
+			$map[$key] = $this->format_variables(array_merge($term, $general));
+		}
+
+		/* Author archive: author tokens + general */
+		$map['author'] = $this->format_variables(array_merge($author, $general));
+
+		/* Date archive: date/archive tokens + general */
+		$map['date'] = $this->format_variables(array_merge($archive, $general));
+
+		/* Search results: search tokens + general */
+		$map['search'] = $this->format_variables(array_merge($archive, $general));
+
+		/* 404: no dynamic tokens, just general */
+		$map['not_found'] = $this->format_variables($general);
+
+		return $map;
+	}
+
+	/**
+	 * Convert a list of raw definition groups into the JS-ready format.
+	 *
+	 * @param array $groups Raw definition groups from Variables::definitions().
+	 * @return array
+	 */
+	private function format_variables(array $groups): array
+	{
+		$out = [];
+
+		foreach ($groups as $group) {
+			$items = [];
+
+			foreach ($group['variables'] as $token => $description) {
+				$items[] = [
+					'token' => $token,
+					'desc'  => $description,
+				];
+			}
+
+			$out[] = [
+				'label' => $group['label'],
+				'items' => $items,
+			];
+		}
+
+		return $out;
 	}
 
 	/**
