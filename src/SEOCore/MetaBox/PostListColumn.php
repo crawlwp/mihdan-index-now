@@ -213,8 +213,24 @@ class PostListColumn
 			return;
 		}
 
-		$score = $this->calculate_score($post_id);
-		update_post_meta($post_id, MetaFields::SEO_SCORE, (string) $score);
+		/*
+		 * Only persist the JS-calculated score (richer analysis: keyword density,
+		 * readability, heading structure, etc.).  When the JS score is absent the
+		 * cached meta is deleted so the post list always shows a fresh PHP-computed
+		 * approximation rather than a stale value from a previous save.
+		 */
+		$submitted = isset($_POST[MetaFields::SEO_SCORE]) ? trim($_POST[MetaFields::SEO_SCORE]) : '';
+
+		if ($submitted !== '' && is_numeric($submitted)) {
+			$score = (float) $submitted;
+			// Clamp to [0, 100] so a tampered value can't break the display.
+			$score = max(0.0, min(100.0, $score));
+			update_post_meta($post_id, MetaFields::SEO_SCORE, (string) $score);
+		} else {
+			/* No JS score submitted — remove any stale cached value so the list
+			   always falls back to the live PHP approximation. */
+			delete_post_meta($post_id, MetaFields::SEO_SCORE);
+		}
 	}
 
 	// -------------------------------------------------------------------------

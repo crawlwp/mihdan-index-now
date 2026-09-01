@@ -167,7 +167,7 @@ class MetaFields
 			'x_creator'           => self::get($post_id, self::X_CREATOR),
 			'x_sync'              => self::get($post_id, self::X_SYNC, '1'),
 			'schema_page_type'    => self::get($post_id, self::SCHEMA_PAGE_TYPE, 'WebPage'),
-			'schema_article_type' => self::get($post_id, self::SCHEMA_ARTICLE_TYPE, 'Article'),
+ 		'schema_article_type' => self::get($post_id, self::SCHEMA_ARTICLE_TYPE, 'Article'),
 			'schema_type'         => self::get($post_id, self::SCHEMA_TYPE, ''), // legacy
 			'schema_headline'     => self::get($post_id, self::SCHEMA_HEADLINE),
 			'schema_breadcrumb'   => self::get($post_id, self::SCHEMA_BREADCRUMB),

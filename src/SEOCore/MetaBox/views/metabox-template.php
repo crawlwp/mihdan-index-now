@@ -689,6 +689,12 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
   </div>
   <?php endif; ?>
 
+  <!-- Hidden field: JS fills this with the analysis score on every keystroke/save.
+       Always starts empty — the value is only meaningful when JS has run the
+       full in-editor analysis.  persist_score() ignores empty submissions so
+       the post list falls back to a live PHP approximation instead. -->
+  <input type="hidden" id="cwpSeoScoreCache" name="<?php echo esc_attr(MetaFields::SEO_SCORE); ?>" value="">
+
   <!-- FOOTER -->
   <div class="cwp-mb-foot">
     <span><?php esc_html_e('Changes save with the post.', 'mihdan-index-now'); ?></span>

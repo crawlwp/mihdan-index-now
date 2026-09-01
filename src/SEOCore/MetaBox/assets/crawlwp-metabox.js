@@ -1360,6 +1360,15 @@
       var $num = $wrap.find('.cwp-score-num');
       if ($ring.length) $ring.attr('stroke-dasharray', pct + ' 100');
       if ($num.length) $num.text(total > 0 ? pct : '\u2014');
+
+      /* Persist the JS-calculated score so it is submitted with the post form.
+       * Only write when analysis actually ran (total > 0).  When total === 0 the
+       * analysis hasn't executed yet and the hidden input already holds the
+       * previously stored score (pre-populated by PHP), so we leave it alone. */
+      var $cache = $('#cwpSeoScoreCache');
+      if ($cache.length && total > 0) {
+        $cache.val(pct);
+      }
     },
 
     /* ---------- insights panel (pro only) ---------- */
