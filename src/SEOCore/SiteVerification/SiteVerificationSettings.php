@@ -11,19 +11,19 @@ class SiteVerificationSettings
 
 	public function __construct()
 	{
-		add_action('crawlwp_setup_fields', [$this, 'core_settings_fields'], 10, 2);
+		add_action('crawlwp_setup_fields', [$this, 'advanced_settings_fields'], 10, 2);
 
 		add_filter('wposa_submitted_data', [$this, 'sanitize_site_verification_data'], 10, 2);
 	}
 
-	public function core_settings_fields(WPOSA $wposa, $settingsInstance)
+	public function advanced_settings_fields(WPOSA $wposa, $settingsInstance)
 	{
-		if ($wposa->get_active_header_menu() === Utils::get_plugin_prefix() . '_core_settings') {
+		if ($wposa->get_active_header_menu() === Utils::get_plugin_prefix() . '_advanced_settings') {
 
-			do_action('crawlwp_before_core_settings_fields', $wposa);
+			do_action('crawlwp_before_advanced_settings_fields', $wposa);
 
 			$wposa->add_section([
-				'header_menu_id' => 'core_settings',
+				'header_menu_id' => 'advanced_settings',
 				'id'             => 'site_verification',
 				'title'          => __('Site Verification', 'mihdan-index-now'),
 				'desc'           => esc_html__('To verify your website with tools such as Google Search Console, Bing Webmaster Tools, and Yandex Webmaster Tools, you need to add a verification meta tag to your site. These options will help you seamlessly integrate the required codes.', 'mihdan-index-now'),
@@ -70,7 +70,7 @@ class SiteVerificationSettings
 				);
 			}
 
-			do_action('crawlwp_after_core_settings_fields', $wposa);
+			do_action('crawlwp_after_advanced_settings_fields', $wposa);
 		}
 	}
 
