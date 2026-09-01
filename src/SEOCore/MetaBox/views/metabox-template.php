@@ -347,17 +347,38 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
       <div class="cwp-grid-2">
         <div class="cwp-field">
           <div class="cwp-label-row">
-            <label class="cwp-label" for="cwpSchema"><?php esc_html_e('Content type', 'mihdan-index-now'); ?></label>
+            <label class="cwp-label" for="cwpPageType"><?php esc_html_e('Page type', 'mihdan-index-now'); ?></label>
           </div>
-          <select class="cwp-select" id="cwpSchema" name="<?php echo esc_attr(MetaFields::SCHEMA_TYPE); ?>">
-            <?php
-            $schema_types = ['Article', 'BlogPosting', 'NewsArticle', 'HowTo', 'FAQPage', 'Product', 'Recipe', 'None — output nothing'];
-            foreach ($schema_types as $st):
-              $val = ($st === 'None — output nothing') ? 'none' : $st;
-            ?>
-              <option value="<?php echo esc_attr($val); ?>" <?php selected($data['schema_type'], $val); ?>><?php echo esc_html($st); ?></option>
-            <?php endforeach; ?>
+          <select class="cwp-select" id="cwpPageType" name="<?php echo esc_attr(MetaFields::SCHEMA_PAGE_TYPE); ?>">
+            <option value="WebPage" <?php selected($data['schema_page_type'], 'WebPage'); ?>><?php esc_html_e('Web Page', 'mihdan-index-now'); ?></option>
+            <option value="ItemPage" <?php selected($data['schema_page_type'], 'ItemPage'); ?>><?php esc_html_e('Item Page', 'mihdan-index-now'); ?></option>
+            <option value="AboutPage" <?php selected($data['schema_page_type'], 'AboutPage'); ?>><?php esc_html_e('About Page', 'mihdan-index-now'); ?></option>
+            <option value="FAQPage" <?php selected($data['schema_page_type'], 'FAQPage'); ?>><?php esc_html_e('FAQ Page', 'mihdan-index-now'); ?></option>
+            <option value="QAPage" <?php selected($data['schema_page_type'], 'QAPage'); ?>><?php esc_html_e('Q&amp;A Page', 'mihdan-index-now'); ?></option>
+            <option value="ProfilePage" <?php selected($data['schema_page_type'], 'ProfilePage'); ?>><?php esc_html_e('Profile Page', 'mihdan-index-now'); ?></option>
+            <option value="ContactPage" <?php selected($data['schema_page_type'], 'ContactPage'); ?>><?php esc_html_e('Contact Page', 'mihdan-index-now'); ?></option>
+            <option value="MedicalWebPage" <?php selected($data['schema_page_type'], 'MedicalWebPage'); ?>><?php esc_html_e('Medical Web Page', 'mihdan-index-now'); ?></option>
+            <option value="none" <?php selected($data['schema_page_type'], 'none'); ?>><?php esc_html_e('None — no structured data', 'mihdan-index-now'); ?></option>
           </select>
+          <p class="cwp-hint"><?php esc_html_e('The general type for this page.', 'mihdan-index-now'); ?></p>
+        </div>
+        <div class="cwp-field">
+          <div class="cwp-label-row">
+            <label class="cwp-label" for="cwpArticleType"><?php esc_html_e('Article type', 'mihdan-index-now'); ?></label>
+          </div>
+          <select class="cwp-select" id="cwpArticleType" name="<?php echo esc_attr(MetaFields::SCHEMA_ARTICLE_TYPE); ?>">
+            <option value="Article" <?php selected($data['schema_article_type'], 'Article'); ?>><?php esc_html_e('Article', 'mihdan-index-now'); ?></option>
+            <option value="BlogPosting" <?php selected($data['schema_article_type'], 'BlogPosting'); ?>><?php esc_html_e('Blog Posting', 'mihdan-index-now'); ?></option>
+            <option value="SocialMediaPosting" <?php selected($data['schema_article_type'], 'SocialMediaPosting'); ?>><?php esc_html_e('Social Media Posting', 'mihdan-index-now'); ?></option>
+            <option value="NewsArticle" <?php selected($data['schema_article_type'], 'NewsArticle'); ?>><?php esc_html_e('News Article', 'mihdan-index-now'); ?></option>
+            <option value="AdvertiserContentArticle" <?php selected($data['schema_article_type'], 'AdvertiserContentArticle'); ?>><?php esc_html_e('Advertiser Content Article', 'mihdan-index-now'); ?></option>
+            <option value="SatiricalArticle" <?php selected($data['schema_article_type'], 'SatiricalArticle'); ?>><?php esc_html_e('Satirical Article', 'mihdan-index-now'); ?></option>
+            <option value="ScholarlyArticle" <?php selected($data['schema_article_type'], 'ScholarlyArticle'); ?>><?php esc_html_e('Scholarly Article', 'mihdan-index-now'); ?></option>
+            <option value="TechArticle" <?php selected($data['schema_article_type'], 'TechArticle'); ?>><?php esc_html_e('Tech Article', 'mihdan-index-now'); ?></option>
+            <option value="Report" <?php selected($data['schema_article_type'], 'Report'); ?>><?php esc_html_e('Report', 'mihdan-index-now'); ?></option>
+            <option value="none" <?php selected($data['schema_article_type'], 'none'); ?>><?php esc_html_e('None — no article type', 'mihdan-index-now'); ?></option>
+          </select>
+          <p class="cwp-hint"><?php esc_html_e('Used when the page type is an article. Ignored otherwise.', 'mihdan-index-now'); ?></p>
         </div>
         <div class="cwp-field">
           <div class="cwp-label-row"><label class="cwp-label" for="cwpBreadcrumb"><?php esc_html_e('Breadcrumb label', 'mihdan-index-now'); ?></label></div>

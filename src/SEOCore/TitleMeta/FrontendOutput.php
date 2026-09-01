@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
 
 /**
  * Emits the document title and meta tags for every front end request.
@@ -119,8 +120,14 @@ class FrontendOutput
 			echo '<link rel="canonical" href="' . esc_url($data['canonical']) . '" />' . "\n";
 		}
 
-		$this->output_open_graph($data);
-		$this->output_twitter_card($data);
+		if (SocialSettings::get('og_tags', 'on') !== 'off') {
+			$this->output_open_graph($data);
+		}
+
+		if (SocialSettings::get('twitter_tags', 'on') !== 'off') {
+			$this->output_twitter_card($data);
+		}
+
 		$this->output_schema($data);
 
 		echo '<!-- /CrawlWP SEO -->' . "\n";
@@ -195,6 +202,11 @@ class FrontendOutput
 			$context
 		);
 
+		/* When "Remove site title from social titles" is on and no custom social title is set,
+		 * strip the separator + site name from the generated title for social use. */
+		$og_title_base = $social_title !== '' ? $social_title : $this->maybe_strip_site_name($title);
+		$x_title_base  = $og_title_base;
+
 		$this->resolved = [
 			'entity'         => $entity_key,
 			'prefix'         => $prefix,
@@ -204,10 +216,10 @@ class FrontendOutput
 			'description'    => $description,
 			'robots'         => $this->robots($entity_key, $prefix, $post),
 			'canonical'      => $this->canonical($post, $overrides),
-			'og_title'       => $social_title !== '' ? $social_title : $title,
+			'og_title'       => $og_title_base,
 			'og_description' => $social_description !== '' ? $social_description : $description,
 			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post),
-			'x_title'        => $social_title !== '' ? $social_title : $title,
+			'x_title'        => $x_title_base,
 			'x_description'  => $social_description !== '' ? $social_description : $description,
 			'x_image'        => $this->image($entity_key, $prefix, 'x_image', $post),
 			'og_type'        => $post !== null && ! is_front_page() ? 'article' : 'website',
@@ -537,6 +549,32 @@ class FrontendOutput
 		return '';
 	}
 
+	/**
+	 * When "Remove site title from generated social titles" is enabled and the
+	 * provided title ends with " {sep} {site name}", strip that suffix.
+	 * If the setting is off, return the title unchanged.
+	 *
+	 * @param string $title The fully resolved page title.
+	 */
+	private function maybe_strip_site_name(string $title): string
+	{
+		if (SocialSettings::get('social_title_rem_additions', 'off') !== 'on') {
+			return $title;
+		}
+
+		$site_name = get_bloginfo('name');
+
+		if ($site_name === '') {
+			return $title;
+		}
+
+		/* Strip any trailing " {anything} {site name}" suffix (sep + site name). */
+		$suffix = preg_quote($site_name, '/');
+		$cleaned = preg_replace('/\s*.+?\s*' . $suffix . '\s*$/', '', $title);
+
+		return ($cleaned !== null && $cleaned !== '') ? trim($cleaned) : $title;
+	}
+
 	private function output_open_graph(array $data): void
 	{
 		echo '<meta property="og:type" content="' . esc_attr($data['og_type']) . '" />' . "\n";
@@ -555,24 +593,64 @@ class FrontendOutput
 
 		echo '<meta property="og:site_name" content="' . esc_attr(get_bloginfo('name')) . '" />' . "\n";
 
-		if ($data['og_image'] !== '') {
-			echo '<meta property="og:image" content="' . esc_url($data['og_image']) . '" />' . "\n";
+		/* Use entity image first; fall back to global social image fallback set in Social Networks settings. */
+		$og_image = $data['og_image'];
+
+		if ($og_image === '') {
+			$fallback_id = (int) SocialSettings::get('social_image_fallback', 0);
+
+			if ($fallback_id > 0) {
+				$og_image = (string) (wp_get_attachment_image_url($fallback_id, 'full') ?: '');
+			}
+		}
+
+		if ($og_image !== '') {
+			echo '<meta property="og:image" content="' . esc_url($og_image) . '" />' . "\n";
+		}
+
+		/* article:published_time / article:modified_time for posts. */
+		if ($data['og_type'] === 'article' && $data['post'] instanceof \WP_Post) {
+			if (SocialSettings::get('post_publish_time', 'on') !== 'off') {
+				$pub = get_the_date('c', $data['post']);
+
+				if ($pub) {
+					echo '<meta property="article:published_time" content="' . esc_attr($pub) . '" />' . "\n";
+				}
+			}
+
+			if (SocialSettings::get('post_modify_time', 'on') !== 'off') {
+				$mod = get_the_modified_date('c', $data['post']);
+
+				if ($mod) {
+					echo '<meta property="article:modified_time" content="' . esc_attr($mod) . '" />' . "\n";
+				}
+			}
 		}
 	}
 
 	private function output_twitter_card(array $data): void
 	{
-		$card_type = 'summary_large_image';
+		/* Global default card type from Social Networks settings; per-post override takes precedence. */
+		$card_type = SocialSettings::get('twitter_card', 'summary_large_image') === 'summary' ? 'summary' : 'summary_large_image';
 
 		if ($data['post'] instanceof \WP_Post) {
-			$stored = MetaFields::get($data['post']->ID, MetaFields::X_CARD_TYPE, 'summary_large_image');
+			$stored = MetaFields::get($data['post']->ID, MetaFields::X_CARD_TYPE, '');
 
 			if ($stored === 'summary') {
 				$card_type = 'summary';
+			} elseif ($stored === 'summary_large_image') {
+				$card_type = 'summary_large_image';
 			}
 		}
 
 		echo '<meta name="twitter:card" content="' . esc_attr($card_type) . '" />' . "\n";
+
+		/* Global site @username from Social Networks settings. */
+		$twitter_site = (string) SocialSettings::get('twitter_site', '');
+
+		if ($twitter_site !== '') {
+			echo '<meta name="twitter:site" content="' . esc_attr($twitter_site) . '" />' . "\n";
+		}
 
 		if ($data['x_title'] !== '') {
 			echo '<meta name="twitter:title" content="' . esc_attr($data['x_title']) . '" />' . "\n";
@@ -582,14 +660,28 @@ class FrontendOutput
 			echo '<meta name="twitter:description" content="' . esc_attr($data['x_description']) . '" />' . "\n";
 		}
 
-		$image = $data['x_image'] !== '' ? $data['x_image'] : $data['og_image'];
+		/* Use entity image; fall back to OG image and then global fallback. */
+		$x_image = $data['x_image'] !== '' ? $data['x_image'] : $data['og_image'];
 
-		if ($image !== '') {
-			echo '<meta name="twitter:image" content="' . esc_url($image) . '" />' . "\n";
+		if ($x_image === '') {
+			$fallback_id = (int) SocialSettings::get('social_image_fallback', 0);
+
+			if ($fallback_id > 0) {
+				$x_image = (string) (wp_get_attachment_image_url($fallback_id, 'full') ?: '');
+			}
+		}
+
+		if ($x_image !== '') {
+			echo '<meta name="twitter:image" content="' . esc_url($x_image) . '" />' . "\n";
 		}
 
 		if ($data['post'] instanceof \WP_Post) {
 			$creator = MetaFields::get($data['post']->ID, MetaFields::X_CREATOR);
+
+			/* Fall back to global twitter:creator from Social Networks settings. */
+			if (empty($creator)) {
+				$creator = (string) SocialSettings::get('twitter_creator', '');
+			}
 
 			if (! empty($creator)) {
 				echo '<meta name="twitter:creator" content="' . esc_attr($creator) . '" />' . "\n";
@@ -599,6 +691,12 @@ class FrontendOutput
 
 	/**
 	 * JSON-LD for singular requests.
+	 *
+	 * Resolves schema type from the two-select model (page_type + article_type).
+	 * When page_type is a WebPage subtype and article_type is set (not 'none'),
+	 * the effective @type is the article type — matching Yoast/Rank Math behaviour.
+	 * Legacy single-select values stored in SCHEMA_TYPE are used as the article type
+	 * when the new fields are absent, so existing data is not lost.
 	 */
 	private function output_schema(array $data): void
 	{
@@ -608,15 +706,39 @@ class FrontendOutput
 			return;
 		}
 
-		$schema_type = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_TYPE, '');
+		/* --- resolve page type --- */
+		$page_type = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_PAGE_TYPE, '');
 
-		if ($schema_type === '') {
-			$schema_type = (string) Options::get(
-				$data['entity'],
-				'schema_type',
-				Entities::default_value($data['entity'], 'schema_type', 'WebPage')
-			);
+		if ($page_type === '') {
+			/* Fall back to global setting, then entity default. */
+			$global_page = (string) Options::get($data['entity'], 'schema_page_type', '');
+			$page_type   = $global_page !== '' ? $global_page : 'WebPage';
 		}
+
+		if ($page_type === 'none') {
+			return; // "None" selected for page type — suppress all structured data.
+		}
+
+		/* --- resolve article type --- */
+		$article_type = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_ARTICLE_TYPE, '');
+
+		if ($article_type === '') {
+			/* Check legacy single-select value. */
+			$legacy = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_TYPE, '');
+
+			if ($legacy !== '' && $legacy !== 'none') {
+				$article_type = $legacy;
+			} else {
+				$global_article = (string) Options::get($data['entity'], 'schema_article_type', '');
+				$article_type   = $global_article !== '' ? $global_article : 'Article';
+			}
+		}
+
+		/* --- determine the effective @type ---
+		 * When article_type is not 'none', it overrides the page type,
+		 * so e.g. "WebPage + Article" becomes @type Article.
+		 * This mirrors Yoast SEO behaviour. */
+		$schema_type = ($article_type !== '' && $article_type !== 'none') ? $article_type : $page_type;
 
 		if ($schema_type === '' || $schema_type === 'none') {
 			return;

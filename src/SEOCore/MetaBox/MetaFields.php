@@ -31,10 +31,12 @@ class MetaFields
 	public const X_CREATOR     = '_crawlwp_x_creator';
 	public const X_SYNC        = '_crawlwp_x_sync';
 
-	public const SCHEMA_TYPE       = '_crawlwp_schema_type';
-	public const SCHEMA_HEADLINE   = '_crawlwp_schema_headline';
-	public const SCHEMA_BREADCRUMB = '_crawlwp_schema_breadcrumb';
-	public const SCHEMA_SECTION    = '_crawlwp_schema_section';
+	public const SCHEMA_PAGE_TYPE    = '_crawlwp_schema_page_type';
+	public const SCHEMA_ARTICLE_TYPE = '_crawlwp_schema_article_type';
+	public const SCHEMA_TYPE         = '_crawlwp_schema_type'; // legacy — kept for migration
+	public const SCHEMA_HEADLINE     = '_crawlwp_schema_headline';
+	public const SCHEMA_BREADCRUMB   = '_crawlwp_schema_breadcrumb';
+	public const SCHEMA_SECTION      = '_crawlwp_schema_section';
 
 	public const NONCE_ACTION = 'crawlwp_seo_metabox';
 	public const NONCE_NAME   = '_crawlwp_seo_nonce';
@@ -63,6 +65,8 @@ class MetaFields
 		self::MAX_IMAGE,
 		self::X_CARD_TYPE,
 		self::SCHEMA_TYPE,
+		self::SCHEMA_PAGE_TYPE,
+		self::SCHEMA_ARTICLE_TYPE,
 		self::REDIRECT_TYPE,
 	];
 
@@ -139,32 +143,34 @@ class MetaFields
 	public static function get_all(int $post_id): array
 	{
 		return [
-			'seo_title'       => self::get($post_id, self::SEO_TITLE),
-			'seo_description' => self::get($post_id, self::SEO_DESCRIPTION),
-			'focus_keyword'   => self::get($post_id, self::FOCUS_KEYWORD),
-			'seo_slug'        => self::get($post_id, self::SEO_SLUG),
-			'robots_index'    => self::get($post_id, self::ROBOTS_INDEX, 'index'),
-			'robots_follow'   => self::get($post_id, self::ROBOTS_FOLLOW, 'follow'),
-			'robots_advanced' => self::get($post_id, self::ROBOTS_ADVANCED, []),
-			'canonical_url'   => self::get($post_id, self::CANONICAL_URL),
-			'max_snippet'     => self::get($post_id, self::MAX_SNIPPET, ''),
-			'max_image'       => self::get($post_id, self::MAX_IMAGE, 'large'),
-			'og_title'        => self::get($post_id, self::OG_TITLE),
-			'og_description'  => self::get($post_id, self::OG_DESCRIPTION),
-			'og_image'        => self::get($post_id, self::OG_IMAGE, 0),
-			'og_sync'         => self::get($post_id, self::OG_SYNC, '1'),
-			'x_title'         => self::get($post_id, self::X_TITLE),
-			'x_description'   => self::get($post_id, self::X_DESCRIPTION),
-			'x_image'         => self::get($post_id, self::X_IMAGE, 0),
-			'x_card_type'     => self::get($post_id, self::X_CARD_TYPE, 'summary_large_image'),
-			'x_creator'       => self::get($post_id, self::X_CREATOR),
-			'x_sync'          => self::get($post_id, self::X_SYNC, '1'),
-			'schema_type'     => self::get($post_id, self::SCHEMA_TYPE, 'Article'),
-			'schema_headline' => self::get($post_id, self::SCHEMA_HEADLINE),
-			'schema_breadcrumb' => self::get($post_id, self::SCHEMA_BREADCRUMB),
-			'schema_section'  => self::get($post_id, self::SCHEMA_SECTION),
-			'redirect_url'    => self::get($post_id, self::REDIRECT_URL),
-			'redirect_type'   => self::get($post_id, self::REDIRECT_TYPE, '301'),
+			'seo_title'           => self::get($post_id, self::SEO_TITLE),
+			'seo_description'     => self::get($post_id, self::SEO_DESCRIPTION),
+			'focus_keyword'       => self::get($post_id, self::FOCUS_KEYWORD),
+			'seo_slug'            => self::get($post_id, self::SEO_SLUG),
+			'robots_index'        => self::get($post_id, self::ROBOTS_INDEX, 'index'),
+			'robots_follow'       => self::get($post_id, self::ROBOTS_FOLLOW, 'follow'),
+			'robots_advanced'     => self::get($post_id, self::ROBOTS_ADVANCED, []),
+			'canonical_url'       => self::get($post_id, self::CANONICAL_URL),
+			'max_snippet'         => self::get($post_id, self::MAX_SNIPPET, ''),
+			'max_image'           => self::get($post_id, self::MAX_IMAGE, 'large'),
+			'og_title'            => self::get($post_id, self::OG_TITLE),
+			'og_description'      => self::get($post_id, self::OG_DESCRIPTION),
+			'og_image'            => self::get($post_id, self::OG_IMAGE, 0),
+			'og_sync'             => self::get($post_id, self::OG_SYNC, '1'),
+			'x_title'             => self::get($post_id, self::X_TITLE),
+			'x_description'       => self::get($post_id, self::X_DESCRIPTION),
+			'x_image'             => self::get($post_id, self::X_IMAGE, 0),
+			'x_card_type'         => self::get($post_id, self::X_CARD_TYPE, 'summary_large_image'),
+			'x_creator'           => self::get($post_id, self::X_CREATOR),
+			'x_sync'              => self::get($post_id, self::X_SYNC, '1'),
+			'schema_page_type'    => self::get($post_id, self::SCHEMA_PAGE_TYPE, 'WebPage'),
+			'schema_article_type' => self::get($post_id, self::SCHEMA_ARTICLE_TYPE, 'Article'),
+			'schema_type'         => self::get($post_id, self::SCHEMA_TYPE, ''), // legacy
+			'schema_headline'     => self::get($post_id, self::SCHEMA_HEADLINE),
+			'schema_breadcrumb'   => self::get($post_id, self::SCHEMA_BREADCRUMB),
+			'schema_section'      => self::get($post_id, self::SCHEMA_SECTION),
+			'redirect_url'        => self::get($post_id, self::REDIRECT_URL),
+			'redirect_type'       => self::get($post_id, self::REDIRECT_TYPE, '301'),
 		];
 	}
 }

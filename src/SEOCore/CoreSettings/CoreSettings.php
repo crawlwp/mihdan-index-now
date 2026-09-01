@@ -207,29 +207,49 @@ class CoreSettings
 	}
 
 	/**
-	 * Default schema.org type for a post type.
+	 * Default schema.org types (page type + article type) for a post type.
 	 */
 	private function add_schema_field(WPOSA $wposa, string $section, array $entity): void
 	{
 		$this->add_heading($wposa, $section, 'heading_schema', __('Structured data', 'mihdan-index-now'));
 
 		$wposa->add_field($section, [
-			'id'      => 'schema_type',
+			'id'      => 'schema_page_type',
 			'type'    => 'select',
-			'name'    => __('Schema type', 'mihdan-index-now'),
-			'default' => Entities::default_value($entity['key'], 'schema_type', 'WebPage'),
+			'name'    => __('Default page type', 'mihdan-index-now'),
+			'default' => Entities::default_value($entity['key'], 'schema_page_type', 'WebPage'),
 			'options' => [
-				'none'         => __('None', 'mihdan-index-now'),
-				'Article'      => __('Article', 'mihdan-index-now'),
-				'BlogPosting'  => __('Blog Posting', 'mihdan-index-now'),
-				'NewsArticle'  => __('News Article', 'mihdan-index-now'),
-				'WebPage'      => __('Web Page', 'mihdan-index-now'),
-				'Product'      => __('Product', 'mihdan-index-now'),
-				'Recipe'       => __('Recipe', 'mihdan-index-now'),
-				'Course'       => __('Course', 'mihdan-index-now'),
-				'Event'        => __('Event', 'mihdan-index-now'),
+				'WebPage'        => __('Web Page', 'mihdan-index-now'),
+				'ItemPage'       => __('Item Page', 'mihdan-index-now'),
+				'AboutPage'      => __('About Page', 'mihdan-index-now'),
+				'FAQPage'        => __('FAQ Page', 'mihdan-index-now'),
+				'QAPage'         => __('Q&A Page', 'mihdan-index-now'),
+				'ProfilePage'    => __('Profile Page', 'mihdan-index-now'),
+				'ContactPage'    => __('Contact Page', 'mihdan-index-now'),
+				'MedicalWebPage' => __('Medical Web Page', 'mihdan-index-now'),
+				'none'           => __('None — no structured data', 'mihdan-index-now'),
 			],
-			'desc'    => esc_html__('Applied to posts of this type that do not define their own schema type.', 'mihdan-index-now'),
+			'desc'    => esc_html__('The general page type for posts of this type. Used as @type in JSON-LD unless overridden by the article type below.', 'mihdan-index-now'),
+		]);
+
+		$wposa->add_field($section, [
+			'id'      => 'schema_article_type',
+			'type'    => 'select',
+			'name'    => __('Default article type', 'mihdan-index-now'),
+			'default' => Entities::default_value($entity['key'], 'schema_article_type', 'Article'),
+			'options' => [
+				'Article'                    => __('Article', 'mihdan-index-now'),
+				'BlogPosting'                => __('Blog Posting', 'mihdan-index-now'),
+				'SocialMediaPosting'         => __('Social Media Posting', 'mihdan-index-now'),
+				'NewsArticle'                => __('News Article', 'mihdan-index-now'),
+				'AdvertiserContentArticle'   => __('Advertiser Content Article', 'mihdan-index-now'),
+				'SatiricalArticle'           => __('Satirical Article', 'mihdan-index-now'),
+				'ScholarlyArticle'           => __('Scholarly Article', 'mihdan-index-now'),
+				'TechArticle'                => __('Tech Article', 'mihdan-index-now'),
+				'Report'                     => __('Report', 'mihdan-index-now'),
+				'none'                       => __('None — use page type only', 'mihdan-index-now'),
+			],
+			'desc'    => esc_html__('When set, overrides the page type as the effective @type in JSON-LD. Set to "None" to use only the page type.', 'mihdan-index-now'),
 		]);
 	}
 
