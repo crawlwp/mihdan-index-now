@@ -117,7 +117,7 @@ class PostListColumn
 			return;
 		}
 
-	$cached = get_post_meta($post_id, MetaFields::SEO_SCORE, true);
+		$cached = get_post_meta($post_id, MetaFields::SEO_SCORE, true);
 		$score  = ($cached !== '' && $cached !== false) ? (float) $cached : $this->calculate_score($post_id);
 		$state  = $this->score_state($score);
 		$label  = $this->state_label($state, $score);
