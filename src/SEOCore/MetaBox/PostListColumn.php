@@ -176,6 +176,48 @@ class PostListColumn
 	}
 
 	// -------------------------------------------------------------------------
+	// Score persistence
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Calculate and persist the SEO score whenever a post is saved.
+	 *
+	 * Runs at priority 20 on save_post so MetaFields::save() (priority 10)
+	 * has already written the fresh meta values.
+	 *
+	 * @param int $post_id
+	 */
+	public function persist_score(int $post_id): void
+	{
+		/* Skip autosaves, revisions and AJAX saves (the inline-edit handler
+		   calls calculate+persist directly). */
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return;
+		}
+
+		if (wp_is_post_revision($post_id)) {
+			return;
+		}
+
+		if (defined('DOING_AJAX') && DOING_AJAX) {
+			return;
+		}
+
+		/* Verify the metabox nonce so we only act on our own form submissions. */
+		$nonce = isset($_POST[MetaFields::NONCE_NAME]) ? $_POST[MetaFields::NONCE_NAME] : '';
+		if (! wp_verify_nonce($nonce, MetaFields::NONCE_ACTION)) {
+			return;
+		}
+
+		if (! current_user_can('edit_post', $post_id)) {
+			return;
+		}
+
+		$score = $this->calculate_score($post_id);
+		update_post_meta($post_id, MetaFields::SEO_SCORE, (string) $score);
+	}
+
+	// -------------------------------------------------------------------------
 	// Score calculation
 	// -------------------------------------------------------------------------
 
@@ -580,45 +622,41 @@ class PostListColumn
 			var cfg = window.crawlwpInlineEdit || {};
 			if (!cfg.ajaxUrl) { return; }
 
-			/* Close any open panel. */
-			function closeAll() {
-				$('.cwp-seo-inline-edit').attr('hidden', '');
-				$('.cwp-seo-inline-edit__trigger').attr('aria-expanded', 'false');
-			}
+ 		/* Close any open panel. */
+ 		function closeAll() {
+ 			$('.cwp-seo-inline-edit').prop('hidden', true);
+ 			$('.cwp-seo-inline-edit__trigger').attr('aria-expanded', 'false');
+ 		}
 
-			/* Open / toggle the panel for a trigger button. */
-			$(document).on('click', '.cwp-seo-inline-edit__trigger', function(e) {
-				e.stopPropagation();
-				var $btn   = $(this);
-				var postId = $btn.data('post-id');
-				var $panel = $('#cwp-seo-inline-edit-' + postId);
+ 		/* Open / toggle the panel for a trigger button. */
+ 		$(document).on('click', '.cwp-seo-inline-edit__trigger', function(e) {
+ 			e.stopPropagation();
+ 			var $btn   = $(this);
+ 			var postId = $btn.data('post-id');
+ 			var $panel = $('#cwp-seo-inline-edit-' + postId);
 
-				if (!$panel.attr('hidden') && $panel.attr('hidden') !== undefined) {
-					closeAll();
-					return;
-				}
+ 			/* If this panel is already open, close it. */
+ 			var alreadyOpen = !$panel.prop('hidden');
 
-				var alreadyOpen = !$panel.is('[hidden]') && $panel.is(':visible');
+ 			closeAll();
 
-				closeAll();
+ 			if (alreadyOpen) { return; }
 
-				if (alreadyOpen) { return; }
+ 			/* Position relative to the cell. */
+ 			var $cell = $btn.closest('td');
+ 			$cell.css('position', 'relative');
 
-				/* Position relative to the cell. */
-				var $cell = $btn.closest('td');
-				$cell.css('position', 'relative');
+ 			$panel.prop('hidden', false);
+ 			$btn.attr('aria-expanded', 'true');
+ 			$panel.find('.cwp-seo-inline-edit__title').trigger('focus');
+ 		});
 
-				$panel.removeAttr('hidden');
-				$btn.attr('aria-expanded', 'true');
-				$panel.find('.cwp-seo-inline-edit__title').trigger('focus');
-			});
-
-			/* Close on outside click or Escape. */
-			$(document).on('click', function() { closeAll(); });
-			$(document).on('keydown', function(e) {
-				if (e.key === 'Escape') { closeAll(); }
-			});
-			$('.cwp-seo-inline-edit').on('click', function(e) { e.stopPropagation(); });
+ 		/* Close on outside click or Escape. */
+ 		$(document).on('click', function() { closeAll(); });
+ 		$(document).on('keydown', function(e) {
+ 			if (e.key === 'Escape') { closeAll(); }
+ 		});
+ 		$(document).on('click', '.cwp-seo-inline-edit', function(e) { e.stopPropagation(); });
 
 			/* Cancel button. */
 			$(document).on('click', '.cwp-seo-inline-edit__cancel', function() {

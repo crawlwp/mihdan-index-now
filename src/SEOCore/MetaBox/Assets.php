@@ -483,10 +483,6 @@ class Assets
 			'kwSubheadBad'     => __('No subheading uses the keyword.', 'flavor'),
 			'kwSubheadFix'     => __('Add the keyword to at least one H2 or H3.', 'flavor'),
 
-			/* Analysis: 8 – H1 check */
-			'h1Good'           => __('Page has exactly one H1 tag.', 'flavor'),
-			'h1None'           => __('No H1 tag found in the content.', 'flavor'),
-			'h1NoneFix'        => __('Add one H1 — it helps search engines understand the main topic.', 'flavor'),
 			/* translators: %s: number of H1 tags */
 			'h1Multiple'       => __('Multiple H1 tags found (%s).', 'flavor'),
 			'h1MultipleFix'    => __('Use only one H1 per page for best SEO practice.', 'flavor'),

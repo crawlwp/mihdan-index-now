@@ -1255,15 +1255,6 @@
         addCheck('bad', L.kwSubheadBad, L.kwSubheadFix);
       }
 
-      /* 8. H1 check */
-      if ($h1s.length === 1) {
-        addCheck('good', L.h1Good, '');
-      } else if ($h1s.length === 0) {
-        addCheck('warn', L.h1None, L.h1NoneFix);
-      } else {
-        addCheck('warn', this.fmt(L.h1Multiple, $h1s.length), L.h1MultipleFix);
-      }
-
       /* 9. Images alt text */
       if ($images.length === 0) {
         addCheck('warn', L.noImages, L.noImagesFix);
