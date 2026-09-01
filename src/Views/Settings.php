@@ -132,8 +132,8 @@ class Settings
 		$this->wposa->sub_page_title = esc_html__('Settings', 'mihdan-index-now');
 
 		$this->wposa->add_header_menu([
-			'id'    => 'core_settings',
-			'title' => __('Core', 'mihdan-index-now'),
+			'id'    => 'title_meta',
+			'title' => __('Title & Meta', 'mihdan-index-now'),
 		]);
 
 		$this->wposa->add_header_menu([

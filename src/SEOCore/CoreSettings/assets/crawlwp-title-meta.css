@@ -60,7 +60,7 @@
 	outline: none;
 }
 
-/* ---------- preview + character count ---------- */
+/* ---------- preview + length meter ---------- */
 
 .cwp-tm-readout {
 	margin-top: 6px;
@@ -83,40 +83,49 @@
 	font-style: italic;
 }
 
-.cwp-tm-count {
-	margin-top: 2px;
-	color: #646970;
-	font-size: 12px;
-	font-style: italic;
-	line-height: 1.5;
+/* ---------- length meter (mirrors the post edit screen) ---------- */
+
+.cwp-tm-meter {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 7px;
 }
 
-/* ---------- quality dot ---------- */
-
-.cwp-tm-dot {
-	display: inline-block;
-	width: 8px;
-	height: 8px;
-	margin-left: 6px;
-	border-radius: 50%;
-	vertical-align: middle;
-	background: #c3c4c7;
+.cwp-tm-meter__bar {
+	flex: 1;
+	height: 4px;
+	overflow: hidden;
+	border-radius: 2px;
+	background: #f0f0f1;
 }
 
-.cwp-tm-dot.is-good {
+.cwp-tm-meter__fill {
+	width: 0;
+	height: 100%;
+	border-radius: 2px;
+	background: #dba617;
+	transition: width .18s ease, background-color .18s ease;
+}
+
+.cwp-tm-meter__fill.is-good {
 	background: #00a32a;
 }
 
-.cwp-tm-dot.is-warn {
-	background: #dba617;
-}
-
-.cwp-tm-dot.is-bad {
+.cwp-tm-meter__fill.is-over {
 	background: #d63638;
 }
 
-.cwp-tm-dot.is-empty {
-	background: #c3c4c7;
+.cwp-tm-meter__text {
+	color: #646970;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.cwp-tm-meter__text b {
+	color: #1d2327;
+	font-weight: 600;
 }
 
 /* ---------- variables dropdown ---------- */

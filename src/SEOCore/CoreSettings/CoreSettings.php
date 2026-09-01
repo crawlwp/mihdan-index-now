@@ -18,15 +18,15 @@ class CoreSettings
 
 	public function settings_fields(WPOSA $wposa, $settingsInstance)
 	{
-		if ($wposa->get_active_header_menu() === Utils::get_plugin_prefix() . '_core_settings') {
+		if ($wposa->get_active_header_menu() === Utils::get_plugin_prefix() . '_title_meta') {
 
-			do_action('crawlwp_before_core_settings_fields', $wposa);
+			do_action('crawlwp_before_title_meta_settings_fields', $wposa);
 
 			foreach (Entities::all() as $entity) {
 				$this->register_entity($wposa, $entity);
 			}
 
-			do_action('crawlwp_after_advanced_settings_fields', $wposa);
+			do_action('crawlwp_after_title_meta_settings_fields', $wposa);
 		}
 	}
 
@@ -40,7 +40,7 @@ class CoreSettings
 		$groups  = Entities::groups();
 
 		$wposa->add_section([
-			'header_menu_id'  => 'core_settings',
+			'header_menu_id'  => 'title_meta',
 			'id'              => $section,
 			'title'           => $entity['label'],
 			'nav_group'       => $entity['group'],
@@ -110,7 +110,7 @@ class CoreSettings
 			'type'       => 'text',
 			'name'       => __('Meta title', 'mihdan-index-now'),
 			'default'    => Entities::default_value($entity['key'], $prefix . 'title'),
-			'desc'       => esc_html__('Recommended length: 60 characters or fewer.', 'mihdan-index-now'),
+			'desc'       => esc_html__('Google cuts titles by width, not character count — the bar tracks rendered pixels.', 'mihdan-index-now'),
 			'attributes' => $this->template_attributes($entity['key'], $prefix . 'title'),
 		]);
 
@@ -119,7 +119,7 @@ class CoreSettings
 			'type'       => 'textarea',
 			'name'       => __('Meta description', 'mihdan-index-now'),
 			'default'    => Entities::default_value($entity['key'], $prefix . 'description'),
-			'desc'       => esc_html__('Recommended length: 50-160 characters.', 'mihdan-index-now'),
+			'desc'       => esc_html__('Descriptions are also cut by width — aim to fill the bar without overflowing it.', 'mihdan-index-now'),
 			'rows'       => 4,
 			'attributes' => $this->template_attributes($entity['key'], $prefix . 'description'),
 		]);

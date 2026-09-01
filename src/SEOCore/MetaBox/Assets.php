@@ -2,6 +2,8 @@
 
 namespace Mihdan\IndexNow\SEOCore\MetaBox;
 
+use Mihdan\IndexNow\SEOCore\TitleMeta\Variables;
+
 class Assets
 {
 	public function __construct()
@@ -72,7 +74,7 @@ class Assets
 			'siteUrl'     => home_url('/'),
 			'postTitle'   => $post_title,
 			'excerpt'     => $excerpt,
-			'separator'   => '—',
+			'separator'   => Variables::separator(),
 			'currentYear' => gmdate('Y'),
 			'author'      => $author,
 			'category'    => ! empty($categories) ? $categories[0] : '',

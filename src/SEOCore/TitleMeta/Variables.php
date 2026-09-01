@@ -5,13 +5,8 @@ namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 /**
  * Resolves template variables used in the global title & meta defaults.
  *
- * Two syntaxes are supported:
- *
- *  - Namespaced (canonical): {{ site.title }}, {{ post.auto_description }}
- *  - Legacy (metabox v1):    {{title}}, {{sitename}}, {{sep}}
- *
- * The legacy tokens are mapped onto their namespaced counterparts so values
- * saved by earlier versions of the SEO metabox keep resolving.
+ * Variables use a single namespaced syntax: {{ site.title }}, {{ sep }},
+ * {{ post.auto_description }}. Inner spaces are optional.
  */
 class Variables
 {
@@ -19,39 +14,6 @@ class Variables
 	 * Matches {{ name }}, {{name}} and {{ some.name }}.
 	 */
 	private const TOKEN_REGEX = '/\{\{\s*([a-z0-9_]+(?:\.[a-z0-9_]+)?)\s*\}\}/i';
-
-	/**
-	 * Matches the %%name%% macro syntax used by other SEO plugins.
-	 */
-	private const MACRO_REGEX = '/%%([a-z0-9_]+)%%/i';
-
-	/**
-	 * Legacy and third-party token => canonical token.
-	 */
-	private const LEGACY_MAP = [
-		'title'             => 'post.title',
-		'sitename'          => 'site.title',
-		'sitedesc'          => 'site.description',
-		'excerpt'           => 'post.auto_description',
-		'excerpt_only'      => 'post.excerpt',
-		'category'          => 'post.category',
-		'primary_category'  => 'post.category',
-		'author'            => 'post.author',
-		'currentyear'       => 'current.year',
-		'currentmonth'      => 'current.month',
-		'currentdate'       => 'current.date',
-		'tag'               => 'post.tag',
-		'date'              => 'post.date',
-		'modified'          => 'post.modified',
-		'id'                => 'post.id',
-		'searchphrase'      => 'search.query',
-		'term_title'        => 'term.title',
-		'term_description'  => 'term.description',
-		'archive_title'     => 'date.archive_title',
-		'pt_plural'         => 'post_type.plural_name',
-		'pt_single'         => 'post_type.name',
-		'user_description'  => 'author.description',
-	];
 
 	/**
 	 * Resolution context for the current request.
@@ -74,7 +36,7 @@ class Variables
 			return '';
 		}
 
-		if (strpos($template, '{{') === false && strpos($template, '%%') === false) {
+		if (strpos($template, '{{') === false) {
 			return self::cleanup($template);
 		}
 
@@ -86,9 +48,6 @@ class Variables
 	 */
 	public function resolve(string $template): string
 	{
-		/* Normalise %%macro%% values imported from other SEO plugins. */
-		$template = (string) preg_replace(self::MACRO_REGEX, '{{$1}}', $template);
-
 		$output = preg_replace_callback(
 			self::TOKEN_REGEX,
 			function ($matches) {
@@ -147,24 +106,12 @@ class Variables
 	 */
 	private function resolve_token(string $token): string
 	{
-		if (isset(self::LEGACY_MAP[$token])) {
-			$token = self::LEGACY_MAP[$token];
-		}
-
 		switch ($token) {
 			case 'sep':
 				return self::separator();
 
 			case 'page':
 				return $this->paged_label();
-
-			case 'name':
-				/* %%name%% means the post author, or the archive author. */
-				if (isset($this->context['post'])) {
-					return $this->resolve_post_token('author');
-				}
-
-				return $this->resolve_author_token('display_name');
 
 			case 'site.title':
 				return (string) get_bloginfo('name');
@@ -472,7 +419,6 @@ class Variables
 	{
 		/* Drop any token we could not resolve. */
 		$value = preg_replace(self::TOKEN_REGEX, '', $value) ?? $value;
-		$value = preg_replace(self::MACRO_REGEX, '', $value) ?? $value;
 
 		$separator = preg_quote(self::separator(), '/');
 

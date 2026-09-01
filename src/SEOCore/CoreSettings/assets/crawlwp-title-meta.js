@@ -9,8 +9,7 @@
 	 * the WordPress Settings API. For each field we add:
 	 *
 	 *   - a live resolved preview of the template,
-	 *   - a character count,
-	 *   - a colour coded quality dot next to the row label,
+	 *   - a pixel width progress bar, identical to the post edit screen meter,
 	 *   - an "insert variable" dropdown anchored inside the field.
 	 *
 	 * The script never throws: a missing or malformed window.crawlwpTitleMeta
@@ -36,8 +35,8 @@
 		return {
 			separator: typeof raw.separator === 'string' && raw.separator !== '' ? raw.separator : '-',
 			limits: {
-				title: normalizeLimit(limits.title, 30, 60),
-				description: normalizeLimit(limits.description, 50, 160)
+				title: normalizeLimit(limits.title, 580, 'bold 20px Arial'),
+				description: normalizeLimit(limits.description, 920, '14px Arial')
 			},
 			variables: Array.isArray(raw.variables) ? raw.variables : [],
 			samples: raw.samples && typeof raw.samples === 'object' ? raw.samples : {},
@@ -45,14 +44,17 @@
 		};
 	}
 
-	function normalizeLimit(limit, min, max) {
+	/**
+	 * A limit is a pixel budget plus the font search engines render the text in.
+	 */
+	function normalizeLimit(limit, px, font) {
 		if (!limit || typeof limit !== 'object') {
-			return { min: min, max: max };
+			return { px: px, font: font };
 		}
 
 		return {
-			min: typeof limit.min === 'number' ? limit.min : min,
-			max: typeof limit.max === 'number' ? limit.max : max
+			px: typeof limit.px === 'number' && limit.px > 0 ? limit.px : px,
+			font: typeof limit.font === 'string' && limit.font !== '' ? limit.font : font
 		};
 	}
 
@@ -118,7 +120,9 @@
 		return value.trim();
 	}
 
-	/* ---------- quality dot ---------- */
+	/* ---------- pixel measurement ---------- */
+
+	var measureContext = null;
 
 	function limitsFor(config, kind) {
 		if (/description$/.test(kind)) {
@@ -128,38 +132,68 @@
 		return config.limits.title;
 	}
 
-	function stateFor(length, limits) {
-		if (length === 0) {
-			return 'is-empty';
+	/**
+	 * Rendered width of a string, in CSS pixels, for the given font shorthand.
+	 *
+	 * Search engines truncate titles and descriptions by width rather than by
+	 * character count, so the meter tracks pixels the same way the post edit
+	 * screen does. Returns 0 when canvas is unavailable.
+	 */
+	function widthOf(value, font) {
+		if (measureContext === null) {
+			measureContext = false;
+
+			try {
+				var canvas = document.createElement('canvas');
+
+				if (canvas && canvas.getContext) {
+					measureContext = canvas.getContext('2d') || false;
+				}
+			} catch (error) {
+				measureContext = false;
+			}
 		}
 
-		if (length > limits.max) {
-			return 'is-bad';
+		if (!measureContext) {
+			return 0;
 		}
 
-		if (length < limits.min) {
-			return 'is-warn';
-		}
+		measureContext.font = font;
 
-		return 'is-good';
+		return Math.round(measureContext.measureText(value).width);
 	}
 
-	function dotTitle(length, limits, state) {
-		var suffix = ' (' + limits.min + '\u2013' + limits.max + ')';
-
-		if (state === 'is-empty') {
-			return '0' + suffix;
+	/** 'empty' | 'short' | 'good' | 'over', mirroring the metabox thresholds. */
+	function stateFor(px, percent, limits) {
+		if (px === 0) {
+			return 'empty';
 		}
 
-		if (state === 'is-bad') {
-			return length + ' \u2013 too long' + suffix;
+		if (px > limits.px) {
+			return 'over';
 		}
 
-		if (state === 'is-warn') {
-			return length + ' \u2013 too short' + suffix;
+		if (percent >= 70) {
+			return 'good';
 		}
 
-		return length + ' \u2013 good' + suffix;
+		return 'short';
+	}
+
+	function stateLabel(config, state) {
+		if (state === 'empty') {
+			return text(config, 'meterEmpty', 'Nothing to measure');
+		}
+
+		if (state === 'over') {
+			return text(config, 'meterWillBeCut', 'Will be cut off');
+		}
+
+		if (state === 'good') {
+			return text(config, 'meterGoodLength', 'Good length');
+		}
+
+		return text(config, 'meterTooShort', 'Too short');
 	}
 
 	/* ---------- DOM helpers ---------- */
@@ -172,20 +206,6 @@
 		}
 
 		return node;
-	}
-
-	function closestRow(control) {
-		var node = control.parentNode;
-
-		while (node && node.nodeType === 1) {
-			if (node.tagName === 'TR') {
-				return node;
-			}
-
-			node = node.parentNode;
-		}
-
-		return null;
 	}
 
 	/* ---------- field controller ---------- */
@@ -223,28 +243,28 @@
 		field.appendChild(trigger);
 
 		/* 2. readout goes right after the field, before any p.description hint */
-		var readout = el('div', 'cwp-tm-readout');
-		var preview = el('div', 'cwp-tm-preview');
-		var count   = el('div', 'cwp-tm-count');
+		var readout   = el('div', 'cwp-tm-readout');
+		var preview   = el('div', 'cwp-tm-preview');
+		var meter     = el('div', 'cwp-tm-meter');
+		var meterBar  = el('div', 'cwp-tm-meter__bar');
+		var meterFill = el('div', 'cwp-tm-meter__fill');
+		var meterText = el('div', 'cwp-tm-meter__text');
+
+		meterBar.appendChild(meterFill);
+		meter.appendChild(meterBar);
+		meter.appendChild(meterText);
+
+		meterBar.setAttribute('role', 'progressbar');
+		meterBar.setAttribute('aria-valuemin', '0');
+		meterBar.setAttribute('aria-valuemax', String(limits.px));
 
 		readout.appendChild(preview);
-		readout.appendChild(count);
+		readout.appendChild(meter);
 
 		if (field.nextSibling) {
 			parent.insertBefore(readout, field.nextSibling);
 		} else {
 			parent.appendChild(readout);
-		}
-
-		/* 3. quality dot lives in the row header, right after the label */
-		var dot = null;
-		var row = closestRow(field);
-		var th  = row ? row.querySelector('th') : null;
-
-		if (th) {
-			dot = el('span', 'cwp-tm-dot');
-			dot.setAttribute('aria-hidden', 'true');
-			th.appendChild(dot);
 		}
 
 		function recompute() {
@@ -265,13 +285,28 @@
 				preview.appendChild(document.createTextNode(resolved));
 			}
 
-			count.textContent = text(config, 'charCount', 'Character count: %s.').replace('%s', String(length));
+			/* the bar fills with the rendered width, capped at the pixel budget */
+			var px      = widthOf(resolved, limits.font);
+			var percent = Math.min(100, Math.round(px / limits.px * 100));
+			var state   = stateFor(px, percent, limits);
 
-			if (dot) {
-				var state = stateFor(length, limits);
-				dot.className = 'cwp-tm-dot ' + state;
-				dot.setAttribute('title', dotTitle(length, limits, state));
-			}
+			meterFill.style.width = percent + '%';
+			meterFill.className = 'cwp-tm-meter__fill' + (state === 'good' ? ' is-good' : (state === 'over' ? ' is-over' : ''));
+
+			meterBar.setAttribute('aria-valuenow', String(px));
+
+			meterText.innerHTML = '';
+
+			var stateNode = el('b');
+			stateNode.appendChild(document.createTextNode(stateLabel(config, state)));
+			meterText.appendChild(stateNode);
+
+			var detail = text(config, 'meterDetail', '%1$s / %2$s px \u00b7 %3$s chars')
+				.replace('%1$s', String(px))
+				.replace('%2$s', String(limits.px))
+				.replace('%3$s', String(length));
+
+			meterText.appendChild(document.createTextNode(' \u00b7 ' + detail));
 		}
 
 		control.addEventListener('input', recompute);

@@ -69,13 +69,13 @@
 
     setupTokens: function() {
       this.TOKENS = {
-        '{{title}}':       crawlwpSEO.postTitle || '',
-        '{{sitename}}':    crawlwpSEO.siteName || '',
-        '{{sep}}':         crawlwpSEO.separator || '\u2014',
-        '{{category}}':    crawlwpSEO.category || '',
-        '{{excerpt}}':     crawlwpSEO.excerpt || '',
-        '{{currentyear}}': crawlwpSEO.currentYear || '',
-        '{{author}}':      crawlwpSEO.author || ''
+        'post.title':            crawlwpSEO.postTitle || '',
+        'site.title':            crawlwpSEO.siteName || '',
+        'sep':                   crawlwpSEO.separator || '\u2014',
+        'post.category':         crawlwpSEO.category || '',
+        'post.auto_description': crawlwpSEO.excerpt || '',
+        'current.year':          crawlwpSEO.currentYear || '',
+        'post.author':           crawlwpSEO.author || ''
       };
     },
 
@@ -112,10 +112,13 @@
       this.$mb.trigger('crawlwp:' + name);
     },
 
+    /* {{ post.title }} / {{post.title}} -> its value; unknown tokens drop out,
+       matching the PHP resolver used on the frontend. */
     resolve: function(str) {
       var tokens = this.TOKENS;
-      return str.replace(/\{\{[a-z]+\}\}/g, function(m) {
-        return tokens[m] !== undefined ? tokens[m] : m;
+      return String(str == null ? '' : str).replace(/\{\{\s*([a-z0-9_.]+)\s*\}\}/gi, function(m, token) {
+        var key = token.toLowerCase();
+        return tokens[key] !== undefined ? tokens[key] : '';
       });
     },
 
@@ -257,7 +260,7 @@
       var raw = $el.val();
       /* If this is the SEO title field and it is empty, assume the default template */
       if (!raw && $el.attr('id') === 'cwpTitle') {
-        raw = '{{title}} {{sep}} {{sitename}}';
+        raw = '{{ post.title }} {{ sep }} {{ site.title }}';
       }
       var text  = this.resolve(raw);
       var limit = parseInt($el.data('limit'), 10);
@@ -284,7 +287,7 @@
     /* ---------- live preview ---------- */
     sync: function() {
       var L = crawlwpSEO.i18n;
-      var titleVal = this.$title.val() || '{{title}} {{sep}} {{sitename}}';
+      var titleVal = this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}';
       var t = this.resolve(titleVal) || crawlwpSEO.postTitle || L.enterTitle;
       var d = this.resolve(this.$desc.val())  || crawlwpSEO.excerpt || L.addMetaDesc;
 
@@ -355,7 +358,7 @@
       var $wpTitle = $('#title');
       if ($wpTitle.length) {
         $wpTitle.on('input', function() {
-          self.TOKENS['{{title}}'] = $wpTitle.val();
+          self.TOKENS['post.title'] = $wpTitle.val();
           crawlwpSEO.postTitle = $wpTitle.val();
           self.emit('measure');
           self.emit('sync');
@@ -365,14 +368,14 @@
 
       /* Gutenberg */
       if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe && wp.data.select('core/editor')) {
-        var lastTitle = this.TOKENS['{{title}}'];
+        var lastTitle = this.TOKENS['post.title'];
         wp.data.subscribe(function() {
           var sel = wp.data.select('core/editor');
           if (!sel) return;
           var newTitle = sel.getEditedPostAttribute('title');
           if (newTitle !== undefined && newTitle !== lastTitle) {
             lastTitle = newTitle;
-            self.TOKENS['{{title}}'] = newTitle;
+            self.TOKENS['post.title'] = newTitle;
             crawlwpSEO.postTitle = newTitle;
             self.emit('measure');
             self.emit('sync');
@@ -1126,7 +1129,7 @@
 
       $noticeText.html(this.fmt(L.scoredAgainst, '<b>' + this.escHtml(keyword) + '</b>'));
 
-      var seoTitle = this.resolve(this.$title.val() || '{{title}} {{sep}} {{sitename}}').toLowerCase();
+      var seoTitle = this.resolve(this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}').toLowerCase();
       var seoDesc = this.resolve(this.$desc.val() || '').toLowerCase();
       var slugVal = (this.$slug.val() || '').toLowerCase();
       var parsed = this.parseLinks(html);
@@ -1203,7 +1206,7 @@
       }
 
       /* 3. Title length (pixel width) */
-      var titleText = this.resolve(this.$title.val() || '{{title}} {{sep}} {{sitename}}');
+      var titleText = this.resolve(this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}');
       var titlePx = this.widthOf(titleText, 'bold 20px Arial');
       if (titlePx >= 200 && titlePx <= 580) {
         addCheck('good', L.titleLenGood, this.fmt(L.titleLenDetail, titlePx));
