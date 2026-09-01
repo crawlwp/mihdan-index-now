@@ -157,7 +157,7 @@ class CoreSettings
 			$section,
 			'heading_social',
 			__('Social overrides', 'mihdan-index-now'),
-			__('Leave these empty to reuse the meta title and meta description above. Applied to both Facebook (OG) and X/Twitter cards.', 'mihdan-index-now')
+			__('Leave these empty to reuse the meta title and meta description above. Applied to all social networks via Open Graph and X/Twitter cards.', 'mihdan-index-now')
 		);
 
 		$wposa->add_field($section, [
