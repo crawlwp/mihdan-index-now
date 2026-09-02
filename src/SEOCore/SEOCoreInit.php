@@ -18,6 +18,7 @@ use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
 use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
 use Mihdan\IndexNow\SEOCore\Sitemap;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapSettings;
+use Mihdan\IndexNow\SEOCore\RobotsSettings\RobotsSettings;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\NewsSitemapProvider;
 
 class SEOCoreInit
@@ -34,6 +35,7 @@ class SEOCoreInit
 		new SocialSettings();
 		new RssSettings();
 		new BreadcrumbSettings();
+		new RobotsSettings();
 		new SitemapSettings();
 		new NewsSitemapProvider();
 		new UserProfile();
