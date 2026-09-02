@@ -4,6 +4,7 @@ namespace Mihdan\IndexNow\SEOCore;
 
 use Mihdan\IndexNow\SEOCore\Breadcrumbs\Breadcrumbs;
 use Mihdan\IndexNow\SEOCore\Breadcrumbs\BreadcrumbSettings;
+use Mihdan\IndexNow\SEOCore\Notifications\Notifications;
 use Mihdan\IndexNow\SEOCore\MetaBox\Assets;
 use Mihdan\IndexNow\SEOCore\MetaBox\PostListColumn;
 use Mihdan\IndexNow\SEOCore\MetaBox\FrontendHead;
@@ -23,6 +24,7 @@ class SEOCoreInit
 
 	public function __construct()
 	{
+		new Notifications();
 		new CoreSettings\CoreSettings();
 		new CoreSettings\Assets();
 		new AdvancedSettings();
