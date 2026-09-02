@@ -4,6 +4,7 @@ namespace Mihdan\IndexNow\SEOCore\MetaBox;
 
 /**
  * Adds an "SEO Score" column to WordPress post list tables for all public post types.
+ * Also injects SEO title + meta description fields into the native Quick Edit panel.
  *
  * Score is calculated from:
  *  - SEO title length (0–60 chars ideal)
@@ -21,20 +22,22 @@ class PostListColumn
 	private const DESC_MIN  = 50;
 	private const DESC_MAX  = 160;
 
-	/** AJAX action name for saving inline SEO fields. */
-	const AJAX_ACTION = 'crawlwp_inline_seo_save';
+	/** Nonce action for Quick Edit saves. */
+	const QUICK_EDIT_NONCE = 'crawlwp_quick_edit_seo';
 
 	public function __construct()
 	{
 		add_action('init', [$this, 'register_hooks'], 20);
-		add_action('wp_ajax_' . self::AJAX_ACTION, [$this, 'ajax_save']);
 
 		/*
-		 * Persist the score to post meta whenever a post is saved via the normal
-		 * metabox form.  Priority 20 ensures MetaFields::save() has already run
-		 * and the fresh field values are in the database before we calculate.
+		 * Persist the score to post meta whenever a post is saved.
+		 * Priority 20 ensures MetaFields::save() (priority 10)
+		 * has already written the fresh meta values.
 		 */
 		add_action('save_post', [$this, 'persist_score'], 20);
+
+		/* Save SEO fields submitted via Quick Edit. */
+		add_action('save_post', [$this, 'save_quick_edit'], 15);
 	}
 
 	/**
@@ -47,12 +50,14 @@ class PostListColumn
 			add_action("manage_{$post_type}_posts_custom_column", [$this, 'render_column'], 10, 2);
 		}
 
+		/* Inject our fields into the Quick Edit panel (fires once per column). */
+		add_action('quick_edit_custom_box', [$this, 'render_quick_edit_fields'], 10, 2);
+
 		/* Sort support. */
 		add_filter('request', [$this, 'sort_query']);
 
-		add_action('admin_head',           [$this, 'print_styles']);
-		add_action('admin_footer',         [$this, 'print_inline_edit_js']);
-		add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
+		add_action('admin_head',   [$this, 'print_styles']);
+		add_action('admin_footer', [$this, 'print_quick_edit_js']);
 	}
 
 	/**
@@ -123,56 +128,122 @@ class PostListColumn
 		$label  = $this->state_label($state, $score);
 		$tip    = $this->tooltip($post_id);
 
+		/* Store current SEO values in data attributes so Quick Edit JS can pre-fill the fields. */
 		$seo_title = (string) MetaFields::get($post_id, MetaFields::SEO_TITLE, '');
 		$seo_desc  = (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION, '');
 
 		printf(
-			'<span class="cwp-seo-score cwp-seo-score--%s" title="%s" aria-label="%s">' .
+			'<span class="cwp-seo-score cwp-seo-score--%s" title="%s" aria-label="%s"' .
+			' data-cwp-seo-title="%s" data-cwp-seo-desc="%s">' .
 			'<span class="cwp-seo-score__bar" style="width:%d%%"></span>' .
 			'<span class="cwp-seo-score__label">%s</span>' .
 			'</span>',
 			esc_attr($state),
 			esc_attr($tip),
 			esc_attr($label),
+			esc_attr($seo_title),
+			esc_attr($seo_desc),
 			(int) $score,
 			esc_html($label)
 		);
+	}
 
-		/* Inline-edit trigger + hidden form. */
-		printf(
-			'<button type="button" class="cwp-seo-inline-edit__trigger button-link" ' .
-			'data-post-id="%d" aria-expanded="false" aria-label="%s">%s</button>',
-			(int) $post_id,
-			esc_attr__('Edit SEO fields', 'mihdan-index-now'),
-			esc_html__('Edit SEO', 'mihdan-index-now')
-		);
+	// -------------------------------------------------------------------------
+	// Quick Edit — render fields
+	// -------------------------------------------------------------------------
 
-		printf(
-			'<div class="cwp-seo-inline-edit" id="cwp-seo-inline-edit-%d" hidden>' .
-			'<label class="cwp-seo-inline-edit__label">%s' .
-			'<input type="text" class="cwp-seo-inline-edit__title" value="%s" ' .
-			'placeholder="%s" maxlength="200" />' .
-			'</label>' .
-			'<label class="cwp-seo-inline-edit__label">%s' .
-			'<textarea class="cwp-seo-inline-edit__desc" rows="3" ' .
-			'placeholder="%s" maxlength="500">%s</textarea>' .
-			'</label>' .
-			'<div class="cwp-seo-inline-edit__actions">' .
-			'<button type="button" class="cwp-seo-inline-edit__save button button-primary button-small">%s</button>' .
-			'<button type="button" class="cwp-seo-inline-edit__cancel button button-small">%s</button>' .
-			'<span class="cwp-seo-inline-edit__spinner spinner"></span>' .
-			'</div>' .
-			'</div>',
-			(int) $post_id,
-			esc_html__('SEO Title', 'mihdan-index-now'),
-			esc_attr($seo_title),
-			esc_attr__('Leave blank to use global template', 'mihdan-index-now'),
-			esc_html__('Meta Description', 'mihdan-index-now'),
-			esc_attr__('Leave blank to use global template', 'mihdan-index-now'),
-			esc_textarea($seo_desc),
-			esc_html__('Save', 'mihdan-index-now'),
-			esc_html__('Cancel', 'mihdan-index-now')
-		);
+	/**
+	 * Inject SEO title + meta description fields into the Quick Edit panel.
+	 *
+	 * @param string $column_name
+	 * @param string $post_type
+	 */
+	public function render_quick_edit_fields(string $column_name, string $post_type): void
+	{
+		if ($column_name !== 'crawlwp_seo_score') {
+			return;
+		}
+
+		/* Only for registered public post types. */
+		if (! in_array($post_type, $this->get_public_post_types(), true)) {
+			return;
+		}
+
+		wp_nonce_field(self::QUICK_EDIT_NONCE, 'cwp_quick_edit_nonce');
+		?>
+		<fieldset class="inline-edit-col-right cwp-quick-edit-seo">
+			<div class="inline-edit-col">
+				<h4 class="cwp-quick-edit-seo__heading"><?php esc_html_e('CrawlWP SEO', 'mihdan-index-now'); ?></h4>
+				<label class="cwp-quick-edit-seo__label">
+					<span class="title"><?php esc_html_e('SEO Title', 'mihdan-index-now'); ?></span>
+					<input type="text"
+						name="cwp_quick_edit_seo_title"
+						class="cwp-quick-edit-seo__title"
+						value=""
+						maxlength="200"
+						placeholder="<?php esc_attr_e('Leave blank to use global template', 'mihdan-index-now'); ?>" />
+				</label>
+				<label class="cwp-quick-edit-seo__label">
+					<span class="title"><?php esc_html_e('Meta Description', 'mihdan-index-now'); ?></span>
+					<textarea
+						name="cwp_quick_edit_seo_desc"
+						class="cwp-quick-edit-seo__desc"
+						rows="3"
+						maxlength="500"
+						placeholder="<?php esc_attr_e('Leave blank to use global template', 'mihdan-index-now'); ?>"></textarea>
+				</label>
+			</div>
+		</fieldset>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Quick Edit — save fields
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Save SEO fields submitted via the Quick Edit panel.
+	 *
+	 * WordPress fires save_post for Quick Edit submissions; the nonce we embed
+	 * in the panel lets us distinguish our submission from other save_post calls.
+	 *
+	 * @param int $post_id
+	 */
+	public function save_quick_edit(int $post_id): void
+	{
+		/* Only act when our nonce is present (i.e. Quick Edit was used). */
+		$nonce = isset($_POST['cwp_quick_edit_nonce']) ? $_POST['cwp_quick_edit_nonce'] : '';
+		if (! wp_verify_nonce($nonce, self::QUICK_EDIT_NONCE)) {
+			return;
+		}
+
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return;
+		}
+
+		if (! current_user_can('edit_post', $post_id)) {
+			return;
+		}
+
+		$seo_title = isset($_POST['cwp_quick_edit_seo_title'])
+			? sanitize_text_field(wp_unslash($_POST['cwp_quick_edit_seo_title']))
+			: '';
+
+		$seo_desc = isset($_POST['cwp_quick_edit_seo_desc'])
+			? sanitize_textarea_field(wp_unslash($_POST['cwp_quick_edit_seo_desc']))
+			: '';
+
+		if ($seo_title !== '') {
+			update_post_meta($post_id, MetaFields::SEO_TITLE, $seo_title);
+		} else {
+			delete_post_meta($post_id, MetaFields::SEO_TITLE);
+		}
+
+		if ($seo_desc !== '') {
+			update_post_meta($post_id, MetaFields::SEO_DESCRIPTION, $seo_desc);
+		} else {
+			delete_post_meta($post_id, MetaFields::SEO_DESCRIPTION);
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -189,27 +260,12 @@ class PostListColumn
 	 */
 	public function persist_score(int $post_id): void
 	{
-		/* Skip autosaves, revisions and AJAX saves (the inline-edit handler
-		   calls calculate+persist directly). */
+		/* Skip autosaves and revisions. */
 		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
 			return;
 		}
 
 		if (wp_is_post_revision($post_id)) {
-			return;
-		}
-
-		if (defined('DOING_AJAX') && DOING_AJAX) {
-			return;
-		}
-
-		/* Verify the metabox nonce so we only act on our own form submissions. */
-		$nonce = isset($_POST[MetaFields::NONCE_NAME]) ? $_POST[MetaFields::NONCE_NAME] : '';
-		if (! wp_verify_nonce($nonce, MetaFields::NONCE_ACTION)) {
-			return;
-		}
-
-		if (! current_user_can('edit_post', $post_id)) {
 			return;
 		}
 
@@ -222,6 +278,16 @@ class PostListColumn
 		$submitted = isset($_POST[MetaFields::SEO_SCORE]) ? trim($_POST[MetaFields::SEO_SCORE]) : '';
 
 		if ($submitted !== '' && is_numeric($submitted)) {
+			/* Verify the metabox nonce — only our own form submissions carry this. */
+			$nonce = isset($_POST[MetaFields::NONCE_NAME]) ? $_POST[MetaFields::NONCE_NAME] : '';
+			if (! wp_verify_nonce($nonce, MetaFields::NONCE_ACTION)) {
+				return;
+			}
+
+			if (! current_user_can('edit_post', $post_id)) {
+				return;
+			}
+
 			$score = (float) $submitted;
 			// Clamp to [0, 100] so a tampered value can't break the display.
 			$score = max(0.0, min(100.0, $score));
@@ -414,71 +480,6 @@ class PostListColumn
 	}
 
 	// -------------------------------------------------------------------------
-	// AJAX save handler
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Handle the AJAX request to save inline SEO fields.
-	 */
-	public function ajax_save(): void
-	{
-		check_ajax_referer('crawlwp_inline_seo_save', 'nonce');
-
-		$post_id = isset($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
-
-		if (! $post_id || ! current_user_can('edit_post', $post_id)) {
-			wp_send_json_error(['message' => __('Permission denied.', 'mihdan-index-now')], 403);
-		}
-
-		$seo_title = isset($_POST['seo_title']) ? sanitize_text_field(wp_unslash($_POST['seo_title'])) : '';
-		$seo_desc  = isset($_POST['seo_desc'])  ? sanitize_textarea_field(wp_unslash($_POST['seo_desc'])) : '';
-
-		if ($seo_title !== '') {
-			update_post_meta($post_id, MetaFields::SEO_TITLE, $seo_title);
-		} else {
-			delete_post_meta($post_id, MetaFields::SEO_TITLE);
-		}
-
-		if ($seo_desc !== '') {
-			update_post_meta($post_id, MetaFields::SEO_DESCRIPTION, $seo_desc);
-		} else {
-			delete_post_meta($post_id, MetaFields::SEO_DESCRIPTION);
-		}
-
-		/* Calculate, persist, and return the updated score. */
-		$score = $this->calculate_score($post_id);
-		update_post_meta($post_id, MetaFields::SEO_SCORE, (string) $score);
-		$state = $this->score_state($score);
-		$label = $this->state_label($state, $score);
-		$tip   = $this->tooltip($post_id);
-
-		wp_send_json_success([
-			'score' => (int) $score,
-			'state' => $state,
-			'label' => $label,
-			'tip'   => $tip,
-		]);
-	}
-
-	/**
-	 * Enqueue admin assets needed only on post list screens.
-	 */
-	public function enqueue_assets(): void
-	{
-		$screen = get_current_screen();
-
-		if (! $screen || $screen->base !== 'edit') {
-			return;
-		}
-
-		wp_localize_script('jquery', 'crawlwpInlineEdit', [
-			'ajaxUrl' => admin_url('admin-ajax.php'),
-			'nonce'   => wp_create_nonce(self::AJAX_ACTION),
-			'action'  => self::AJAX_ACTION,
-		]);
-	}
-
-	// -------------------------------------------------------------------------
 	// Sort support
 	// -------------------------------------------------------------------------
 
@@ -508,7 +509,7 @@ class PostListColumn
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Print minimal inline styles for the SEO score column and inline edit UI.
+	 * Print minimal inline styles for the SEO score column and Quick Edit fields.
 	 * Only emitted on post list screens.
 	 */
 	public function print_styles(): void
@@ -522,7 +523,7 @@ class PostListColumn
 		?>
 		<style id="cwp-seo-score-styles">
 			/* SEO Score column — CrawlWP */
-			.column-crawlwp_seo_score { width: 120px; }
+			.column-crawlwp_seo_score { width: 80px; }
 
 			.cwp-seo-score {
 				display: inline-flex;
@@ -560,69 +561,42 @@ class PostListColumn
 			.cwp-seo-score--poor  .cwp-seo-score__label { color: #d63638; }
 			.cwp-seo-score--noindex .cwp-seo-score__label { color: #8c8f94; }
 
-			/* Inline edit trigger */
-			.cwp-seo-inline-edit__trigger {
-				display: block;
-				margin-top: 4px;
-				font-size: 11px;
-				color: #2271b1;
-				text-decoration: none;
-				cursor: pointer;
-			}
-			.cwp-seo-inline-edit__trigger:hover { color: #135e96; text-decoration: underline; }
-
-			/* Inline edit panel */
-			.cwp-seo-inline-edit {
-				position: absolute;
-				left: 0;
-				z-index: 200;
-				background: #fff;
-				border: 1px solid #c3c4c7;
-				border-radius: 4px;
-				box-shadow: 0 3px 10px rgba(0,0,0,.12);
-				padding: 12px 14px;
-				width: 380px;
-				max-width: 90vw;
+			/* Quick Edit SEO fields */
+			.cwp-quick-edit-seo__heading {
+				margin-bottom: 2px;
+				padding: 0;
 			}
 
-			.cwp-seo-inline-edit__label {
-				display: block;
-				margin-bottom: 10px;
+			.cwp-quick-edit-seo__label {
+				display: flex;
+				align-items: baseline;
+				margin-bottom: 8px;
+			}
+
+			.cwp-quick-edit-seo__label .title {
+				min-width: 110px;
+				padding-right: 8px;
 				font-size: 12px;
-				font-weight: 600;
-				color: #1d2327;
+				color: #646970;
 			}
 
-			.cwp-seo-inline-edit__title,
-			.cwp-seo-inline-edit__desc {
-				display: block;
+			.cwp-quick-edit-seo__title,
+			.cwp-quick-edit-seo__desc {
+				flex: 1;
 				width: 100%;
-				margin-top: 4px;
 				box-sizing: border-box;
 				font-size: 13px;
 			}
-
-			.cwp-seo-inline-edit__actions {
-				display: flex;
-				align-items: center;
-				gap: 8px;
-				margin-top: 8px;
-			}
-
-			.cwp-seo-inline-edit__spinner {
-				float: none;
-				visibility: hidden;
-			}
-			.cwp-seo-inline-edit__spinner.is-active { visibility: visible; }
 		</style>
 		<?php
 	}
 
 	/**
-	 * Print the inline JS for the inline-edit panel.
+	 * Print the JS that pre-fills our Quick Edit fields from the data attributes
+	 * stored on the score span in the list row.
 	 * Only emitted on post list screens.
 	 */
-	public function print_inline_edit_js(): void
+	public function print_quick_edit_js(): void
 	{
 		$screen = get_current_screen();
 
@@ -631,95 +605,37 @@ class PostListColumn
 		}
 
 		?>
-		<script id="cwp-seo-inline-edit-js">
+		<script id="cwp-seo-quick-edit-js">
 		(function($) {
 			'use strict';
 
-			var cfg = window.crawlwpInlineEdit || {};
-			if (!cfg.ajaxUrl) { return; }
+			$(document).ready(function() {
+				if (typeof inlineEditPost === 'undefined') { return; }
 
- 		/* Close any open panel. */
- 		function closeAll() {
- 			$('.cwp-seo-inline-edit').prop('hidden', true);
- 			$('.cwp-seo-inline-edit__trigger').attr('aria-expanded', 'false');
- 		}
+				/* Store a reference to the original open() method. */
+				var _originalOpen = inlineEditPost.open;
 
- 		/* Open / toggle the panel for a trigger button. */
- 		$(document).on('click', '.cwp-seo-inline-edit__trigger', function(e) {
- 			e.stopPropagation();
- 			var $btn   = $(this);
- 			var postId = $btn.data('post-id');
- 			var $panel = $('#cwp-seo-inline-edit-' + postId);
+				/* Override open() so we can pre-fill our fields each time the row expands. */
+				inlineEditPost.open = function(id) {
+					/* Call the original first so WP sets up the row. */
+					_originalOpen.apply(this, arguments);
 
- 			/* If this panel is already open, close it. */
- 			var alreadyOpen = !$panel.prop('hidden');
+					/* Resolve the numeric post ID (WP may pass the TR id string). */
+					var postId = (typeof id === 'string') ? id.replace(/[^0-9]/g, '') : String(id);
+					if (!postId) { return; }
 
- 			closeAll();
+					/* Read stored values from the data attributes on the score span. */
+					var $score = $('#post-' + postId + ' .cwp-seo-score');
+					if (!$score.length) { return; }
 
- 			if (alreadyOpen) { return; }
+					var seoTitle = $score.data('cwp-seo-title') || '';
+					var seoDesc  = $score.data('cwp-seo-desc')  || '';
 
- 			/* Position relative to the cell. */
- 			var $cell = $btn.closest('td');
- 			$cell.css('position', 'relative');
-
- 			$panel.prop('hidden', false);
- 			$btn.attr('aria-expanded', 'true');
- 			$panel.find('.cwp-seo-inline-edit__title').trigger('focus');
- 		});
-
- 		/* Close on outside click or Escape. */
- 		$(document).on('click', function() { closeAll(); });
- 		$(document).on('keydown', function(e) {
- 			if (e.key === 'Escape') { closeAll(); }
- 		});
- 		$(document).on('click', '.cwp-seo-inline-edit', function(e) { e.stopPropagation(); });
-
-			/* Cancel button. */
-			$(document).on('click', '.cwp-seo-inline-edit__cancel', function() {
-				closeAll();
-			});
-
-			/* Save button — AJAX. */
-			$(document).on('click', '.cwp-seo-inline-edit__save', function() {
-				var $btn    = $(this);
-				var $panel  = $btn.closest('.cwp-seo-inline-edit');
-				var postId  = $panel.attr('id').replace('cwp-seo-inline-edit-', '');
-				var $spin   = $panel.find('.cwp-seo-inline-edit__spinner');
-				var title   = $panel.find('.cwp-seo-inline-edit__title').val();
-				var desc    = $panel.find('.cwp-seo-inline-edit__desc').val();
-
-				$btn.prop('disabled', true);
-				$spin.addClass('is-active');
-
-				$.post(cfg.ajaxUrl, {
-					action:    cfg.action,
-					nonce:     cfg.nonce,
-					post_id:   postId,
-					seo_title: title,
-					seo_desc:  desc
-				}, function(res) {
-					$btn.prop('disabled', false);
-					$spin.removeClass('is-active');
-
-					if (!res.success) {
-						alert(res.data && res.data.message ? res.data.message : 'Save failed.');
-						return;
-					}
-
-					/* Update the score cell without a page reload. */
-					var d      = res.data;
-					var $score = $panel.closest('td').find('.cwp-seo-score');
-
-					$score
-						.attr('class', 'cwp-seo-score cwp-seo-score--' + d.state)
-						.attr('title', d.tip)
-						.attr('aria-label', d.label);
-
-					$score.find('.cwp-seo-score__bar').css('width', d.score + '%');
-					$score.find('.cwp-seo-score__label').text(d.label);
-
-					closeAll();
-				});
+					/* Find the Quick Edit row that WP just revealed and fill our fields. */
+					var $editRow = $('#edit-' + postId);
+					$editRow.find('.cwp-quick-edit-seo__title').val(seoTitle);
+					$editRow.find('.cwp-quick-edit-seo__desc').val(seoDesc);
+				};
 			});
 		}(jQuery));
 		</script>
