@@ -2,118 +2,175 @@
 
 namespace Mihdan\IndexNow\SEOCore\SitemapSettings;
 
+use WP_Site;
+
 /**
  * Google News Sitemap provider.
  *
- * Registers a custom WordPress sitemap endpoint at /wp-sitemap-news.xml
- * that outputs a Google News-compatible sitemap with news:news metadata.
+ * Extends WP_Sitemaps_Provider so WordPress fully manages routing and the
+ * sitemap index entry. The provider is registered under the name 'crawlwp-news'
+ * and its sitemap is accessible at:
  *
- * Only posts published within the last 2 days are included, per the
- * Google News Sitemap specification.
+ *   {site}/wp-sitemap-crawlwp-news-1.xml
  *
- * The provider reads its configuration from SitemapSettings:
- *   news_enabled          – whether the news sitemap is active.
+ * Because WordPress's default sitemap renderer does not support custom XML
+ * namespaces, this class intercepts template_redirect for its own sitemap
+ * request and outputs Google-News-compliant XML directly.
+ *
+ * Only posts published within the last 2 days are included, per the Google
+ * News Sitemap specification (max 1 000 entries).
+ *
+ * Configuration is read from SitemapSettings:
+ *   news_enabled          – whether the news sitemap is active (default off).
  *   news_publication_name – the <news:name> value (defaults to site title).
  *   news_post_types       – multicheck array of post types to include.
  *
- * The output URL is:  {site}/wp-sitemap-news.xml
+ * Developer hooks:
+ *   crawlwp_news_sitemap_query_args   – filter WP_Query args before fetching entries.
+ *   crawlwp_news_sitemap_entry        – filter / exclude a single entry (return false to skip).
  */
-class NewsSitemapProvider
+class NewsSitemapProvider extends \WP_Sitemaps_Provider
 {
-	/** Rewrite tag used for the custom sitemap endpoint. */
-	const QUERY_VAR = 'crawlwp_news_sitemap';
+	/**
+	 * Provider name used with wp_register_sitemap_provider().
+	 *
+	 * Must NOT contain hyphens: WordPress's sitemap rewrite rule
+	 * ^wp-sitemap-([a-z]+?)-([a-z\d_-]+?)-(\d+?)\.xml$ would otherwise
+	 * split 'crawlwp-news' across the provider and subtype capture groups,
+	 * causing a 'crawlwp' provider lookup that fails and falls through to a
+	 * normal page render.
+	 */
+	const PROVIDER_NAME = 'crawlwpnews';
 
 	public function __construct()
 	{
-		add_action('init', [$this, 'add_rewrite_rule']);
-		add_action('template_redirect', [$this, 'maybe_render']);
-		add_filter('query_vars', [$this, 'add_query_var']);
+		$this->name = self::PROVIDER_NAME;
+		$this->object_type = 'crawlwp_news_item';
 
-		/* Flush rewrite rules once after the rule is first registered. */
-		add_action('admin_init', [$this, 'maybe_flush_rewrite_rules']);
+		/*
+		 * Register the provider with WordPress's sitemap system so it gets
+		 * a proper entry in /wp-sitemap.xml index and a canonical URL.
+		 * This must run on 'init' after WordPress finishes its own sitemap setup.
+		 */
+		add_action('init', [$this, 'register_provider'], 20);
+
+		/*
+		 * Intercept the sitemap URL for our provider and render Google-News
+		 * XML with the news: namespace, which WordPress's renderer cannot output.
+		 */
+		add_action('template_redirect', [$this, 'maybe_render'], 1);
 	}
 
 	// -------------------------------------------------------------------------
-	// Rewrite / routing
+	// WordPress sitemap provider API (abstract methods)
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Register the /wp-sitemap-news.xml rewrite rule.
+	 * Returns the list of URL entries for a given page.
+	 *
+	 * WordPress calls this when it renders a normal sitemap for the provider.
+	 * In practice we intercept before the default renderer runs (see
+	 * maybe_render()), so this only executes if something bypasses our hook.
+	 *
+	 * @param int $page_num Page number (1-based).
+	 * @param string $object_subtype Unused; news has no subtypes.
+	 * @return array<int,array{loc:string}>
 	 */
-	public function add_rewrite_rule(): void
+	public function get_url_list($page_num, $object_subtype = ''): array
 	{
-		add_rewrite_rule('^wp-sitemap-news\.xml$', 'index.php?' . self::QUERY_VAR . '=1', 'top');
-	}
+		$entries = $this->get_entries();
+		$urls = [];
 
-	/**
-	 * Flush rewrite rules once after first registration so the new endpoint
-	 * is immediately accessible without a manual Permalinks save.
-	 */
-	public function maybe_flush_rewrite_rules(): void
-	{
-		if (get_option('crawlwp_news_sitemap_flushed')) {
-			return;
+		foreach ($entries as $entry) {
+			$urls[] = ['loc' => $entry['loc']];
 		}
 
-		flush_rewrite_rules(false);
-		update_option('crawlwp_news_sitemap_flushed', true, false);
+		return $urls;
 	}
 
 	/**
-	 * Expose the query var to WordPress.
+	 * Returns the maximum number of pages.
 	 *
-	 * @param array $vars
-	 * @return array
+	 * Google News sitemaps are always a single page (≤ 1 000 items).
+	 *
+	 * @param string $object_subtype Unused.
+	 * @return int
 	 */
-	public function add_query_var(array $vars): array
+	public function get_max_num_pages($object_subtype = ''): int
 	{
-		$vars[] = self::QUERY_VAR;
-		return $vars;
+		if (SitemapSettings::get('news_enabled', 'off') !== 'on') {
+			return 0;
+		}
+
+		return 1;
 	}
 
+	// -------------------------------------------------------------------------
+	// Registration
+	// -------------------------------------------------------------------------
+
 	/**
-	 * Render the news sitemap when our query var is present.
+	 * Register this provider with WordPress's sitemap system.
+	 * Runs on 'init' at priority 20 (after core sitemap setup).
+	 */
+	public function register_provider(): void
+	{
+		if (function_exists('wp_register_sitemap_provider')) {
+			wp_register_sitemap_provider(self::PROVIDER_NAME, $this);
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Custom Google-News XML output
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Intercept the sitemap request for our provider and render Google-News XML.
+	 *
+	 * WordPress sets $wp_query->get('sitemap') to the provider name when
+	 * serving a provider sitemap, so we can detect our own URL cleanly.
 	 */
 	public function maybe_render(): void
 	{
-		if (!get_query_var(self::QUERY_VAR)) {
+		/* Only act on sitemap requests for our provider. */
+		if (get_query_var('sitemap') !== self::PROVIDER_NAME) {
 			return;
 		}
 
-		/* Respect the news_enabled toggle. */
+		/* Respect the news_enabled toggle; return 404 when disabled. */
 		if (SitemapSettings::get('news_enabled', 'off') !== 'on') {
 			wp_die(
-				esc_html__('The News Sitemap is disabled. Enable it under CrawlWP → Settings → Advanced → Sitemap.', 'mihdan-index-now'),
+				esc_html__('The News Sitemap is disabled. Enable it under Advanced → Sitemap.', 'mihdan-index-now'),
 				esc_html__('News Sitemap disabled', 'mihdan-index-now'),
 				['response' => 404]
 			);
 		}
 
-		$this->render();
+		$this->render_xml();
 		exit;
 	}
 
-	// -------------------------------------------------------------------------
-	// Sitemap output
-	// -------------------------------------------------------------------------
+	private function get_language()
+	{
+		$locale = strtolower(str_replace('_', '-', get_locale()));
+
+		return in_array($locale, ['zh-cn', 'zh-tw'], true) ? $locale : explode('-', $locale)[0];
+	}
 
 	/**
-	 * Stream the Google News sitemap XML to the browser.
+	 * Output a Google-News-compliant sitemap with the news: namespace.
 	 */
-	private function render(): void
+	private function render_xml(): void
 	{
-		$entries = $this->get_entries();
-
 		header('Content-Type: application/xml; charset=UTF-8');
-		header('X-Robots-Tag: noindex, follow');
+
+		$entries = $this->get_entries();
+		$publication_name = SitemapSettings::get('news_publication_name', '') ?: get_bloginfo('name');
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 		echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
 		echo '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">' . "\n";
-
-		$publication_name = SitemapSettings::get('news_publication_name', '') ?: get_bloginfo('name');
-		$language = substr(get_locale(), 0, 2);
 
 		foreach ($entries as $entry) {
 			echo "\t<url>\n";
@@ -121,7 +178,7 @@ class NewsSitemapProvider
 			echo "\t\t<news:news>\n";
 			echo "\t\t\t<news:publication>\n";
 			echo "\t\t\t\t<news:name>" . esc_xml($publication_name) . "</news:name>\n";
-			echo "\t\t\t\t<news:language>" . esc_xml($language) . "</news:language>\n";
+			echo "\t\t\t\t<news:language>" . esc_xml($this->get_language()) . "</news:language>\n";
 			echo "\t\t\t</news:publication>\n";
 			echo "\t\t\t<news:publication_date>" . esc_xml($entry['publication_date']) . "</news:publication_date>\n";
 			echo "\t\t\t<news:title>" . esc_xml($entry['title']) . "</news:title>\n";
@@ -137,7 +194,7 @@ class NewsSitemapProvider
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Retrieve recent posts to include in the news sitemap.
+	 * Retrieve recent posts for the news sitemap.
 	 *
 	 * @return array<int,array{loc:string,title:string,publication_date:string}>
 	 */
@@ -154,7 +211,7 @@ class NewsSitemapProvider
 			'post_type' => $post_types,
 			'post_status' => 'publish',
 			'posts_per_page' => 1000,
-			'date_queryz' => [
+			'date_query' => [
 				[
 					'after' => '2 days ago',
 					'inclusive' => true,

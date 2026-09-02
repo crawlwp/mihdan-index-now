@@ -327,13 +327,10 @@ class Notifications
 	 */
 	private function is_sitemap_enabled(): bool
 	{
-		/* The native WP sitemap API was added in WP 5.5. */
-		if (!function_exists('wp_sitemaps_get_server')) {
-			return false;
-		}
+		/** @global \WP_Sitemaps $wp_sitemaps */
+		global $wp_sitemaps;
 
-		/* Check the canonical filter; plugins/robots-meta can disable it this way. */
-		return (bool)apply_filters('wp_sitemaps_enabled', true);
+		return $wp_sitemaps->sitemaps_enabled();
 	}
 
 	/**

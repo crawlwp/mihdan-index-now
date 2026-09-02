@@ -76,7 +76,7 @@ class SitemapSettings
 	 */
 	private function add_news_sitemap_fields(WPOSA $wposa): void
 	{
-		$news_sitemap_url = home_url('/wp-sitemap-news.xml');
+		$news_sitemap_url = get_sitemap_url(NewsSitemapProvider::PROVIDER_NAME);
 		$news_desc = sprintf(
 		/* translators: %s: URL to the news sitemap. */
 			__('Enable a dedicated News Sitemap feed that Google News requires. Only recent content (published within the last 2 days) is included. Access your news sitemap at: %s', 'mihdan-index-now'),
@@ -94,7 +94,7 @@ class SitemapSettings
 			'id' => 'news_enabled',
 			'type' => 'switch',
 			'name' => __('Enable News Sitemap', 'mihdan-index-now'),
-			'desc' => esc_html__('Register a /wp-sitemap-news.xml feed for Google News indexing.', 'mihdan-index-now'),
+			'desc' => esc_html__('Register a /wp-sitemap-crawlwpnews-1.xml feed for Google News indexing.', 'mihdan-index-now'),
 			'default' => 'off',
 		]);
 
