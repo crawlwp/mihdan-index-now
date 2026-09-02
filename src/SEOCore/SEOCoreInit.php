@@ -46,8 +46,11 @@ class SEOCoreInit
 		new PostListColumn();
 		new FrontendHead();
 
-		$breadcrumbs = new Breadcrumbs();
-		$breadcrumbs->setup();
+		// init hooking to prevent "Function _load_textdomain_just_in_time was called incorrectly" error.
+		add_action('init', function() {
+			$breadcrumbs = new Breadcrumbs();
+			$breadcrumbs->setup();
+		});
 
 		new FrontendOutput();
 		new Sitemap();
