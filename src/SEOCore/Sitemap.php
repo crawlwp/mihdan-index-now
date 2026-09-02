@@ -1,9 +1,13 @@
 <?php
 
-namespace Mihdan\IndexNow\SEOCore\TitleMeta;
+namespace Mihdan\IndexNow\SEOCore;
+
+use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
+use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
 
 /**
- * Keeps the core sitemap in sync with the "Hide from search results" toggles.
+ * Keeps the WordPress core sitemap in sync with the "Hide from search results" toggles
+ * and adds hreflang alternate-link support for Polylang, WPML, and TranslatePress.
  */
 class Sitemap
 {
@@ -12,12 +16,21 @@ class Sitemap
 		add_filter('wp_sitemaps_post_types', [$this, 'filter_post_types']);
 		add_filter('wp_sitemaps_taxonomies', [$this, 'filter_taxonomies']);
 		add_filter('wp_sitemaps_add_provider', [$this, 'filter_providers'], 10, 2);
+
+		/* Boot whichever multilingual integration is active. */
+		$this->setup_multilingual();
 	}
+
+	// -------------------------------------------------------------------------
+	// Noindex filters (unchanged from original)
+	// -------------------------------------------------------------------------
 
 	/**
 	 * Drop post types that are hidden from search results.
 	 *
 	 * @param array $post_types Post type objects keyed by name.
+	 *
+	 * @return array
 	 */
 	public function filter_post_types($post_types)
 	{
@@ -38,6 +51,8 @@ class Sitemap
 	 * Drop taxonomies that are hidden from search results.
 	 *
 	 * @param array $taxonomies Taxonomy objects keyed by name.
+	 *
+	 * @return array
 	 */
 	public function filter_taxonomies($taxonomies)
 	{
@@ -69,5 +84,23 @@ class Sitemap
 		}
 
 		return $provider;
+	}
+
+	// -------------------------------------------------------------------------
+	// Multilingual integration bootstrap
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Detect active multilingual plugin and boot the appropriate integration.
+	 */
+	private function setup_multilingual()
+	{
+		if (defined('POLYLANG_VERSION')) {
+			(new Sitemap\Polylang())->setup();
+		} elseif (defined('ICL_SITEPRESS_VERSION')) {
+			(new Sitemap\WPML())->setup();
+		} elseif (defined('TRP_PLUGIN_VERSION')) {
+			(new Sitemap\TranslatePress())->setup();
+		}
 	}
 }

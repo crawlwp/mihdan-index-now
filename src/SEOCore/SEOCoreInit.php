@@ -16,7 +16,7 @@ use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
 use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
-use Mihdan\IndexNow\SEOCore\TitleMeta\Sitemap;
+use Mihdan\IndexNow\SEOCore\Sitemap;
 
 class SEOCoreInit
 {
