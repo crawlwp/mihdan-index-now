@@ -118,6 +118,14 @@ class SocialSettings
 			'placeholder' => 'https://www.facebook.com/YourPersonalProfile',
 			'desc'        => esc_html__('Used as the article:author Open Graph tag. Authors can override this on their profile page.', 'mihdan-index-now'),
 		]);
+
+		$wposa->add_field(self::SECTION, [
+			'id'          => 'fb_app_id',
+			'type'        => 'text',
+			'name'        => __('Facebook App ID', 'mihdan-index-now'),
+			'placeholder' => '123456789012345',
+			'desc'        => esc_html__('Your Facebook App ID. When set, the fb:app_id meta tag is added to every page, enabling Facebook Insights and improving link-preview attribution. Create an app at developers.facebook.com.', 'mihdan-index-now'),
+		]);
 	}
 
 	// -------------------------------------------------------------------------

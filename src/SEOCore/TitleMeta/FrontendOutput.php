@@ -698,6 +698,26 @@ class FrontendOutput
 
 				if ($mod) {
 					$og_tags['article:modified_time'] = $mod;
+					/* og:updated_time is an alias recognised by some crawlers as a fallback. */
+					$og_tags['og:updated_time'] = $mod;
+				}
+			}
+
+			/* article:section — primary category name for standard posts. */
+			if ($data['post']->post_type === 'post') {
+				$categories = get_the_category($data['post']->ID);
+
+				if (! empty($categories)) {
+					$og_tags['article:section'] = get_cat_name($categories[0]->cat_ID);
+				}
+
+				/* article:tag — one tag per taxonomy tag term. */
+				$tags = get_the_tags($data['post']->ID);
+
+				if (is_array($tags) && ! empty($tags)) {
+					$og_tags['article:tag'] = array_map(function ($tag) {
+						return $tag->name;
+					}, $tags);
 				}
 			}
 		}
@@ -714,11 +734,26 @@ class FrontendOutput
 		 */
 		$og_tags = (array) apply_filters('crawlwp_open_graph_tags', $og_tags, $data);
 
+		/* fb:app_id — output when a Facebook App ID is configured. */
+		$fb_app_id = (string) SocialSettings::get('fb_app_id', '');
+
+		if ($fb_app_id !== '') {
+			$og_tags['fb:app_id'] = $fb_app_id;
+		}
+
 		/* Print each tag; use esc_url for URL properties. */
 		$url_props = ['og:url', 'og:image', 'article:author'];
 
 		foreach ($og_tags as $property => $content) {
 			if ($content === '' || $content === null) {
+				continue;
+			}
+
+			/* article:tag can be an array — emit one tag per value. */
+			if (is_array($content)) {
+				foreach ($content as $single) {
+					echo '<meta property="' . esc_attr($property) . '" content="' . esc_attr((string) $single) . '" />' . "\n";
+				}
 				continue;
 			}
 
