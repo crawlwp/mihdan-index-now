@@ -234,6 +234,12 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
           </div>
         </div>
       </div>
+
+      <div class="cwp-field">
+        <div class="cwp-label-row"><label class="cwp-label" for="cwpOgImageAlt"><?php esc_html_e('Social image alt text', 'mihdan-index-now'); ?></label></div>
+        <input class="cwp-input" id="cwpOgImageAlt" name="<?php echo esc_attr(MetaFields::OG_IMAGE_ALT); ?>" type="text" value="<?php echo esc_attr($data['og_image_alt']); ?>" placeholder="<?php esc_attr_e('Describe the image for screen readers and social networks', 'mihdan-index-now'); ?>">
+        <p class="cwp-hint"><?php esc_html_e('Used as og:image:alt and twitter:image:alt. Falls back to the image\'s WordPress alt text.', 'mihdan-index-now'); ?></p>
+      </div>
     </div>
 
     <!-- X panel -->

@@ -397,6 +397,22 @@ class RssSettings
 		$before = $this->resolve(self::get('rss_before_content', ''));
 		$after  = $this->resolve(self::get('rss_after_content', self::DEFAULT_AFTER));
 
+		/**
+		 * Filter the HTML prepended to each RSS feed item.
+		 *
+		 * @param string       $before    The resolved before-content HTML.
+		 * @param \WP_Post|null $post     The current post in The Loop.
+		 */
+		$before = (string) apply_filters('crawlwp_rss_content_before', $before, get_post());
+
+		/**
+		 * Filter the HTML appended to each RSS feed item.
+		 *
+		 * @param string        $after  The resolved after-content HTML.
+		 * @param \WP_Post|null $post   The current post in The Loop.
+		 */
+		$after = (string) apply_filters('crawlwp_rss_content_after', $after, get_post());
+
 		if ($before !== '') {
 			$content = '<p>' . $before . '</p>' . $content;
 		}
@@ -418,6 +434,12 @@ class RssSettings
 	{
 		$before = $this->resolve(self::get('rss_before_content', ''));
 		$after  = $this->resolve(self::get('rss_after_content', self::DEFAULT_AFTER));
+
+		/** This filter is documented in inject_content(). */
+		$before = (string) apply_filters('crawlwp_rss_content_before', $before, get_post());
+
+		/** This filter is documented in inject_content(). */
+		$after = (string) apply_filters('crawlwp_rss_content_after', $after, get_post());
 
 		if ($before !== '') {
 			$excerpt = '<p>' . $before . '</p>' . $excerpt;

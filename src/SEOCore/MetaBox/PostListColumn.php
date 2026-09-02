@@ -333,8 +333,15 @@ class PostListColumn
 
 		/* Weighted: title 40%, description 40%, keyword 20%. */
 		$score = ($title_score * 0.4) + ($desc_score * 0.4) + ($kw_score * 0.2);
+		$score = round($score, 1);
 
-		return round($score, 1);
+		/**
+		 * Filter the calculated SEO score for a post.
+		 *
+		 * @param float $score   The computed score (0–100).
+		 * @param int   $post_id The post ID.
+		 */
+		return (float) apply_filters('crawlwp_post_seo_score', $score, $post_id);
 	}
 
 	/**

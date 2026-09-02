@@ -38,6 +38,7 @@ class FrontendOutput
 		add_filter('pre_get_document_title', [$this, 'filter_document_title'], 15);
 		add_filter('wp_robots', [$this, 'filter_robots'], 20);
 		add_action('wp_head', [$this, 'output'], 1);
+		add_action('wp_head', [$this, 'output_pagination_links'], 1);
 		add_action('wp_head', [$this, 'output_site_graph'], 2);
 		add_action('template_redirect', [$this, 'unhook_core_canonical']);
 	}
@@ -197,10 +198,28 @@ class FrontendOutput
 			$context
 		);
 
+		/**
+		 * Filter the resolved meta title for the current request.
+		 *
+		 * @param string $title      The resolved title string.
+		 * @param string $entity_key The matched entity key (e.g. 'pt_post', 'home').
+		 * @param array  $context    The resolution context array.
+		 */
+		$title = (string) apply_filters('crawlwp_meta_title', $title, $entity_key, $context);
+
 		$description = Variables::replace(
 			$overrides['description'] ?? $this->template($entity_key, $prefix . 'description'),
 			$context
 		);
+
+		/**
+		 * Filter the resolved meta description for the current request.
+		 *
+		 * @param string $description The resolved description string.
+		 * @param string $entity_key  The matched entity key.
+		 * @param array  $context     The resolution context array.
+		 */
+		$description = (string) apply_filters('crawlwp_meta_description', $description, $entity_key, $context);
 
 		/* Unified social override: one title/description shared by OG and X/Twitter. */
 		$social_title = Variables::replace(
@@ -218,6 +237,17 @@ class FrontendOutput
 		$og_title_base = $social_title !== '' ? $social_title : $this->maybe_strip_site_name($title);
 		$x_title_base  = $og_title_base;
 
+		$canonical = $this->canonical($post, $overrides);
+
+		/**
+		 * Filter the canonical URL for the current request.
+		 *
+		 * @param string $canonical   The resolved canonical URL.
+		 * @param string $entity_key  The matched entity key.
+		 * @param array  $context     The resolution context array.
+		 */
+		$canonical = (string) apply_filters('crawlwp_canonical_url', $canonical, $entity_key, $context);
+
 		$this->resolved = [
 			'entity'         => $entity_key,
 			'prefix'         => $prefix,
@@ -226,7 +256,7 @@ class FrontendOutput
 			'title'          => $title,
 			'description'    => $description,
 			'robots'         => $this->robots($entity_key, $prefix, $post),
-			'canonical'      => $this->canonical($post, $overrides),
+			'canonical'      => $canonical,
 			'og_title'       => $og_title_base,
 			'og_description' => $social_description !== '' ? $social_description : $description,
 			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post),
@@ -460,6 +490,7 @@ class FrontendOutput
 
 	/**
 	 * Canonical URL for the current request.
+	 * For paged archive/taxonomy/author views, returns the paginated URL.
 	 */
 	private function canonical(?\WP_Post $post, array $overrides): string
 	{
@@ -468,46 +499,61 @@ class FrontendOutput
 		}
 
 		if (is_front_page()) {
-			return home_url('/');
-		}
-
-		if ($post !== null) {
-			return (string) get_permalink($post);
-		}
-
-		if (is_category() || is_tag() || is_tax()) {
+			$url = home_url('/');
+		} elseif ($post !== null) {
+			$url = (string) get_permalink($post);
+		} elseif (is_category() || is_tag() || is_tax()) {
 			$term = get_queried_object();
 
 			if ($term instanceof \WP_Term) {
 				$link = get_term_link($term);
-
-				return is_wp_error($link) ? '' : $link;
+				$url  = is_wp_error($link) ? '' : (string) $link;
+			} else {
+				$url = '';
 			}
-		}
-
-		if (is_author()) {
+		} elseif (is_author()) {
 			$user = get_queried_object();
-
-			return $user instanceof \WP_User ? (string) get_author_posts_url($user->ID) : '';
-		}
-
-		if (is_post_type_archive()) {
+			$url  = $user instanceof \WP_User ? (string) get_author_posts_url($user->ID) : '';
+		} elseif (is_post_type_archive()) {
 			$post_type = $this->queried_post_type();
-
-			if ($post_type !== null) {
-				$link = get_post_type_archive_link($post_type->name);
-
-				return $link ?: '';
-			}
-		}
-
-		if (is_home()) {
+			$url       = $post_type !== null ? (string) (get_post_type_archive_link($post_type->name) ?: '') : '';
+		} elseif (is_home()) {
 			$page_for_posts = (int) get_option('page_for_posts');
-
-			return $page_for_posts ? (string) get_permalink($page_for_posts) : home_url('/');
+			$url            = $page_for_posts ? (string) get_permalink($page_for_posts) : home_url('/');
+		} else {
+			$url = '';
 		}
 
-		return '';
+		/* Adjust canonical for paged archive/taxonomy/author pages. */
+		$paged = (int) get_query_var('paged');
+
+		if ($paged > 1 && $url !== '' && ! is_singular()) {
+			$url = (string) get_pagenum_link($paged);
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Emit rel=prev and rel=next pagination links.
+	 * Only active on paged non-singular pages (archives, taxonomies, author, etc.).
+	 */
+	public function output_pagination_links(): void
+	{
+		if (is_admin() || is_singular()) {
+			return;
+		}
+
+		$paged     = (int) max(1, get_query_var('paged'));
+		$max_pages = isset($GLOBALS['wp_query']) ? (int) $GLOBALS['wp_query']->max_num_pages : 1;
+
+		if ($paged > 1) {
+			echo '<link rel="prev" href="' . esc_url(get_pagenum_link($paged - 1)) . '" />' . "\n";
+		}
+
+		if ($paged < $max_pages) {
+			echo '<link rel="next" href="' . esc_url(get_pagenum_link($paged + 1)) . '" />' . "\n";
+		}
 	}
 
 	/**
@@ -571,23 +617,7 @@ class FrontendOutput
 
 	private function output_open_graph(array $data): void
 	{
-		echo '<meta property="og:type" content="' . esc_attr($data['og_type']) . '" />' . "\n";
-
-		if ($data['og_title'] !== '') {
-			echo '<meta property="og:title" content="' . esc_attr($data['og_title']) . '" />' . "\n";
-		}
-
-		if ($data['og_description'] !== '') {
-			echo '<meta property="og:description" content="' . esc_attr($data['og_description']) . '" />' . "\n";
-		}
-
-		if ($data['canonical'] !== '') {
-			echo '<meta property="og:url" content="' . esc_url($data['canonical']) . '" />' . "\n";
-		}
-
-		echo '<meta property="og:site_name" content="' . esc_attr(get_bloginfo('name')) . '" />' . "\n";
-
-		/* Use entity image first; fall back to global social image fallback set in Social Networks settings. */
+		/* Use entity image first; fall back to global social image fallback. */
 		$og_image = $data['og_image'];
 
 		if ($og_image === '') {
@@ -598,13 +628,50 @@ class FrontendOutput
 			}
 		}
 
+		/* Build OG tags array — keyed by property name. */
+		$og_tags = [
+			'og:locale'    => str_replace('-', '_', get_locale()),
+			'og:type'      => $data['og_type'],
+			'og:title'     => $data['og_title'],
+			'og:description' => $data['og_description'],
+			'og:url'       => $data['canonical'],
+			'og:site_name' => get_bloginfo('name'),
+		];
+
 		if ($og_image !== '') {
-			echo '<meta property="og:image" content="' . esc_url($og_image) . '" />' . "\n";
+			$og_tags['og:image'] = $og_image;
+
+			/* Image dimensions — try to resolve from WordPress attachment metadata. */
+			$img_id = attachment_url_to_postid($og_image);
+
+			if ($img_id > 0) {
+				$img_meta = wp_get_attachment_metadata($img_id);
+
+				if (is_array($img_meta) && isset($img_meta['width'], $img_meta['height'])) {
+					$og_tags['og:image:width']  = (string) (int) $img_meta['width'];
+					$og_tags['og:image:height'] = (string) (int) $img_meta['height'];
+				}
+			}
+
+			/* Alt text: metabox field → attachment alt. */
+			$img_alt = '';
+
+			if ($data['post'] instanceof \WP_Post) {
+				$img_alt = (string) MetaFields::get($data['post']->ID, MetaFields::OG_IMAGE_ALT, '');
+			}
+
+			if ($img_alt === '' && $img_id > 0) {
+				$img_alt = (string) get_post_meta($img_id, '_wp_attachment_image_alt', true);
+			}
+
+			if ($img_alt !== '') {
+				$og_tags['og:image:alt'] = $img_alt;
+			}
 		}
 
 		/* article:author for posts — per-author Facebook URL overrides the global fallback. */
 		if ($data['post'] instanceof \WP_Post) {
-			$author_id      = (int) $data['post']->post_author;
+			$author_id       = (int) $data['post']->post_author;
 			$facebook_author = $author_id > 0 ? UserProfile::get($author_id, UserProfile::META_FACEBOOK) : '';
 
 			if ($facebook_author === '') {
@@ -612,7 +679,7 @@ class FrontendOutput
 			}
 
 			if ($facebook_author !== '') {
-				echo '<meta property="article:author" content="' . esc_url($facebook_author) . '" />' . "\n";
+				$og_tags['article:author'] = $facebook_author;
 			}
 		}
 
@@ -622,7 +689,7 @@ class FrontendOutput
 				$pub = get_the_date('c', $data['post']);
 
 				if ($pub) {
-					echo '<meta property="article:published_time" content="' . esc_attr($pub) . '" />' . "\n";
+					$og_tags['article:published_time'] = $pub;
 				}
 			}
 
@@ -630,9 +697,36 @@ class FrontendOutput
 				$mod = get_the_modified_date('c', $data['post']);
 
 				if ($mod) {
-					echo '<meta property="article:modified_time" content="' . esc_attr($mod) . '" />' . "\n";
+					$og_tags['article:modified_time'] = $mod;
 				}
 			}
+		}
+
+		/**
+		 * Filter the Open Graph meta tags array before output.
+		 *
+		 * Array is keyed by property name (e.g. 'og:title'). Remove a key to
+		 * suppress that tag; add a key to emit a new one. Values are escaped
+		 * with esc_attr() before printing (URLs additionally with esc_url()).
+		 *
+		 * @param array $og_tags Associative array of OG property => content.
+		 * @param array $data    The resolved page data.
+		 */
+		$og_tags = (array) apply_filters('crawlwp_open_graph_tags', $og_tags, $data);
+
+		/* Print each tag; use esc_url for URL properties. */
+		$url_props = ['og:url', 'og:image', 'article:author'];
+
+		foreach ($og_tags as $property => $content) {
+			if ($content === '' || $content === null) {
+				continue;
+			}
+
+			$content_attr = in_array($property, $url_props, true)
+				? esc_url((string) $content)
+				: esc_attr((string) $content);
+
+			echo '<meta property="' . esc_attr($property) . '" content="' . $content_attr . '" />' . "\n";
 		}
 	}
 
@@ -651,12 +745,9 @@ class FrontendOutput
 			}
 		}
 
-		echo '<meta name="twitter:card" content="' . esc_attr($card_type) . '" />' . "\n";
-
 		/* Global site @username: read from Site Information profile_x field. */
 		$twitter_site_url = (string) SiteInfoSettings::get('profile_x', '');
-		/* Extract @handle from a full URL (https://x.com/handle) or use as-is if already a handle. */
-		$twitter_site = '';
+		$twitter_site     = '';
 
 		if ($twitter_site_url !== '') {
 			if (str_starts_with($twitter_site_url, '@')) {
@@ -671,18 +762,6 @@ class FrontendOutput
 			}
 		}
 
-		if ($twitter_site !== '') {
-			echo '<meta name="twitter:site" content="' . esc_attr($twitter_site) . '" />' . "\n";
-		}
-
-		if ($data['x_title'] !== '') {
-			echo '<meta name="twitter:title" content="' . esc_attr($data['x_title']) . '" />' . "\n";
-		}
-
-		if ($data['x_description'] !== '') {
-			echo '<meta name="twitter:description" content="' . esc_attr($data['x_description']) . '" />' . "\n";
-		}
-
 		/* Use entity image; fall back to OG image and then global fallback. */
 		$x_image = $data['x_image'] !== '' ? $data['x_image'] : $data['og_image'];
 
@@ -694,43 +773,131 @@ class FrontendOutput
 			}
 		}
 
-		if ($x_image !== '') {
-			echo '<meta name="twitter:image" content="' . esc_url($x_image) . '" />' . "\n";
-		}
+		/* twitter:creator — per-post → author profile → global setting. */
+		$creator = '';
 
 		if ($data['post'] instanceof \WP_Post) {
-			$creator = MetaFields::get($data['post']->ID, MetaFields::X_CREATOR);
+			$creator = (string) MetaFields::get($data['post']->ID, MetaFields::X_CREATOR);
 
-			/* Fall back to per-author user profile setting, then global Social Networks setting. */
-			if (empty($creator)) {
+			if ($creator === '') {
 				$author_id = (int) $data['post']->post_author;
-				$creator   = $author_id > 0 ? UserProfile::get($author_id, UserProfile::META_TWITTER) : '';
+				$creator   = $author_id > 0 ? (string) UserProfile::get($author_id, UserProfile::META_TWITTER) : '';
 			}
 
-			if (empty($creator)) {
+			if ($creator === '') {
 				$creator = (string) SocialSettings::get('twitter_creator', '');
 			}
+		}
 
-			if (! empty($creator)) {
-				echo '<meta name="twitter:creator" content="' . esc_attr($creator) . '" />' . "\n";
+		/* Build Twitter card tags array — keyed by name attribute. */
+		$twitter_tags = [
+			'twitter:card'        => $card_type,
+			'twitter:site'        => $twitter_site,
+			'twitter:title'       => $data['x_title'],
+			'twitter:description' => $data['x_description'],
+			'twitter:creator'     => $creator,
+		];
+
+		if ($x_image !== '') {
+			$twitter_tags['twitter:image'] = $x_image;
+
+			/* Alt text: metabox OG image alt → attachment alt. */
+			$img_alt = '';
+
+			if ($data['post'] instanceof \WP_Post) {
+				$img_alt = (string) MetaFields::get($data['post']->ID, MetaFields::OG_IMAGE_ALT, '');
 			}
+
+			if ($img_alt === '') {
+				$img_id = attachment_url_to_postid($x_image);
+
+				if ($img_id > 0) {
+					$img_alt = (string) get_post_meta($img_id, '_wp_attachment_image_alt', true);
+				}
+			}
+
+			if ($img_alt !== '') {
+				$twitter_tags['twitter:image:alt'] = $img_alt;
+			}
+		}
+
+		/**
+		 * Filter the X/Twitter card meta tags array before output.
+		 *
+		 * Array is keyed by tag name (e.g. 'twitter:title'). Remove a key to
+		 * suppress that tag; add a key to emit a new one.
+		 *
+		 * @param array $twitter_tags Associative array of twitter:name => content.
+		 * @param array $data         The resolved page data.
+		 */
+		$twitter_tags = (array) apply_filters('crawlwp_twitter_card_tags', $twitter_tags, $data);
+
+		/* Print each tag; use esc_url for the image URL. */
+		$url_names = ['twitter:image'];
+
+		foreach ($twitter_tags as $name => $content) {
+			if ($content === '' || $content === null) {
+				continue;
+			}
+
+			$content_attr = in_array($name, $url_names, true)
+				? esc_url((string) $content)
+				: esc_attr((string) $content);
+
+			echo '<meta name="' . esc_attr($name) . '" content="' . $content_attr . '" />' . "\n";
 		}
 	}
 
 	/**
-	 * JSON-LD for singular requests.
+	 * JSON-LD for the current request.
 	 *
-	 * Resolves schema type from the two-select model (page_type + article_type).
-	 * When page_type is a WebPage subtype and article_type is set (not 'none'),
-	 * the effective @type is the article type — matching Yoast/Rank Math behaviour.
-	 * Legacy single-select values stored in SCHEMA_TYPE are used as the article type
-	 * when the new fields are absent, so existing data is not lost.
+	 * For singular posts: resolves schema type from the two-select model (page_type +
+	 * article_type). When page_type is a WebPage subtype and article_type is set
+	 * (not 'none'), the effective @type is the article type — matching Yoast/Rank Math.
+	 * Legacy single-select values stored in SCHEMA_TYPE are used when new fields are absent.
+	 *
+	 * For non-singular pages: emits a minimal WebPage subtype (CollectionPage,
+	 * SearchResultsPage, ProfilePage) when the page is indexable.
 	 */
 	private function output_schema(array $data): void
 	{
 		$post = $data['post'];
 
 		if (! $post instanceof \WP_Post) {
+			/* Non-singular schema: determine appropriate WebPage subtype. */
+			if (is_home() || is_post_type_archive() || is_category() || is_tag() || is_tax()) {
+				$schema_type = 'CollectionPage';
+			} elseif (is_author()) {
+				$schema_type = 'ProfilePage';
+			} elseif (is_search()) {
+				$schema_type = 'SearchResultsPage';
+			} else {
+				return;
+			}
+
+			/* Skip noindexed pages — no value in structured data for them. */
+			if (! empty($data['robots']) && in_array('noindex', $data['robots'], true)) {
+				return;
+			}
+
+			$schema = [
+				'@context' => 'https://schema.org',
+				'@type'    => $schema_type,
+				'url'      => $data['canonical'],
+				'name'     => $data['title'],
+			];
+
+			if ($data['description'] !== '') {
+				$schema['description'] = $data['description'];
+			}
+
+			/** This filter is documented below in the singular branch. */
+			$schema = apply_filters('crawlwp_schema_data', $schema, null);
+
+			echo '<script type="application/ld+json">' . "\n";
+			echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			echo "\n" . '</script>' . "\n";
+
 			return;
 		}
 

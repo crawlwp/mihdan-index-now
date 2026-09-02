@@ -51,12 +51,32 @@ class Variables
 		$output = preg_replace_callback(
 			self::TOKEN_REGEX,
 			function ($matches) {
-				return $this->resolve_token(strtolower($matches[1]));
+				$token = strtolower($matches[1]);
+				$value = $this->resolve_token($token);
+
+				/**
+				 * Filter the value resolved for a single template variable.
+				 *
+				 * @param string $value   The resolved value.
+				 * @param string $token   The token name (e.g. 'post.title').
+				 * @param array  $context The resolution context array.
+				 */
+				return (string) apply_filters('crawlwp_variable_resolved', $value, $token, $this->context);
 			},
 			$template
 		);
 
-		return self::cleanup((string) $output);
+		/**
+		 * Filter the fully resolved template string (after all token substitutions,
+		 * before separator cleanup).
+		 *
+		 * @param string $output   The resolved string before cleanup.
+		 * @param string $template The original template.
+		 * @param array  $context  The resolution context.
+		 */
+		$output = (string) apply_filters('crawlwp_template_resolved', (string) $output, $template, $this->context);
+
+		return self::cleanup($output);
 	}
 
 	/**

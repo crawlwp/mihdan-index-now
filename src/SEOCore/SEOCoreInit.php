@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore;
 
 use Mihdan\IndexNow\SEOCore\Breadcrumbs\Breadcrumbs;
+use Mihdan\IndexNow\SEOCore\Breadcrumbs\BreadcrumbSettings;
 use Mihdan\IndexNow\SEOCore\MetaBox\Assets;
 use Mihdan\IndexNow\SEOCore\MetaBox\PostListColumn;
 use Mihdan\IndexNow\SEOCore\MetaBox\FrontendHead;
@@ -28,6 +29,7 @@ class SEOCoreInit
 		new SiteInfoSettings();
 		new SocialSettings();
 		new RssSettings();
+		new BreadcrumbSettings();
 		new UserProfile();
 
 		new SiteVerificationSettings();

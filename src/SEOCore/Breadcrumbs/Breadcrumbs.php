@@ -2,6 +2,8 @@
 
 namespace Mihdan\IndexNow\SEOCore\Breadcrumbs;
 
+use Mihdan\IndexNow\SEOCore\Breadcrumbs\BreadcrumbSettings;
+
 /**
  * Builds and renders HTML breadcrumbs for every public front-end context.
  *
@@ -32,10 +34,10 @@ class Breadcrumbs
 	public function __construct()
 	{
 		$this->args = [
-			'separator'       => '&rsaquo;',
-			'taxonomy'        => 'category',
-			'display_current' => 'true',
-			'label_home'      => __('Home', 'mihdan-index-now'),
+			'separator'       => BreadcrumbSettings::get('separator', '›'),
+			'taxonomy'        => BreadcrumbSettings::get('taxonomy', 'category'),
+			'display_current' => BreadcrumbSettings::get('display_current', 'on') !== 'off' ? 'true' : 'false',
+			'label_home'      => BreadcrumbSettings::get('label_home', __('Home', 'mihdan-index-now')),
 			/* translators: %s = search query */
 			'label_search'    => __('Search results for &#8220;%s&#8221;', 'mihdan-index-now'),
 			'label_404'       => __('Page not found', 'mihdan-index-now'),
@@ -48,7 +50,25 @@ class Breadcrumbs
 
 	public function setup(): void
 	{
+		if (BreadcrumbSettings::get('enabled', 'on') === 'off') {
+			return;
+		}
+
 		add_shortcode('crawlwp_breadcrumbs', [$this, 'render_shortcode']);
+		add_action('wp_enqueue_scripts', [$this, 'enqueue_styles']);
+	}
+
+	/**
+	 * Enqueue the default breadcrumb stylesheet.
+	 */
+	public function enqueue_styles(): void
+	{
+		wp_enqueue_style(
+			'crawlwp-breadcrumbs',
+			plugin_dir_url(__FILE__) . 'assets/breadcrumbs.css',
+			[],
+			'1.0.0'
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -97,6 +117,15 @@ class Breadcrumbs
 		$output .= implode(' ' . $sep . ' ', $items);
 		$output .= '</nav>';
 
+		/**
+		 * Filter the final rendered breadcrumb HTML.
+		 *
+		 * @param string $output The complete HTML string.
+		 * @param array  $links  The resolved link array (ancestor items only).
+		 * @param array  $args   The breadcrumb arguments.
+		 */
+		$output = (string) apply_filters('crawlwp_breadcrumbs_html', $output, $links, $this->args);
+
 		return $output;
 	}
 
@@ -106,12 +135,17 @@ class Breadcrumbs
 
 	/**
 	 * Returns a BreadcrumbList schema node for inclusion in the site graph,
-	 * or null when there is nothing to emit (e.g. the homepage).
+	 * or null when there is nothing to emit (e.g. the homepage) or when
+	 * the schema output is disabled in settings.
 	 *
 	 * @return array|null
 	 */
 	public function get_schema_node()
 	{
+		if (BreadcrumbSettings::get('schema_enabled', 'on') === 'off') {
+			return null;
+		}
+
 		$this->parse();
 
 		$links = $this->get_links();

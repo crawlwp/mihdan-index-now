@@ -22,6 +22,7 @@ class MetaFields
 	public const OG_TITLE       = '_crawlwp_og_title';
 	public const OG_DESCRIPTION = '_crawlwp_og_description';
 	public const OG_IMAGE       = '_crawlwp_og_image';
+	public const OG_IMAGE_ALT   = '_crawlwp_og_image_alt';
 	public const OG_SYNC        = '_crawlwp_og_sync';
 
 	public const X_TITLE       = '_crawlwp_x_title';
@@ -52,6 +53,7 @@ class MetaFields
 		self::CANONICAL_URL,
 		self::OG_TITLE,
 		self::OG_DESCRIPTION,
+		self::OG_IMAGE_ALT,
 		self::X_TITLE,
 		self::X_DESCRIPTION,
 		self::X_CREATOR,
@@ -159,6 +161,7 @@ class MetaFields
 			'og_title'            => self::get($post_id, self::OG_TITLE),
 			'og_description'      => self::get($post_id, self::OG_DESCRIPTION),
 			'og_image'            => self::get($post_id, self::OG_IMAGE, 0),
+			'og_image_alt'        => self::get($post_id, self::OG_IMAGE_ALT),
 			'og_sync'             => self::get($post_id, self::OG_SYNC, '1'),
 			'x_title'             => self::get($post_id, self::X_TITLE),
 			'x_description'       => self::get($post_id, self::X_DESCRIPTION),
