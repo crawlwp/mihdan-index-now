@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 
+use Mihdan\IndexNow\SEOCore\Breadcrumbs\Breadcrumbs;
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
@@ -24,6 +25,13 @@ class FrontendOutput
 	 * @var array|null|false Null until resolved, false when nothing applies.
 	 */
 	private $resolved = null;
+
+	/**
+	 * Shared Breadcrumbs instance — built once per request.
+	 *
+	 * @var Breadcrumbs|null
+	 */
+	private $breadcrumbs = null;
 
 	public function __construct()
 	{
@@ -931,13 +939,18 @@ class FrontendOutput
 			];
 		}
 
+		/* --- BreadcrumbList node --- */
+		$bc_node = $this->get_breadcrumbs()->get_schema_node();
+
 		/* --- assemble and print --- */
+		$graph_nodes = [$website_node, $entity_node];
+		if ($bc_node !== null) {
+			$graph_nodes[] = $bc_node;
+		}
+
 		$graph = [
 			'@context' => 'https://schema.org',
-			'@graph'   => [
-				$website_node,
-				$entity_node,
-			],
+			'@graph'   => $graph_nodes,
 		];
 
 		/**
@@ -950,6 +963,18 @@ class FrontendOutput
 		echo '<script type="application/ld+json">' . "\n";
 		echo wp_json_encode($graph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 		echo "\n" . '</script>' . "\n";
+	}
+
+	/**
+	 * Returns the shared (memoised) Breadcrumbs instance for this request.
+	 */
+	private function get_breadcrumbs(): Breadcrumbs
+	{
+		if ($this->breadcrumbs === null) {
+			$this->breadcrumbs = new Breadcrumbs();
+		}
+
+		return $this->breadcrumbs;
 	}
 
 	/**

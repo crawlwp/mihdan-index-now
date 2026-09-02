@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore;
 
+use Mihdan\IndexNow\SEOCore\Breadcrumbs\Breadcrumbs;
 use Mihdan\IndexNow\SEOCore\MetaBox\Assets;
 use Mihdan\IndexNow\SEOCore\MetaBox\PostListColumn;
 use Mihdan\IndexNow\SEOCore\MetaBox\FrontendHead;
@@ -36,6 +37,9 @@ class SEOCoreInit
 		new Assets();
 		new PostListColumn();
 		new FrontendHead();
+
+		$breadcrumbs = new Breadcrumbs();
+		$breadcrumbs->setup();
 
 		new FrontendOutput();
 		new Sitemap();
