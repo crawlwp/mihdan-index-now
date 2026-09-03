@@ -195,6 +195,14 @@ input.wposa-field--switch:hover:after {
 	padding: 0;
 }
 
+.wposa-form-table__row_crawlwp_redirects_manager_ui th {
+	display: none !important;
+}
+
+.wposa-form-table__row_crawlwp_redirects_manager_ui td {
+	padding: 0;
+}
+
 .wposa-plugins {
 	display: grid;
 	grid-gap: 20px;
@@ -453,7 +461,7 @@ input.wposa-field--switch:hover:after {
 	border-radius: 6px;
 	box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
 	margin-top: 20px;
-	overflow: scroll;
+	overflow: hidden;
 	min-width: 0;
 }
 

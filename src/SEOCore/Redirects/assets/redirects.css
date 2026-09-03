@@ -3,7 +3,8 @@
 /* ---- Wrapper ---- */
 .cwp-redirect-wrap {
 	position: relative;
-	max-width: 1200px;
+	max-width: 100%;
+	overflow-x: hidden;
 }
 
 /* ---- Toolbar ---- */
@@ -95,6 +96,7 @@
 /* ---- Table ---- */
 .cwp-redirect-table {
 	width: 100%;
+	table-layout: fixed;
 	border-collapse: collapse;
 	font-size: 13px;
 	background: #fff;
@@ -149,11 +151,11 @@
 
 .cwp-redirect-col-from,
 .cwp-redirect-col-to {
-	max-width: 280px;
+	width: auto;
 }
 
 .cwp-redirect-col-note {
-	max-width: 160px;
+	width: 140px;
 }
 
 .cwp-redirect-col-hits {
@@ -169,9 +171,6 @@
 }
 
 /* URL display — truncate long URLs */
-.cwp-redirect-col-url {
-	max-width: 280px;
-}
 
 .cwp-redirect-url {
 	display: block;
