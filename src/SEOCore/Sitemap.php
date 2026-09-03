@@ -167,14 +167,15 @@ class Sitemap
 						margin: 0 0 8px;
 					}
 
-					#sitemap__header p {
-						color: rgba(255,255,255,.75);
+ 				#sitemap__header p {
+						color: #e8eaed;
 						font-size: 13px;
 						margin: 4px 0 0;
 					}
 
 					#sitemap__header a {
-						color: #72aee6;
+						color: #93c5fd;
+						text-decoration: underline;
 					}
 
 					#sitemap__content {
