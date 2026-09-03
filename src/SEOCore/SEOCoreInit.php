@@ -20,6 +20,7 @@ use Mihdan\IndexNow\SEOCore\Sitemap;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapSettings;
 use Mihdan\IndexNow\SEOCore\RobotsSettings\RobotsSettings;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\NewsSitemapProvider;
+use Mihdan\IndexNow\SEOCore\SitemapSettings\CustomUrlsSitemapProvider;
 
 class SEOCoreInit
 {
@@ -38,6 +39,7 @@ class SEOCoreInit
 		new RobotsSettings();
 		new SitemapSettings();
 		new NewsSitemapProvider();
+		new CustomUrlsSitemapProvider();
 		new UserProfile();
 
 		new SiteVerificationSettings();

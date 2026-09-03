@@ -44,6 +44,7 @@ class SitemapSettings
 
 		$this->add_sitemap_fields($wposa);
 		$this->add_news_sitemap_fields($wposa);
+		$this->add_custom_urls_fields($wposa);
 	}
 
 	// -------------------------------------------------------------------------
@@ -113,6 +114,36 @@ class SitemapSettings
 			'desc' => esc_html__('Select which post types should appear in the News Sitemap. Only published posts from the last 2 days are included.', 'mihdan-index-now'),
 			'options' => $this->get_post_type_options(),
 			'default' => ['post' => 'post'],
+		]);
+	}
+
+	/**
+	 * Custom URLs fields — textarea for adding additional URLs to the sitemap.
+	 */
+	private function add_custom_urls_fields(WPOSA $wposa): void
+	{
+		$custom_sitemap_url = get_sitemap_url(CustomUrlsSitemapProvider::PROVIDER_NAME);
+
+		$this->add_heading(
+			$wposa,
+			'heading_custom_urls',
+			__('Additional Custom URLs', 'mihdan-index-now'),
+			__('Add URLs to pages on your domain that are not managed by WordPress (e.g. a static landing page, a web app sub-path, or a custom checkout flow). One absolute URL per line. Invalid or duplicate entries are silently skipped. When at least one URL is saved, a dedicated sitemap is generated and linked from the sitemap index.', 'mihdan-index-now')
+		);
+
+		$wposa->add_field(self::SECTION, [
+			'id'          => 'custom_urls',
+			'type'        => 'textarea',
+			'name'        => __('Custom URLs', 'mihdan-index-now'),
+			'placeholder' => 'https://example.com/landing-page' . PHP_EOL . 'https://example.com/app/',
+			'rows'        => 10,
+			'desc'        => $custom_sitemap_url
+				? sprintf(
+					/* translators: %s: URL to the custom URLs sitemap. */
+					__('When URLs are saved, the custom sitemap will be available at: %s', 'mihdan-index-now'),
+					'<a href="' . esc_url($custom_sitemap_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($custom_sitemap_url) . '</a>'
+				)
+				: '',
 		]);
 	}
 
