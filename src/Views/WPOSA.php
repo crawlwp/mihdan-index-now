@@ -360,6 +360,24 @@ class WPOSA
 			true
 		);
 
+		// Admin settings JS (extracted from the former inline script() method).
+		wp_enqueue_script(
+			'crawlwp-admin',
+			CRAWLWP_PLUGIN_URL . 'src/Views/assets/admin.js',
+			array('jquery', 'iris'),
+			CRAWLWP_VERSION,
+			true
+		);
+		wp_localize_script(
+			'crawlwp-admin',
+			'wposaAdmin',
+			array(
+				'prefix'      => CRAWLWP_PREFIX,
+				'redirectUrl' => esc_url(admin_url('admin.php?page=' . Utils::get_plugin_slug())),
+				'yandexState' => wp_create_nonce('yandex_oauth_nonce'),
+			)
+		);
+
 		// Admin stylesheet.
 		wp_enqueue_style(
 			'crawlwp-admin',
@@ -405,7 +423,7 @@ class WPOSA
 			return false;
 		}
 
-		$menu['id'] = $this->get_prefix() . '_' . $menu['id'];
+		$menu['id'] = $this->plugin_prefix . '_' . $menu['id'];
 
 		// Assign the section to sections array.
 		$this->header_menu_array[] = $menu;
@@ -428,9 +446,9 @@ class WPOSA
 			return false;
 		}
 
-		$section['id'] = $this->get_prefix() . '_' . $section['id'];
+		$section['id'] = $this->plugin_prefix . '_' . $section['id'];
 		if (isset($section['header_menu_id'])) {
-			$section['header_menu_id'] = $this->get_prefix() . '_' . $section['header_menu_id'];
+			$section['header_menu_id'] = $this->plugin_prefix . '_' . $section['header_menu_id'];
 		}
 		// Assign the section to sections array.
 		$this->sections_array[] = $section;
@@ -477,7 +495,9 @@ class WPOSA
 		$arg = wp_parse_args($field_array, $defaults);
 
 		// Each field is an array named against its section.
-		$this->fields_array[$this->get_prefix() . '_' . $section][] = $arg;
+		$this->fields_array[$this->plugin_prefix . '_' . $section][] = $arg;
+		// Invalidate the sanitize index so a newly added field is included.
+		$this->sanitize_index = null;
 
 		return $this;
 	}
@@ -609,9 +629,16 @@ class WPOSA
 		 */
 		foreach ($this->sections_array as $section) {
 
-			if (get_option($section['id']) === false) {
-				// Add a new field as section ID.
+			// Only call add_option when the option is genuinely missing; the
+			// cached get_option() already returns false for non-existent keys
+			// so we bypass it here to avoid polluting the option_cache with
+			// a false entry before the option is created.
+			if ( ! array_key_exists($section['id'], $this->option_cache)) {
+				$this->option_cache[$section['id']] = get_option($section['id']);
+			}
+			if ($this->option_cache[$section['id']] === false) {
 				add_option($section['id'], '', '', false);
+				$this->option_cache[$section['id']] = [];
 			}
 
 			// Deals with sections description.
@@ -1214,8 +1241,8 @@ class WPOSA
 	 */
 	public function get_option(string $option, string $section, $default = '')
 	{
-		$section     = str_replace($this->get_prefix() . '_', '', $section);
-		$option_name = $this->get_prefix() . '_' . $section;
+		$section     = str_replace($this->plugin_prefix . '_', '', $section);
+		$option_name = $this->plugin_prefix . '_' . $section;
 
 		// Cache the entire option row for the lifetime of this request so that
 		// rendering 30 fields in one section only triggers a single DB read.
@@ -1234,7 +1261,7 @@ class WPOSA
 
 	public function set_option(string $option, $value, string $section): bool
 	{
-		$name = $this->get_prefix() . '_' . $section;
+		$name = $this->plugin_prefix . '_' . $section;
 
 		// Get option (use cache when available).
 		$options = array_key_exists($name, $this->option_cache)
@@ -1589,220 +1616,15 @@ class WPOSA
 	}
 
 	/**
-	 * Tabbable JavaScript codes & Initiate Color Picker
+	 * Tabbable JavaScript codes & Initiate Color Picker.
 	 *
-	 * This code uses localstorage for displaying active tabs
+	 * Previously contained 200 lines of inline JS; now the JS lives in
+	 * src/Views/assets/admin.js and is enqueued via admin_scripts() with
+	 * dynamic values passed through wp_localize_script( 'crawlwp-admin', … ).
+	 * This method is kept as a no-op so callers (show_forms) don't break.
 	 */
 	public function script()
 	{
-		?>
-		<script>
-			(function ($) {
-
-				$(document).ready(function () {
-
-					const
-						$show_settings_toggler = $('.show-settings'),
-						$help = $('.wpsa-help-tab-toggle').not('.is-url'),
-						wp = window.wp;
-
-					$help.on(
-						'click',
-						function () {
-							var $this = $(this);
-							var tab = '#tab-link-<?php echo esc_js(CRAWLWP_PREFIX); ?>_' + $this.data('tab');
-
-							if ($show_settings_toggler.attr('aria-expanded') === 'false') {
-								$show_settings_toggler.trigger('click');
-							}
-
-							$(tab).find('a').trigger('click');
-						}
-					);
-
-					//Initiate Color Picker.
-					$('.color-picker').iris();
-
-					// Switches option sections
-					$('.group').hide();
-					var activetab = '';
-					if ('undefined' != typeof localStorage) {
-						activetab = localStorage.getItem('activetab');
-					}
-					if ('' != activetab && $(activetab).length) {
-						$(activetab).fadeIn();
-					} else {
-						$('.group:first').fadeIn();
-					}
-					$('.group .collapsed').each(function () {
-						$(this)
-							.find('input:checked')
-							.parent()
-							.parent()
-							.parent()
-							.nextAll()
-							.each(function () {
-								if ($(this).hasClass('last')) {
-									$(this).removeClass('hidden');
-									return false;
-								}
-								$(this)
-									.filter('.hidden')
-									.removeClass('hidden');
-							});
-					});
-
-					if ('' != activetab && $(activetab + '-tab').length) {
-						$(activetab + '-tab').addClass('wposa-nav-tab-active');
-					} else {
-						$('.wposa-nav-tab-wrapper a:first').addClass('wposa-nav-tab-active');
-					}
-					$('.wposa-nav-tab-wrapper a').click(function (evt) {
-						$('.wposa-nav-tab-wrapper a').removeClass('wposa-nav-tab-active');
-						$(this)
-							.addClass('wposa-nav-tab-active')
-							.blur();
-						var clicked_group = $(this).attr('href');
-						if ('undefined' != typeof localStorage) {
-							localStorage.setItem('activetab', $(this).attr('href'));
-						}
-						$('.group').hide();
-						$(clicked_group).fadeIn();
-						evt.preventDefault();
-					});
-
-					// Collapsible navigation groups.
-					var navGroupKey = function ($group) {
-						return 'wposa-navgroup-' + $group.data('group');
-					};
-
-					var setNavGroupCollapsed = function ($group, collapsed, store) {
-						var $items = $group.children('.wposa-nav-group__items');
-
-						$group.toggleClass('wposa-nav-group--collapsed', collapsed);
-						$group
-							.children('.wposa-nav-group__toggle')
-							.attr('aria-expanded', collapsed ? 'false' : 'true');
-
-						$items.stop(true, true).css('display', '');
-
-						if (store && 'undefined' != typeof localStorage) {
-							localStorage.setItem(navGroupKey($group), collapsed ? '1' : '0');
-						}
-					};
-
-					// Restore the saved state of every group, default is expanded.
-					$('.wposa-nav-group').each(function () {
-						var $group = $(this);
-
-						if ('undefined' == typeof localStorage) {
-							return;
-						}
-
-						if ('1' === localStorage.getItem(navGroupKey($group))) {
-							setNavGroupCollapsed($group, true, false);
-						}
-					});
-
-					// Keep the active item visible even when its group was collapsed.
-					if ('' != activetab && $(activetab + '-tab').length) {
-						var $active_group = $(activetab + '-tab').closest('.wposa-nav-group');
-
-						if ($active_group.hasClass('wposa-nav-group--collapsed')) {
-							setNavGroupCollapsed($active_group, false, true);
-						}
-					}
-
-					$(document).on('click', '.wposa-nav-group__toggle', function (evt) {
-						evt.preventDefault();
-
-						var $toggle = $(this),
-							$group = $toggle.closest('.wposa-nav-group'),
-							$items = $group.children('.wposa-nav-group__items'),
-							collapse = !$group.hasClass('wposa-nav-group--collapsed');
-
-						$toggle.attr('aria-expanded', collapse ? 'false' : 'true');
-
-						if ('undefined' != typeof localStorage) {
-							localStorage.setItem(navGroupKey($group), collapse ? '1' : '0');
-						}
-
-						if (collapse) {
-							$items.stop(true, true).slideUp(150, function () {
-								$group.addClass('wposa-nav-group--collapsed');
-								$items.css('display', '');
-							});
-						} else {
-							$group.removeClass('wposa-nav-group--collapsed');
-							$items
-								.hide()
-								.stop(true, true)
-								.slideDown(150, function () {
-									$items.css('display', '');
-								});
-						}
-					});
-
-					$('.wpsa-browse').on('click', function (event) {
-						event.preventDefault();
-
-						var self = $(this);
-
-						// Create the media frame.
-						var file_frame = (wp.media.frames.file_frame = wp.media({
-							title: self.data('uploader_title'),
-							button: {
-								text: self.data('uploader_button_text')
-							},
-							multiple: false
-						}));
-
-						file_frame.on('select', function () {
-							attachment = file_frame
-								.state()
-								.get('selection')
-								.first()
-								.toJSON();
-
-							self
-								.prev('.wpsa-url')
-								.val(attachment.url)
-								.change();
-						});
-
-						// Finally, open the modal
-						file_frame.open();
-					});
-
-					$('input.wpsa-url')
-						.on('change keyup paste input', function () {
-							var self = $(this);
-							self
-								.next()
-								.parent()
-								.children('.wpsa-image-preview')
-								.children('img')
-								.attr('src', self.val());
-						})
-						.change();
-
-					var REDIRECT_URL = '<?php echo esc_url(admin_url('admin.php?page=' . Utils::get_plugin_slug())); ?>';
-					var YSTATE = '<?php echo wp_create_nonce('yandex_oauth_nonce'); ?>';
-					var CODE_ENDPOINT = 'https://oauth.yandex.com/authorize?state=' + YSTATE + '&response_type=code&force_confirm=yes&redirect_uri=' + REDIRECT_URL + '&client_id=';
-
-					$('#button_get_token').on(
-						'click',
-						function () {
-							var CLIENT_ID = document.getElementById('crawlwp_yandex_webmaster[client_id]').value;
-
-							window.location.href = CODE_ENDPOINT + CLIENT_ID;
-						}
-					);
-				});
-
-			})(jQuery);
-
-		</script>
-		<?php
+		// All JS is now in assets/admin.js — nothing to output inline.
 	}
 }
