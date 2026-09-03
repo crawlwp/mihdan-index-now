@@ -23,7 +23,7 @@ class CoreSettings
 			]);
 
 			do_action('crawlwp_setup_fields_after_title_meta', $wposa, $this);
-		});
+		}, -1);
 	}
 
 	public function settings_fields(WPOSA $wposa, $settingsInstance)
