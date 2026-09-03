@@ -511,15 +511,25 @@ class RssSettings
 		/*
 		 * Support both space-padded {{ token }} and unpadded {{token}} forms,
 		 * matching the plugin's standard variable syntax.
+		 *
+		 * Use preg_replace_callback (not preg_replace with a string map) so that
+		 * HTML replacement values containing '$' (e.g. URLs with query strings)
+		 * are never misinterpreted as regex backreferences.
 		 */
-		$patterns = [
-			'/\{\{\s*authorlink\s*\}\}/'   => $author_link,
-			'/\{\{\s*postlink\s*\}\}/'     => $post_link,
-			'/\{\{\s*bloglink\s*\}\}/'     => $blog_link,
-			'/\{\{\s*blogdesclink\s*\}\}/' => $blog_desc_link,
+		$replacements = [
+			'authorlink'   => $author_link,
+			'postlink'     => $post_link,
+			'bloglink'     => $blog_link,
+			'blogdesclink' => $blog_desc_link,
 		];
 
-		return preg_replace(array_keys($patterns), array_values($patterns), $template);
+		return preg_replace_callback(
+			'/\{\{\s*(' . implode('|', array_map('preg_quote', array_keys($replacements))) . ')\s*\}\}/i',
+			function ($m) use ($replacements) {
+				return $replacements[ strtolower($m[1]) ] ?? $m[0];
+			},
+			$template
+		);
 	}
 
 	// -------------------------------------------------------------------------

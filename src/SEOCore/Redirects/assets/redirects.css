@@ -36,7 +36,7 @@
 	border-radius: 3px;
 	padding: 6px 14px;
 	font-size: 13px;
-	line-height: 1.4;
+	line-height: 2;
 	cursor: pointer;
 	text-decoration: none;
 	transition: background .15s, border-color .15s;
@@ -53,6 +53,7 @@
 	background: #fff;
 	color: #2271b1;
 	border-color: #2271b1;
+	line-height: 2;
 }
 
 .cwp-redirect-btn--outline:hover,

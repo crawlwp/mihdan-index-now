@@ -98,12 +98,31 @@ class RedirectsProcessor
 		// Determine the subject to compare against.
 		$subject = $ignore_qs ? $request_path : $request_with_query;
 
+		// Capture the query string from the request so we can pass it through
+		// to the destination when ignore_qs is disabled.
+		$request_query = parse_url($request_with_query, PHP_URL_QUERY);
+
 		if ($match_type === 'regex') {
 			return $this->match_regex($from, $subject, $redirect->to_url, $to_url);
 		}
 
 		// Exact match — normalise both sides.
-		return $this->match_exact($from, $subject, $redirect->to_url, $to_url);
+		if (!$this->match_exact($from, $subject, $redirect->to_url, $to_url)) {
+			return false;
+		}
+
+		// When ignore_qs is disabled and the stored rule has no query string,
+		// the match stripped the request query for comparison purposes. Now
+		// append it to the destination so users land on the equivalent URL.
+		if (!$ignore_qs && $request_query !== null && $request_query !== '') {
+			$from_has_query = strpos(urldecode($from), '?') !== false;
+			if (!$from_has_query) {
+				$separator = (strpos($to_url, '?') !== false) ? '&' : '?';
+				$to_url   .= $separator . $request_query;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -112,25 +131,43 @@ class RedirectsProcessor
 	 * Handles full URLs (stored when auto-created from permalink changes) and
 	 * path-only values (stored when entered manually by the admin).
 	 *
-	 * @param string $from    Stored from_url.
-	 * @param string $subject Current request path or full URI.
-	 * @param string $raw_to  Stored to_url.
-	 * @param string $to_url  Resolved destination (output).
+	 * When the stored from_url contains a query string, the full URI (path +
+	 * query) is compared. When from_url has no query string, only the path
+	 * portion of the request is compared — regardless of the ignore_qs setting
+	 * — so a rule like "/old-page/" correctly matches "/old-page/?foo=bar".
+	 *
+	 * @param string $from Stored from_url.
+	 * @param string $subject Current request path or full URI (depends on ignore_qs).
+	 * @param string $raw_to Stored to_url.
+	 * @param string|null $to_url Resolved destination (output).
 	 * @return bool
 	 */
 	private function match_exact(string $from, string $subject, string $raw_to, string &$to_url = null): bool
 	{
-		// If $from is a full URL, reduce it to its path for comparison.
+		// If $from is a full URL, reduce it to its path (and query) for comparison.
 		if (filter_var($from, FILTER_VALIDATE_URL)) {
-			$from_parsed = parse_url($from, PHP_URL_PATH);
+			$parsed_path  = parse_url($from, PHP_URL_PATH);
+			$parsed_query = parse_url($from, PHP_URL_QUERY);
 
-			if ($from_parsed === null) {
+			if ($parsed_path === null) {
 				return false;
 			}
 
-			$from = urldecode($from_parsed);
+			$from = urldecode($parsed_path);
+			if ($parsed_query !== null && $parsed_query !== '') {
+				$from .= '?' . $parsed_query;
+			}
 		} else {
 			$from = urldecode($from);
+		}
+
+		// When the stored rule has no query string, compare against the path
+		// portion of the request only. This ensures "/old-page/" matches
+		// "/old-page/?any=params" regardless of the ignore_qs setting.
+		$from_has_query = strpos($from, '?') !== false;
+		if (!$from_has_query) {
+			// Strip query string from subject to compare paths only.
+			$subject = urldecode(parse_url($subject, PHP_URL_PATH));
 		}
 
 		// Normalise trailing slashes.
@@ -150,8 +187,8 @@ class RedirectsProcessor
 	 *
 	 * @param string $pattern Pattern stored in from_url.
 	 * @param string $subject Current request path or full URI.
-	 * @param string $raw_to  Stored to_url (may contain $1, $2, …).
-	 * @param string $to_url  Resolved destination (output).
+	 * @param string $raw_to Stored to_url (may contain $1, $2, …).
+	 * @param string|null $to_url Resolved destination (output).
 	 * @return bool
 	 */
 	private function match_regex(string $pattern, string $subject, string $raw_to, string &$to_url = null): bool
@@ -169,11 +206,17 @@ class RedirectsProcessor
 		}
 
 		// Replace $1, $2 … capture group placeholders in the destination.
-		$to_url = preg_replace_callback('/\$(\d+)/', function($m) use ($matches) {
+		$resolved = preg_replace_callback('/\$(\d+)/', function($m) use ($matches) {
 			$idx = (int) $m[1];
-			return isset($matches[$idx]) ? $matches[$idx] : '';
+			return $matches[$idx] ?? '';
 		}, $raw_to);
 
+		// preg_replace_callback returns null on error; treat that as no match.
+		if ($resolved === null) {
+			return false;
+		}
+
+		$to_url = $resolved;
 		return true;
 	}
 }

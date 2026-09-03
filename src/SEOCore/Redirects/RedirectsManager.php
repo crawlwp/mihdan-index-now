@@ -412,11 +412,13 @@ class RedirectsManager
 	 */
 	private function build_where(array $args): array
 	{
+		global $wpdb;
+
 		$conditions = [];
 		$values     = [];
 
 		if (!empty($args['search'])) {
-			$search = '%' . $args['search'] . '%';
+			$search = '%' . $wpdb->esc_like($args['search']) . '%';
 			$conditions[] = "(from_url LIKE %s OR to_url LIKE %s OR note LIKE %s)";
 			$values[] = $search;
 			$values[] = $search;

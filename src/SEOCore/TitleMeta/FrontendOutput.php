@@ -1122,22 +1122,22 @@ class FrontendOutput
 		/* SearchAction (Sitelinks Search Box). */
 		if (SiteInfoSettings::get('search_action', 'on') !== 'off') {
 			$website_node['potentialAction'] = [
-				[
-					'@type'       => 'SearchAction',
- 				'target'      => [
-						'@type'       => 'EntryPoint',
-						'urlTemplate' => str_replace(
-							urlencode( '{search_term_string}' ),
-							'{search_term_string}',
-							get_search_link( '{search_term_string}' )
-						),
-					],
-					'query-input' => [
-						'@type'         => 'PropertyValueSpecification',
-						'valueRequired' => true,
-						'valueName'     => 'search_term_string',
-					],
+			[
+				'@type'       => 'SearchAction',
+				'target'      => [
+					'@type'       => 'EntryPoint',
+					'urlTemplate' => str_replace(
+						urlencode( '{search_term_string}' ),
+						'{search_term_string}',
+						get_search_link( '{search_term_string}' )
+					),
 				],
+				'query-input' => [
+					'@type'         => 'PropertyValueSpecification',
+					'valueRequired' => true,
+					'valueName'     => 'search_term_string',
+				],
+			],
 			];
 		}
 

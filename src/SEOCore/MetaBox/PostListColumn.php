@@ -46,8 +46,9 @@ class PostListColumn
 	public function register_hooks(): void
 	{
 		foreach ($this->get_public_post_types() as $post_type) {
-			add_filter("manage_{$post_type}_posts_columns",       [$this, 'add_column']);
-			add_action("manage_{$post_type}_posts_custom_column", [$this, 'render_column'], 10, 2);
+			add_filter("manage_{$post_type}_posts_columns",          [$this, 'add_column']);
+			add_action("manage_{$post_type}_posts_custom_column",    [$this, 'render_column'], 10, 2);
+			add_filter("manage_edit-{$post_type}_sortable_columns",  [$this, 'add_sortable_column']);
 		}
 
 		/* Inject our fields into the Quick Edit panel (fires once per column). */
@@ -489,6 +490,19 @@ class PostListColumn
 	// -------------------------------------------------------------------------
 	// Sort support
 	// -------------------------------------------------------------------------
+
+	/**
+	 * Declare the SEO score column as sortable so WordPress renders the
+	 * sort arrows in the column header.
+	 *
+	 * @param array $sortable_columns
+	 * @return array
+	 */
+	public function add_sortable_column(array $sortable_columns): array
+	{
+		$sortable_columns['crawlwp_seo_score'] = 'crawlwp_seo_score';
+		return $sortable_columns;
+	}
 
 	/**
 	 * Allow sorting by the SEO score column via a meta_key query.

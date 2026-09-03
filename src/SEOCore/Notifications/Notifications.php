@@ -135,11 +135,11 @@ class Notifications
 				'message' => sprintf(
 				/* translators: 1: link opening tag, 2: link closing tag */
 					__('<strong>CrawlWP SEO:</strong> Your homepage has <strong>no SEO title template</strong> set. A descriptive title is critical for search engine rankings. %1$sConfigure now%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(CRAWLWP_SETTINGS_URL . '#crawlwp_tm_home') . '">',
-					'</a>'
-				),
-			];
-		}
+				'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+				'</a>'
+			),
+		];
+	}
 
 		/* 5. Missing homepage meta description. */
 		if (Options::get('home', 'description', '') === '') {
@@ -149,7 +149,7 @@ class Notifications
 				'message' => sprintf(
 				/* translators: 1: link opening tag, 2: link closing tag */
 					__('<strong>CrawlWP SEO:</strong> Your homepage has <strong>no meta description template</strong> set. A good description improves click-through rates from search results. %1$sConfigure now%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(CRAWLWP_SETTINGS_URL . '#crawlwp_tm_home') . '">',
+					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
 					'</a>'
 				),
 			];
@@ -172,7 +172,7 @@ class Notifications
 				'message' => sprintf(
 				/* translators: 1: link opening tag, 2: link closing tag */
 					__('<strong>CrawlWP SEO:</strong> Your <strong>robots.txt file is blocking all search engine crawlers</strong> (Disallow: /). Search engines cannot index any of your pages. %1$sEdit robots.txt%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(admin_url('options-reading.php')) . '">',
+					'<a href="' . esc_url(CRAWLWP_ADVANCED_SETTINGS_URL . '#crawlwp_robots') . '">',
 					'</a>'
 				),
 			];

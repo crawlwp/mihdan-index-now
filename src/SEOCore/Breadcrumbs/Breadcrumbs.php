@@ -150,10 +150,13 @@ class Breadcrumbs
 
 		$links = $this->get_links();
 
-		/* Include the current page as the last item when it has a URL. */
-		$current_url = $this->current !== '' ? (string) get_permalink() : '';
+		/* Include the current page as the last item when it has a URL.
+		 * We don't call get_permalink() here because it is unreliable on
+		 * non-singular pages.  The actual URL is resolved below in the
+		 * is_singular / is_home / … branches.
+		 */
 
-		if (empty($links) && $current_url === '') {
+		if (empty($links) && $this->current === '') {
 			return null;
 		}
 
@@ -280,7 +283,12 @@ class Breadcrumbs
 
 	private function add_singular(): void
 	{
-		$post          = get_queried_object();
+		$post = get_queried_object();
+
+		if (! $post instanceof \WP_Post) {
+			return;
+		}
+
 		$this->current = (string) single_post_title('', false);
 
 		$this->add_post_type_archive_link($post->post_type);

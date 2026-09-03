@@ -199,6 +199,7 @@ input.wposa-field--switch:hover:after {
 .wposa-form-table__row_crawlwp_redirects_manager_ui {
 	display: block;
 	width: 100%;
+	padding-top: 12px;
 }
 
 .wposa-form-table__row_crawlwp_redirects_manager_ui th {
