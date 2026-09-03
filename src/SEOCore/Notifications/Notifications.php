@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\Notifications;
 
+use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
 
 /**
@@ -554,7 +555,22 @@ class Notifications
 	 */
 	private function collect_notices(): array
 	{
-		$notices = [];
+		$notices         = [];
+		$features_active = FeatureGate::is_enabled();
+
+		/* 0. On-page SEO features are inactive — urge the admin to enable them. */
+		if (!$features_active) {
+			$notices[] = [
+				'id'       => 'seo_features_inactive',
+				'severity' => 'warning',
+				'message'  => sprintf(
+					/* translators: 1: link opening tag, 2: link closing tag */
+					__('CrawlWP\'s <strong>on-page SEO features are inactive</strong>. Your site is not outputting any meta tags, Open Graph, Schema/JSON-LD or breadcrumbs. %1$sEnable SEO features%2$s', 'mihdan-index-now'),
+					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_seo_features'], CRAWLWP_SETTINGS_URL)) . '">',
+					'</a>'
+				),
+			];
+		}
 
 		/* 1. WordPress "Discourage search engines" setting. */
 		if (!(bool) get_option('blog_public', 1)) {
@@ -570,62 +586,67 @@ class Notifications
 			];
 		}
 
-		/* 2. CrawlWP site-wide noindex. */
-		if (Options::is_on('home', 'noindex')) {
-			$notices[] = [
-				'id'       => 'crawlwp_site_noindex',
-				'severity' => 'warning',
-				'message'  => sprintf(
-					/* translators: 1: link opening tag, 2: link closing tag */
-					__('Your <strong>Homepage is set to noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
-					'</a>'
-				),
-			];
-		}
+		// Notices 2–5 are only relevant when SEO features are active.
+		if ($features_active) {
 
-		/* 3. Conflicting SEO plugin detected. */
-		$conflict = $this->detect_conflicting_plugin();
+			/* 2. CrawlWP site-wide noindex. */
+			if (Options::is_on('home', 'noindex')) {
+				$notices[] = [
+					'id'       => 'crawlwp_site_noindex',
+					'severity' => 'warning',
+					'message'  => sprintf(
+						/* translators: 1: link opening tag, 2: link closing tag */
+						__('Your <strong>Homepage is set to noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now'),
+						'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+						'</a>'
+					),
+				];
+			}
 
-		if ($conflict !== null) {
-			$notices[] = [
-				'id'       => 'conflicting_seo_plugin',
-				'severity' => 'warning',
-				'message'  => sprintf(
-					/* translators: %s: conflicting plugin name */
-					__('<strong>%s</strong> is also active on your site. Running two SEO plugins simultaneously can cause duplicate meta tags and conflicting settings. Please deactivate one of them.', 'mihdan-index-now'),
-					esc_html($conflict)
-				),
-			];
-		}
+			/* 3. Conflicting SEO plugin detected (only relevant when our output is active). */
+			$conflict = $this->detect_conflicting_plugin();
 
-		/* 4. Missing homepage SEO title. */
-		if (Options::get('home', 'title', '') === '') {
-			$notices[] = [
-				'id'       => 'missing_homepage_title',
-				'severity' => 'warning',
-				'message'  => sprintf(
-					/* translators: 1: link opening tag, 2: link closing tag */
-					__('Your homepage has <strong>no SEO title template</strong> set. A descriptive title is critical for search engine rankings. %1$sConfigure now%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
-					'</a>'
-				),
-			];
-		}
+			if ($conflict !== null) {
+				$notices[] = [
+					'id'       => 'conflicting_seo_plugin',
+					'severity' => 'warning',
+					'message'  => sprintf(
+						/* translators: %s: conflicting plugin name */
+						__('<strong>%s</strong> is also active on your site. Running two SEO plugins simultaneously can cause duplicate meta tags and conflicting settings. Please deactivate one of them.', 'mihdan-index-now'),
+						esc_html($conflict)
+					),
+				];
+			}
 
-		/* 5. Missing homepage meta description. */
-		if (Options::get('home', 'description', '') === '') {
-			$notices[] = [
-				'id'       => 'missing_homepage_description',
-				'severity' => 'warning',
-				'message'  => sprintf(
-					/* translators: 1: link opening tag, 2: link closing tag */
-					__('Your homepage has <strong>no meta description template</strong> set. A good description improves click-through rates from search results. %1$sConfigure now%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
-					'</a>'
-				),
-			];
-		}
+			/* 4. Missing homepage SEO title. */
+			if (Options::get('home', 'title', '') === '') {
+				$notices[] = [
+					'id'       => 'missing_homepage_title',
+					'severity' => 'warning',
+					'message'  => sprintf(
+						/* translators: 1: link opening tag, 2: link closing tag */
+						__('Your homepage has <strong>no SEO title template</strong> set. A descriptive title is critical for search engine rankings. %1$sConfigure now%2$s', 'mihdan-index-now'),
+						'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+						'</a>'
+					),
+				];
+			}
+
+			/* 5. Missing homepage meta description. */
+			if (Options::get('home', 'description', '') === '') {
+				$notices[] = [
+					'id'       => 'missing_homepage_description',
+					'severity' => 'warning',
+					'message'  => sprintf(
+						/* translators: 1: link opening tag, 2: link closing tag */
+						__('Your homepage has <strong>no meta description template</strong> set. A good description improves click-through rates from search results. %1$sConfigure now%2$s', 'mihdan-index-now'),
+						'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+						'</a>'
+					),
+				];
+			}
+
+		} // end if $features_active
 
 		/* 6. WordPress core sitemaps disabled. */
 		if (!$this->is_sitemap_enabled()) {
@@ -726,7 +747,7 @@ class Notifications
 		/** @global \WP_Sitemaps $wp_sitemaps */
 		global $wp_sitemaps;
 
-		return $wp_sitemaps->sitemaps_enabled();
+		return is_a($wp_sitemaps, \WP_Sitemaps::class) && $wp_sitemaps->sitemaps_enabled();
 	}
 
 	/**

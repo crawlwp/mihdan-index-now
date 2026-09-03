@@ -25,6 +25,7 @@ use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsSettings;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsProcessor;
 use Mihdan\IndexNow\SEOCore\Redirects\PermalinkTracker;
+use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 
 class SEOCoreInit
 {
@@ -32,42 +33,54 @@ class SEOCoreInit
 
 	public function __construct()
 	{
-		new Notifications();
+		// Feature gate — registers the "SEO Features" promo/settings tab.
+		// Must be first so the tab appears before all other header menus.
+		new FeatureGate();
 
-		// Redirects — manager must be instantiated early so the DB table
-		// is created on plugins_loaded before any other code queries it.
-		$redirects_manager = new RedirectsManager();
-		new RedirectsSettings($redirects_manager);
-		new RedirectsProcessor($redirects_manager);
-		new PermalinkTracker($redirects_manager);
-		new CoreSettings\CoreSettings();
-		new CoreSettings\Assets();
-		new AdvancedSettings();
-		new SiteInfoSettings();
-		new SocialSettings();
-		new RssSettings();
-		new BreadcrumbSettings();
-		new RobotsSettings();
-		new SitemapSettings();
-		new NewsSitemapProvider();
-		new CustomUrlsSitemapProvider();
-		new UserProfile();
+		// Notifications are always active (even when features are disabled)
+		// so admins are alerted to critical site-wide issues.
+		new Notifications();
 
 		new SiteVerificationSettings();
 		new SiteVerificationFrontendOutput();
 
-		new MetaBox();
-		new Assets();
-		new PostListColumn();
-		new FrontendHead();
+		// The on-page SEO output features are gated behind the master toggle.
+		// Admins who are upgrading from another SEO plugin can review settings
+		// first, then flip the switch on the "SEO Features" tab.
+		if (FeatureGate::is_enabled()) {
 
-		// init hooking to prevent "Function _load_textdomain_just_in_time was called incorrectly" error.
-		add_action('init', function() {
-			$breadcrumbs = new Breadcrumbs();
-			$breadcrumbs->setup();
-		});
+			// Redirects — manager must be instantiated early so the DB table
+			// is created on plugins_loaded before any other code queries it.
+			$redirects_manager = new RedirectsManager();
+			new RedirectsSettings($redirects_manager);
+			new RedirectsProcessor($redirects_manager);
+			new PermalinkTracker($redirects_manager);
+			new CoreSettings\CoreSettings();
+			new CoreSettings\Assets();
+			new AdvancedSettings();
+			new SiteInfoSettings();
+			new SocialSettings();
+			new RssSettings();
+			new BreadcrumbSettings();
+			new RobotsSettings();
+			new SitemapSettings();
+			new NewsSitemapProvider();
+			new CustomUrlsSitemapProvider();
+			new UserProfile();
 
-		new FrontendOutput();
-		new Sitemap();
+			new MetaBox();
+			new Assets();
+			new PostListColumn();
+			new FrontendHead();
+
+			// init hooking to prevent "Function _load_textdomain_just_in_time was called incorrectly" error.
+			add_action('init', function() {
+				$breadcrumbs = new Breadcrumbs();
+				$breadcrumbs->setup();
+			});
+
+			new FrontendOutput();
+			new Sitemap();
+		}
 	}
 }
