@@ -195,11 +195,20 @@ input.wposa-field--switch:hover:after {
 	padding: 0;
 }
 
+/* Redirect manager — take the row out of the form-table column layout entirely */
+.wposa-form-table__row_crawlwp_redirects_manager_ui {
+	display: block;
+	width: 100%;
+}
+
 .wposa-form-table__row_crawlwp_redirects_manager_ui th {
 	display: none !important;
 }
 
 .wposa-form-table__row_crawlwp_redirects_manager_ui td {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
 	padding: 0;
 }
 
@@ -461,7 +470,7 @@ input.wposa-field--switch:hover:after {
 	border-radius: 6px;
 	box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
 	margin-top: 20px;
-	overflow: hidden;
+	overflow: visible;
 	min-width: 0;
 }
 

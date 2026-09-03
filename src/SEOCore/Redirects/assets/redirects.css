@@ -1,10 +1,15 @@
 /* CrawlWP Redirects admin styles — scoped to .cwp-redirect-* */
 
+#crawlwp_redirects .form-table {
+	width: 100%;
+	table-layout: fixed;
+}
+
 /* ---- Wrapper ---- */
 .cwp-redirect-wrap {
 	position: relative;
 	max-width: 100%;
-	overflow-x: hidden;
+	overflow-x: auto;
 }
 
 /* ---- Toolbar ---- */
@@ -140,34 +145,36 @@
 	background: #f0f6fc;
 }
 
-/* Column widths */
-.cwp-redirect-col-cb {
+/* Column widths — scoped inside .cwp-redirect-table to outspecify WP's
+   .form-table th { width: 200px } default.
+   Fixed columns + two 30% URL cols fit any container ≥ 550px. */
+.cwp-redirect-table .cwp-redirect-col-cb {
 	width: 36px;
 }
 
-.cwp-redirect-col-type {
-	width: 100px;
+.cwp-redirect-table .cwp-redirect-col-type {
+	width: 80px;
 }
 
-.cwp-redirect-col-from,
-.cwp-redirect-col-to {
-	width: auto;
+.cwp-redirect-table .cwp-redirect-col-from,
+.cwp-redirect-table .cwp-redirect-col-to {
+	width: 30%;
 }
 
-.cwp-redirect-col-note {
-	width: 140px;
+.cwp-redirect-table .cwp-redirect-col-note {
+	width: 80px;
 }
 
-.cwp-redirect-col-hits {
+.cwp-redirect-table .cwp-redirect-col-hits {
+	width: 50px;
+}
+
+.cwp-redirect-table .cwp-redirect-col-enable {
 	width: 60px;
 }
 
-.cwp-redirect-col-enable {
-	width: 80px;
-}
-
-.cwp-redirect-col-actions {
-	width: 80px;
+.cwp-redirect-table .cwp-redirect-col-actions {
+	width: 70px;
 }
 
 /* URL display — truncate long URLs */
