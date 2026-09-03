@@ -2,11 +2,9 @@
 /**
  * FeatureGate — master on/off switch for all on-page SEO features.
  *
- * When a user upgrades from an older version (or already has another SEO
- * plugin active) the option will not exist, so `is_enabled()` returns false
- * and no frontend output is emitted until the admin explicitly enables it.
- * New installs that have never saved any option will also start with the
- * feature OFF so the admin can review and choose to enable it.
+ * New installs (option never saved) automatically have the feature enabled.
+ * Existing installs that have explicitly saved the option respect whatever
+ * value was stored, so upgrading users who turned it off are not affected.
  *
  * @package mihdan-index-now
  */
@@ -37,11 +35,23 @@ class FeatureGate
 
 	/**
 	 * Return true when the on-page SEO features are enabled.
+	 *
+	 * For brand-new installs the option row does not exist yet (`get_option`
+	 * returns `false`). In that case we auto-enable and persist the setting so
+	 * the admin does not have to take any extra action.
 	 */
 	public static function is_enabled(): bool
 	{
 		if (self::$cache === null) {
-			$options = get_option(self::OPTION_KEY, []);
+			$raw = get_option(self::OPTION_KEY);
+
+			// First-ever run: the option has never been saved → auto-enable.
+			if ($raw === false) {
+				self::enable();
+				return self::$cache; // set to true by enable()
+			}
+
+			$options = is_array($raw) ? $raw : [];
 			self::$cache = !empty($options[self::OPTION_FIELD]);
 		}
 
@@ -100,7 +110,7 @@ class FeatureGate
 					'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
 					'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
 					'desc' => __('Check this box to enable all on-page SEO features: meta tags, Open Graph, Schema/JSON-LD, breadcrumbs, canonical URLs, sitemap enhancements, redirects, RSS branding, robots.txt editing, social profile fields, and critical SEO notifications. Leave it unchecked if you prefer to keep using your current SEO plugin.', 'mihdan-index-now'),
-					'default' => '0',
+ 				'default' => '1',
 				]
 			);
 		}
