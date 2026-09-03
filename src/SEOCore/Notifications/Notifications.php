@@ -58,10 +58,10 @@ class Notifications
 
 	public function __construct()
 	{
-		add_action('admin_bar_menu',               [$this, 'add_admin_bar_node'], 999);
-		add_action('admin_head',                   [$this, 'print_styles']);
-		add_action('admin_footer',                 [$this, 'print_panel_html']);
-		add_action('admin_footer',                 [$this, 'print_scripts']);
+		add_action('admin_bar_menu', [$this, 'add_admin_bar_node'], 999);
+		add_action('admin_head', [$this, 'print_styles']);
+		add_action('admin_footer', [$this, 'print_panel_html']);
+		add_action('admin_footer', [$this, 'print_scripts']);
 		add_action('wp_ajax_crawlwp_dismiss_notice', [$this, 'ajax_dismiss_notice']);
 	}
 
@@ -86,8 +86,8 @@ class Notifications
 			return;
 		}
 
-		$count      = count($notices);
-		$has_error  = !empty(array_filter($notices, fn($n) => $n['severity'] === 'error'));
+		$count = count($notices);
+		$has_error = !empty(array_filter($notices, fn($n) => $n['severity'] === 'error'));
 		$bell_class = $has_error ? 'cwp-nc-bell cwp-nc-bell--error' : 'cwp-nc-bell cwp-nc-bell--warning';
 
 		/* The bell icon SVG. */
@@ -98,18 +98,18 @@ class Notifications
 		$title = '<span class="' . esc_attr($bell_class) . '">'
 			. $bell_svg
 			. '<span class="cwp-nc-badge" aria-label="' . esc_attr(sprintf(
-				/* translators: %d number of SEO issues */
+			/* translators: %d number of SEO issues */
 				_n('%d SEO issue', '%d SEO issues', $count, 'mihdan-index-now'),
 				$count
 			)) . '">' . esc_html($count) . '</span>'
 			. '</span>';
 
 		$wp_admin_bar->add_node([
-			'id'    => 'crawlwp-notifications',
+			'id' => 'crawlwp-notifications',
 			'title' => $title,
-			'href'  => '#',
-			'meta'  => [
-				'class'    => 'cwp-nc-menu',
+			'href' => '#',
+			'meta' => [
+				'class' => 'cwp-nc-menu',
 				'tabindex' => '0',
 			],
 		]);
@@ -137,32 +137,36 @@ class Notifications
 
 		$nonce = wp_create_nonce('crawlwp_dismiss_notice');
 		?>
-		<div id="cwp-nc-panel" class="cwp-nc-panel" role="dialog" aria-label="<?php esc_attr_e('CrawlWP SEO Notifications', 'mihdan-index-now'); ?>" hidden>
+		<div id="cwp-nc-panel" class="cwp-nc-panel" role="dialog"
+		     aria-label="<?php esc_attr_e('CrawlWP SEO Notifications', 'mihdan-index-now'); ?>" hidden>
 			<div class="cwp-nc-panel__header">
 				<span class="cwp-nc-panel__title">
 					<?php
 					$count = count($notices);
 					printf(
-						/* translators: %d number of SEO issues */
+					/* translators: %d number of SEO issues */
 						esc_html(_n('%d SEO Issue', '%d SEO Issues', $count, 'mihdan-index-now')),
-						(int) $count
+						(int)$count
 					);
 					?>
 				</span>
-				<button type="button" class="cwp-nc-panel__close" aria-label="<?php esc_attr_e('Close notification panel', 'mihdan-index-now'); ?>">&#10005;</button>
+				<button type="button" class="cwp-nc-panel__close"
+				        aria-label="<?php esc_attr_e('Close notification panel', 'mihdan-index-now'); ?>">&#10005;
+				</button>
 			</div>
 			<ul class="cwp-nc-panel__list">
 				<?php foreach ($notices as $notice) : ?>
-					<li class="cwp-nc-item cwp-nc-item--<?php echo esc_attr($notice['severity']); ?>" data-notice-id="<?php echo esc_attr($notice['id']); ?>">
+					<li class="cwp-nc-item cwp-nc-item--<?php echo esc_attr($notice['severity']); ?>"
+					    data-notice-id="<?php echo esc_attr($notice['id']); ?>">
 						<span class="cwp-nc-item__icon" aria-hidden="true">
 							<?php echo $notice['severity'] === 'error' ? '&#9888;' : '&#9432;'; ?>
 						</span>
 						<span class="cwp-nc-item__message"><?php echo wp_kses_post($notice['message']); ?></span>
 						<button type="button"
-							class="cwp-nc-item__dismiss"
-							data-notice-id="<?php echo esc_attr($notice['id']); ?>"
-							data-nonce="<?php echo esc_attr($nonce); ?>"
-							aria-label="<?php esc_attr_e('Dismiss this notice', 'mihdan-index-now'); ?>">
+						        class="cwp-nc-item__dismiss"
+						        data-notice-id="<?php echo esc_attr($notice['id']); ?>"
+						        data-nonce="<?php echo esc_attr($nonce); ?>"
+						        aria-label="<?php esc_attr_e('Dismiss this notice', 'mihdan-index-now'); ?>">
 							&#10005;
 						</button>
 					</li>
@@ -213,8 +217,13 @@ class Notifications
 			}
 
 			/* Error = red tint, Warning = amber tint */
-			.cwp-nc-bell--error svg   { color: #ff8b8b; }
-			.cwp-nc-bell--warning svg { color: #f0c040; }
+			.cwp-nc-bell--error svg {
+				color: #ff8b8b;
+			}
+
+			.cwp-nc-bell--warning svg {
+				color: #f0c040;
+			}
 
 			.cwp-nc-badge {
 				display: inline-flex;
@@ -230,13 +239,18 @@ class Notifications
 				color: #fff;
 			}
 
-			.cwp-nc-bell--error   .cwp-nc-badge { background: #cc1818; }
-			.cwp-nc-bell--warning .cwp-nc-badge { background: #b57800; }
+			.cwp-nc-bell--error .cwp-nc-badge {
+				background: #cc1818;
+			}
+
+			.cwp-nc-bell--warning .cwp-nc-badge {
+				background: #b57800;
+			}
 
 			/* ---- Dropdown panel ---- */
 			.cwp-nc-panel {
 				position: fixed;
-				top: 32px;                   /* below the admin bar */
+				top: 32px; /* below the admin bar */
 				right: 16px;
 				z-index: 99999;
 				width: 420px;
@@ -246,11 +260,13 @@ class Notifications
 				background: #fff;
 				border: 1px solid #c3c4c7;
 				border-radius: 4px;
-				box-shadow: 0 4px 16px rgba(0,0,0,.18);
+				box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
 				font-size: 13px;
 			}
 
-			.cwp-nc-panel[hidden] { display: none; }
+			.cwp-nc-panel[hidden] {
+				display: none;
+			}
 
 			.cwp-nc-panel__header {
 				display: flex;
@@ -301,14 +317,30 @@ class Notifications
 				transition: background .1s;
 			}
 
-			.cwp-nc-item:last-child { border-bottom: none; }
-			.cwp-nc-item:hover      { background: #fafafa; }
+			.cwp-nc-item:last-child {
+				border-bottom: none;
+			}
+
+			.cwp-nc-item:hover {
+				background: #fafafa;
+			}
 
 			/* Left-border accent by severity */
-			.cwp-nc-item--error   { border-left: 3px solid #d63638; }
-			.cwp-nc-item--warning { border-left: 3px solid #dba617; }
-			.cwp-nc-item--success { border-left: 3px solid #00a32a; }
-			.cwp-nc-item--info    { border-left: 3px solid #72aee6; }
+			.cwp-nc-item--error {
+				border-left: 3px solid #d63638;
+			}
+
+			.cwp-nc-item--warning {
+				border-left: 3px solid #dba617;
+			}
+
+			.cwp-nc-item--success {
+				border-left: 3px solid #00a32a;
+			}
+
+			.cwp-nc-item--info {
+				border-left: 3px solid #72aee6;
+			}
 
 			.cwp-nc-item__icon {
 				flex-shrink: 0;
@@ -316,8 +348,13 @@ class Notifications
 				line-height: 1.4;
 			}
 
-			.cwp-nc-item--error   .cwp-nc-item__icon { color: #d63638; }
-			.cwp-nc-item--warning .cwp-nc-item__icon { color: #b57800; }
+			.cwp-nc-item--error .cwp-nc-item__icon {
+				color: #d63638;
+			}
+
+			.cwp-nc-item--warning .cwp-nc-item__icon {
+				color: #b57800;
+			}
 
 			.cwp-nc-item__message {
 				flex: 1;
@@ -325,14 +362,18 @@ class Notifications
 				color: #1d2327;
 			}
 
-			.cwp-nc-item__message strong { font-weight: 600; }
+			.cwp-nc-item__message strong {
+				font-weight: 600;
+			}
 
 			.cwp-nc-item__message a {
 				color: #2271b1;
 				text-decoration: none;
 			}
 
-			.cwp-nc-item__message a:hover { text-decoration: underline; }
+			.cwp-nc-item__message a:hover {
+				text-decoration: underline;
+			}
 
 			.cwp-nc-item__dismiss {
 				flex-shrink: 0;
@@ -385,112 +426,112 @@ class Notifications
 		}
 		?>
 		<script id="cwp-nc-scripts">
-		(function () {
-			'use strict';
+			(function () {
+				'use strict';
 
-			var bellBtn  = document.getElementById('wp-admin-bar-crawlwp-notifications');
-			var panel    = document.getElementById('cwp-nc-panel');
-			var closeBtn = panel ? panel.querySelector('.cwp-nc-panel__close') : null;
+				var bellBtn = document.getElementById('wp-admin-bar-crawlwp-notifications');
+				var panel = document.getElementById('cwp-nc-panel');
+				var closeBtn = panel ? panel.querySelector('.cwp-nc-panel__close') : null;
 
-			if (!bellBtn || !panel) return;
+				if (!bellBtn || !panel) return;
 
-			/* Toggle the panel when the bell is clicked. */
-			bellBtn.addEventListener('click', function (e) {
-				e.preventDefault();
-				e.stopPropagation();
-				togglePanel();
-			});
-
-			/* Close via the × button. */
-			if (closeBtn) {
-				closeBtn.addEventListener('click', function () {
-					closePanel();
+				/* Toggle the panel when the bell is clicked. */
+				bellBtn.addEventListener('click', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					togglePanel();
 				});
-			}
 
-			/* Close when clicking outside. */
-			document.addEventListener('click', function (e) {
-				if (!panel.hidden && !panel.contains(e.target) && !bellBtn.contains(e.target)) {
-					closePanel();
-				}
-			});
-
-			/* Close on Escape. */
-			document.addEventListener('keydown', function (e) {
-				if (e.key === 'Escape' && !panel.hidden) {
-					closePanel();
-					bellBtn.querySelector('a') && bellBtn.querySelector('a').focus();
-				}
-			});
-
-			/* Dismiss individual notices. */
-			panel.addEventListener('click', function (e) {
-				var btn = e.target.closest('.cwp-nc-item__dismiss');
-				if (!btn) return;
-
-				var item     = btn.closest('.cwp-nc-item');
-				var noticeId = btn.dataset.noticeId;
-				var nonce    = btn.dataset.nonce;
-
-				if (!item || !noticeId) return;
-
-				/* Animate out. */
-				item.classList.add('is-dismissing');
-
-				setTimeout(function () {
-					item.remove();
-					updateBadge();
-
-					/* If no items remain, close and hide the bell. */
-					var remaining = panel.querySelectorAll('.cwp-nc-item');
-					if (remaining.length === 0) {
+				/* Close via the × button. */
+				if (closeBtn) {
+					closeBtn.addEventListener('click', function () {
 						closePanel();
-						if (bellBtn) bellBtn.style.display = 'none';
-					}
-				}, 300);
-
-				/* Persist via AJAX. */
-				var data = new FormData();
-				data.append('action',    'crawlwp_dismiss_notice');
-				data.append('nonce',     nonce);
-				data.append('notice_id', noticeId);
-
-				fetch(typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php', {
-					method: 'POST',
-					body:   data,
-					credentials: 'same-origin'
-				});
-			});
-
-			/* ---------- helpers ---------- */
-
-			function togglePanel() {
-				if (panel.hidden) {
-					openPanel();
-				} else {
-					closePanel();
+					});
 				}
-			}
 
-			function openPanel() {
-				panel.hidden = false;
-				panel.removeAttribute('hidden');
-				bellBtn.setAttribute('aria-expanded', 'true');
-				if (closeBtn) closeBtn.focus();
-			}
+				/* Close when clicking outside. */
+				document.addEventListener('click', function (e) {
+					if (!panel.hidden && !panel.contains(e.target) && !bellBtn.contains(e.target)) {
+						closePanel();
+					}
+				});
 
-			function closePanel() {
-				panel.hidden = true;
-				panel.setAttribute('hidden', '');
-				bellBtn.setAttribute('aria-expanded', 'false');
-			}
+				/* Close on Escape. */
+				document.addEventListener('keydown', function (e) {
+					if (e.key === 'Escape' && !panel.hidden) {
+						closePanel();
+						bellBtn.querySelector('a') && bellBtn.querySelector('a').focus();
+					}
+				});
 
-			function updateBadge() {
-				var badge = bellBtn.querySelector('.cwp-nc-badge');
-				var count = panel.querySelectorAll('.cwp-nc-item').length;
-				if (badge) badge.textContent = count;
-			}
-		}());
+				/* Dismiss individual notices. */
+				panel.addEventListener('click', function (e) {
+					var btn = e.target.closest('.cwp-nc-item__dismiss');
+					if (!btn) return;
+
+					var item = btn.closest('.cwp-nc-item');
+					var noticeId = btn.dataset.noticeId;
+					var nonce = btn.dataset.nonce;
+
+					if (!item || !noticeId) return;
+
+					/* Animate out. */
+					item.classList.add('is-dismissing');
+
+					setTimeout(function () {
+						item.remove();
+						updateBadge();
+
+						/* If no items remain, close and hide the bell. */
+						var remaining = panel.querySelectorAll('.cwp-nc-item');
+						if (remaining.length === 0) {
+							closePanel();
+							if (bellBtn) bellBtn.style.display = 'none';
+						}
+					}, 300);
+
+					/* Persist via AJAX. */
+					var data = new FormData();
+					data.append('action', 'crawlwp_dismiss_notice');
+					data.append('nonce', nonce);
+					data.append('notice_id', noticeId);
+
+					fetch(typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php', {
+						method: 'POST',
+						body: data,
+						credentials: 'same-origin'
+					});
+				});
+
+				/* ---------- helpers ---------- */
+
+				function togglePanel() {
+					if (panel.hidden) {
+						openPanel();
+					} else {
+						closePanel();
+					}
+				}
+
+				function openPanel() {
+					panel.hidden = false;
+					panel.removeAttribute('hidden');
+					bellBtn.setAttribute('aria-expanded', 'true');
+					if (closeBtn) closeBtn.focus();
+				}
+
+				function closePanel() {
+					panel.hidden = true;
+					panel.setAttribute('hidden', '');
+					bellBtn.setAttribute('aria-expanded', 'false');
+				}
+
+				function updateBadge() {
+					var badge = bellBtn.querySelector('.cwp-nc-badge');
+					var count = panel.querySelectorAll('.cwp-nc-item').length;
+					if (badge) badge.textContent = count;
+				}
+			}());
 		</script>
 		<?php
 	}
@@ -516,8 +557,8 @@ class Notifications
 			wp_send_json_error('missing notice_id');
 		}
 
-		$dismissed               = $this->get_dismissed();
-		$dismissed[$notice_id]   = true;
+		$dismissed = $this->get_dismissed();
+		$dismissed[$notice_id] = true;
 		update_option(self::DISMISSED_KEY, $dismissed, false);
 
 		wp_send_json_success();
@@ -539,7 +580,7 @@ class Notifications
 		}
 
 		$dismissed = $this->get_dismissed();
-		$notices   = $this->collect_notices();
+		$notices = $this->collect_notices();
 
 		$this->active_notices = array_values(
 			array_filter($notices, fn($n) => !isset($dismissed[$n['id']]))
@@ -555,30 +596,15 @@ class Notifications
 	 */
 	private function collect_notices(): array
 	{
-		$notices         = [];
-		$features_active = FeatureGate::is_enabled();
-
-		/* 0. On-page SEO features are inactive — urge the admin to enable them. */
-		if (!$features_active) {
-			$notices[] = [
-				'id'       => 'seo_features_inactive',
-				'severity' => 'warning',
-				'message'  => sprintf(
-					/* translators: 1: link opening tag, 2: link closing tag */
-					__('CrawlWP\'s <strong>on-page SEO features are inactive</strong>. Your site is not outputting any meta tags, Open Graph, Schema/JSON-LD or breadcrumbs. %1$sEnable SEO features%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_seo_features'], CRAWLWP_SETTINGS_URL)) . '">',
-					'</a>'
-				),
-			];
-		}
+		$notices = [];
 
 		/* 1. WordPress "Discourage search engines" setting. */
-		if (!(bool) get_option('blog_public', 1)) {
+		if (!get_option('blog_public', 1)) {
 			$notices[] = [
-				'id'       => 'blog_not_public',
+				'id' => 'blog_not_public',
 				'severity' => 'error',
-				'message'  => sprintf(
-					/* translators: 1: link opening tag, 2: link closing tag */
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
 					__('Your site is set to <strong>discourage search engines from indexing</strong>. Search engines will not index your pages. %1$sChange this setting%2$s', 'mihdan-index-now'),
 					'<a href="' . esc_url(admin_url('options-reading.php')) . '">',
 					'</a>'
@@ -586,84 +612,79 @@ class Notifications
 			];
 		}
 
-		// Notices 2–5 are only relevant when SEO features are active.
-		if ($features_active) {
+		/* 2. CrawlWP site-wide noindex. */
+		if (Options::is_on('home', 'noindex')) {
+			$notices[] = [
+				'id' => 'crawlwp_site_noindex',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
+					__('Your <strong>Homepage is set to noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now'),
+					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+					'</a>'
+				),
+			];
+		}
 
-			/* 2. CrawlWP site-wide noindex. */
-			if (Options::is_on('home', 'noindex')) {
-				$notices[] = [
-					'id'       => 'crawlwp_site_noindex',
-					'severity' => 'warning',
-					'message'  => sprintf(
-						/* translators: 1: link opening tag, 2: link closing tag */
-						__('Your <strong>Homepage is set to noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now'),
-						'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
-						'</a>'
-					),
-				];
-			}
+		/* 3. Conflicting SEO plugin detected (only relevant when our output is active). */
+		$conflict = $this->detect_conflicting_plugin();
 
-			/* 3. Conflicting SEO plugin detected (only relevant when our output is active). */
-			$conflict = $this->detect_conflicting_plugin();
+		if ($conflict !== null) {
+			$notices[] = [
+				'id' => 'conflicting_seo_plugin',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: %s: conflicting plugin name */
+					__('<strong>%s</strong> is also active on your site. Running two SEO plugins simultaneously can cause duplicate meta tags and conflicting settings. Please deactivate one of them.', 'mihdan-index-now'),
+					esc_html($conflict)
+				),
+			];
+		}
 
-			if ($conflict !== null) {
-				$notices[] = [
-					'id'       => 'conflicting_seo_plugin',
-					'severity' => 'warning',
-					'message'  => sprintf(
-						/* translators: %s: conflicting plugin name */
-						__('<strong>%s</strong> is also active on your site. Running two SEO plugins simultaneously can cause duplicate meta tags and conflicting settings. Please deactivate one of them.', 'mihdan-index-now'),
-						esc_html($conflict)
-					),
-				];
-			}
+		/* 4. Missing homepage SEO title. */
+		if (Options::get('home', 'title', '') === '') {
+			$notices[] = [
+				'id' => 'missing_homepage_title',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
+					__('Your homepage has <strong>no SEO title template</strong> set. A descriptive title is critical for search engine rankings. %1$sConfigure now%2$s', 'mihdan-index-now'),
+					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+					'</a>'
+				),
+			];
+		}
 
-			/* 4. Missing homepage SEO title. */
-			if (Options::get('home', 'title', '') === '') {
-				$notices[] = [
-					'id'       => 'missing_homepage_title',
-					'severity' => 'warning',
-					'message'  => sprintf(
-						/* translators: 1: link opening tag, 2: link closing tag */
-						__('Your homepage has <strong>no SEO title template</strong> set. A descriptive title is critical for search engine rankings. %1$sConfigure now%2$s', 'mihdan-index-now'),
-						'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
-						'</a>'
-					),
-				];
-			}
-
-			/* 5. Missing homepage meta description. */
-			if (Options::get('home', 'description', '') === '') {
-				$notices[] = [
-					'id'       => 'missing_homepage_description',
-					'severity' => 'warning',
-					'message'  => sprintf(
-						/* translators: 1: link opening tag, 2: link closing tag */
-						__('Your homepage has <strong>no meta description template</strong> set. A good description improves click-through rates from search results. %1$sConfigure now%2$s', 'mihdan-index-now'),
-						'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
-						'</a>'
-					),
-				];
-			}
-
-		} // end if $features_active
+		/* 5. Missing homepage meta description. */
+		if (Options::get('home', 'description', '') === '') {
+			$notices[] = [
+				'id' => 'missing_homepage_description',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
+					__('Your homepage has <strong>no meta description template</strong> set. A good description improves click-through rates from search results. %1$sConfigure now%2$s', 'mihdan-index-now'),
+					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+					'</a>'
+				),
+			];
+		}
 
 		/* 6. WordPress core sitemaps disabled. */
 		if (!$this->is_sitemap_enabled()) {
 			$notices[] = [
-				'id'       => 'sitemap_disabled',
+				'id' => 'sitemap_disabled',
 				'severity' => 'warning',
-				'message'  => __('The <strong>WordPress XML sitemap is disabled</strong>. Without a sitemap, search engines may have difficulty discovering all your pages.', 'mihdan-index-now'),
+				'message' => __('The <strong>WordPress XML sitemap is disabled</strong>. Without a sitemap, search engines may have difficulty discovering all your pages.', 'mihdan-index-now'),
 			];
 		}
 
 		/* 7. robots.txt blocking all crawlers. */
 		if ($this->robots_txt_blocks_all()) {
 			$notices[] = [
-				'id'       => 'robots_txt_blocking',
+				'id' => 'robots_txt_blocking',
 				'severity' => 'error',
-				'message'  => sprintf(
-					/* translators: 1: link opening tag, 2: link closing tag */
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
 					__('Your <strong>robots.txt file is blocking all search engine crawlers</strong> (Disallow: /). Search engines cannot index any of your pages. %1$sEdit robots.txt%2$s', 'mihdan-index-now'),
 					'<a href="' . esc_url(CRAWLWP_ADVANCED_SETTINGS_URL . '#crawlwp_robots') . '">',
 					'</a>'
@@ -674,9 +695,9 @@ class Notifications
 		/* 8. No SSL / HTTPS. */
 		if (!is_ssl() && !$this->site_uses_https()) {
 			$notices[] = [
-				'id'       => 'no_ssl',
+				'id' => 'no_ssl',
 				'severity' => 'warning',
-				'message'  => __('Your site is <strong>not using HTTPS</strong>. Google gives a ranking advantage to secure (HTTPS) sites. Contact your host to install an SSL certificate.', 'mihdan-index-now'),
+				'message' => __('Your site is <strong>not using HTTPS</strong>. Google gives a ranking advantage to secure (HTTPS) sites. Contact your host to install an SSL certificate.', 'mihdan-index-now'),
 			];
 		}
 
@@ -685,7 +706,7 @@ class Notifications
 		 *
 		 * @param array[] $notices Array of notice definition arrays.
 		 */
-		return (array) apply_filters('crawlwp_seo_notices', $notices);
+		return (array)apply_filters('crawlwp_seo_notices', $notices);
 	}
 
 	// -------------------------------------------------------------------------
@@ -714,12 +735,12 @@ class Notifications
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		$active = (array) get_option('active_plugins', []);
+		$active = (array)get_option('active_plugins', []);
 
 		/* Include network-activated plugins for multisite. */
 		if (is_multisite()) {
-			$network_active = array_keys((array) get_site_option('active_sitewide_plugins', []));
-			$active         = array_merge($active, $network_active);
+			$network_active = array_keys((array)get_site_option('active_sitewide_plugins', []));
+			$active = array_merge($active, $network_active);
 		}
 
 		foreach (self::CONFLICTING_PLUGINS as $basename) {
@@ -770,15 +791,15 @@ class Notifications
 			$content = @file_get_contents($file_path);
 		} else {
 			$robots_url = home_url('/robots.txt');
-			$response   = wp_remote_get($robots_url, [
-				'timeout'    => 5,
+			$response = wp_remote_get($robots_url, [
+				'timeout' => 5,
 				'user-agent' => 'CrawlWP-SEO-Checker',
 			]);
 
 			$content = is_wp_error($response) ? '' : wp_remote_retrieve_body($response);
 		}
 
-		$checked = $this->content_blocks_all_crawlers((string) $content);
+		$checked = $this->content_blocks_all_crawlers((string)$content);
 
 		return $checked;
 	}
@@ -795,7 +816,7 @@ class Notifications
 			return false;
 		}
 
-		$lines      = explode("\n", str_replace("\r\n", "\n", $content));
+		$lines = explode("\n", str_replace("\r\n", "\n", $content));
 		$in_wildcard = false;
 
 		foreach ($lines as $line) {
@@ -806,7 +827,7 @@ class Notifications
 			}
 
 			if (stripos($line, 'user-agent:') === 0) {
-				$agent      = trim(substr($line, strlen('user-agent:')));
+				$agent = trim(substr($line, strlen('user-agent:')));
 				$in_wildcard = ($agent === '*');
 				continue;
 			}

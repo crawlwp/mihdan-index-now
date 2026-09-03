@@ -37,10 +37,6 @@ class SEOCoreInit
 		// Must be first so the tab appears before all other header menus.
 		new FeatureGate();
 
-		// Notifications are always active (even when features are disabled)
-		// so admins are alerted to critical site-wide issues.
-		new Notifications();
-
 		new AdvancedSettings();
 		new SiteVerificationSettings();
 		new SiteVerificationFrontendOutput();
@@ -49,6 +45,8 @@ class SEOCoreInit
 		// Admins who are upgrading from another SEO plugin can review settings
 		// first, then flip the switch on the "SEO Features" tab.
 		if (FeatureGate::is_enabled()) {
+
+			new Notifications();
 
 			// Redirects — manager must be instantiated early so the DB table
 			// is created on plugins_loaded before any other code queries it.

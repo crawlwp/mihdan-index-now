@@ -31,7 +31,13 @@ class FeatureGate
 	 */
 	public function __construct()
 	{
-		add_action('crawlwp_pre_setup_fields', [$this, 'register_menu'], -1);
+		if (!self::is_enabled()) {
+			add_action('crawlwp_pre_setup_fields', [$this, 'register_menu'], -1);
+		} else {
+			if (Utils::_GET_var('wposa-menu') == 'crawlwp_seo_features') {
+				Utils::content_http_redirect(CRAWLWP_SETTINGS_URL);
+			}
+		}
 	}
 
 	/**
@@ -49,14 +55,14 @@ class FeatureGate
 	public static function is_enabled(): bool
 	{
 		if (self::$cache === null) {
+
 			$raw = get_option(self::OPTION_KEY);
 
 			if ($raw === false) {
 				// Option never written yet. Decide based on whether the plugin
 				// was already in use: if the core IndexNow option exists this is
 				// an upgrade, not a fresh install — leave features OFF.
-				$is_fresh_install = get_option('crawlwp_index_now') === false
-					&& get_option('crawlwp_install_date') === false;
+				$is_fresh_install = empty(get_option('crawlwp_index_now', ''));
 
 				if ($is_fresh_install) {
 					self::enable();
@@ -69,10 +75,11 @@ class FeatureGate
 			}
 
 			$options = is_array($raw) ? $raw : [];
+
 			self::$cache = isset($options[self::OPTION_FIELD]) && $options[self::OPTION_FIELD] === 'on';
 		}
 
-		return self::$cache;
+		return apply_filters('crawlwp_seo_features_is_enabled', self::$cache);
 	}
 
 	/**
@@ -111,34 +118,23 @@ class FeatureGate
 
 		if ($wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_' . self::SECTION_ID) {
 
- 		$wposa->add_section([
+			$wposa->add_section([
 				'header_menu_id' => self::SECTION_ID,
 				'id' => self::SECTION_ID,
 				'title' => '',
 				'desc' => '',
 				'callback' => [$this, 'render_promo'],
 			]);
-
- 		/**
- 		 * Hide the enable/disable checkbox (and save button) once SEO features
- 		 * are active, unless a developer explicitly opts out of gate-hiding.
- 		 *
- 		 * @param bool $hide Whether to hide the feature gate page when enabled.
- 		 */
- 		$hide_when_enabled = (bool) apply_filters('crawlwp_hide_feature_gate', true);
-
- 		if (!$hide_when_enabled || !self::is_enabled()) {
- 			$wposa->add_field(
- 				self::SECTION_ID,
- 				[
- 					'id' => self::OPTION_FIELD,
- 					'type' => 'checkbox',
- 					'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
- 					'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
- 					'desc' => __('Check this box to enable all on-page SEO features. Leave it unchecked if you prefer to keep using your current SEO plugin.', 'mihdan-index-now'),
- 				]
- 			);
- 		}
+			$wposa->add_field(
+				self::SECTION_ID,
+				[
+					'id' => self::OPTION_FIELD,
+					'type' => 'checkbox',
+					'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
+					'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
+					'desc' => __('Check this box to enable all on-page SEO features. Leave it unchecked if you prefer to keep using your current SEO plugin.', 'mihdan-index-now'),
+				]
+			);
 		}
 	}
 
@@ -147,20 +143,6 @@ class FeatureGate
 	 */
 	public function render_promo(): void
 	{
-		/**
-		 * Filter whether to hide this promo page once SEO features are enabled.
-		 *
-		 * Return false to keep the page visible even after features are on.
-		 *
-		 * @param bool $hide Whether to hide the page. Default true.
-		 */
-		$hide_when_enabled = (bool) apply_filters('crawlwp_hide_feature_gate', true);
-
-		if ($hide_when_enabled && self::is_enabled()) {
-			echo '<p style="color:#50575e;padding:8px 0;">' . esc_html__('On-page SEO features are active. Use the tabs above to configure each feature area.', 'mihdan-index-now') . '</p>';
-			return;
-		}
-
 		$features = [
 			[
 				'title' => __('Title & Meta Tags', 'mihdan-index-now'),
@@ -215,34 +197,34 @@ class FeatureGate
 		?>
 		<div class="cwp-fg-wrap">
 
-		<div class="cwp-fg-hero">
-			<h2 class="cwp-fg-hero__title">
-				<?php esc_html_e('Supercharge your SEO with CrawlWP', 'mihdan-index-now'); ?>
-			</h2>
-			<p class="cwp-fg-hero__intro">
- 			<?php esc_html_e(
- 				'A complete on-page SEO suite — title & meta, Open Graph, Schema/JSON-LD, breadcrumbs, sitemaps, redirects, robots.txt and more — built directly into CrawlWP.',
- 				'mihdan-index-now'
- 			); ?>
-			</p>
-		</div>
+			<div class="cwp-fg-hero">
+				<h2 class="cwp-fg-hero__title">
+					<?php esc_html_e('Supercharge your SEO with CrawlWP', 'mihdan-index-now'); ?>
+				</h2>
+				<p class="cwp-fg-hero__intro">
+					<?php esc_html_e(
+						'A complete on-page SEO suite — title & meta, Open Graph, Schema/JSON-LD, breadcrumbs, sitemaps, redirects, robots.txt and more — built directly into CrawlWP.',
+						'mihdan-index-now'
+					); ?>
+				</p>
+			</div>
 
 			<div class="cwp-fg-grid">
 				<?php foreach ($features as $feature): ?>
- 				<div class="cwp-fg-card">
- 					<h3 class="cwp-fg-card__title"><?php echo esc_html($feature['title']); ?></h3>
- 					<p class="cwp-fg-card__desc"><?php echo esc_html($feature['desc']); ?></p>
- 				</div>
+					<div class="cwp-fg-card">
+						<h3 class="cwp-fg-card__title"><?php echo esc_html($feature['title']); ?></h3>
+						<p class="cwp-fg-card__desc"><?php echo esc_html($feature['desc']); ?></p>
+					</div>
 				<?php endforeach; ?>
 			</div>
 
-		<div class="cwp-fg-note">
-			<strong><?php esc_html_e('Migrating from another SEO plugin?', 'mihdan-index-now'); ?></strong>
-			<?php esc_html_e(
-				'Enable the features below first — this unlocks the Title & Meta, Social Networks, Site Information and all other settings tabs. Configure everything to your liking, then safely deactivate your old SEO plugin. Your existing per-post SEO meta will be honoured automatically.',
-				'mihdan-index-now'
-			); ?>
-		</div>
+			<div class="cwp-fg-note">
+				<strong><?php esc_html_e('Migrating from another SEO plugin?', 'mihdan-index-now'); ?></strong>
+				<?php esc_html_e(
+					'Enable the features below first — this unlocks the Title & Meta, Social Networks, Site Information and all other settings tabs. Configure everything to your liking, then safely deactivate your old SEO plugin. Your existing per-post SEO meta will be honoured automatically.',
+					'mihdan-index-now'
+				); ?>
+			</div>
 
 		</div>
 
