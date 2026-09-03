@@ -21,6 +21,10 @@ use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapSettings;
 use Mihdan\IndexNow\SEOCore\RobotsSettings\RobotsSettings;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\NewsSitemapProvider;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\CustomUrlsSitemapProvider;
+use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
+use Mihdan\IndexNow\SEOCore\Redirects\RedirectsSettings;
+use Mihdan\IndexNow\SEOCore\Redirects\RedirectsProcessor;
+use Mihdan\IndexNow\SEOCore\Redirects\PermalinkTracker;
 
 class SEOCoreInit
 {
@@ -29,6 +33,13 @@ class SEOCoreInit
 	public function __construct()
 	{
 		new Notifications();
+
+		// Redirects — manager must be instantiated early so the DB table
+		// is created on plugins_loaded before any other code queries it.
+		$redirects_manager = new RedirectsManager();
+		new RedirectsSettings($redirects_manager);
+		new RedirectsProcessor($redirects_manager);
+		new PermalinkTracker($redirects_manager);
 		new CoreSettings\CoreSettings();
 		new CoreSettings\Assets();
 		new AdvancedSettings();
