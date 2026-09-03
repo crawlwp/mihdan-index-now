@@ -998,12 +998,12 @@ class WPOSA
 	function callback_select($args)
 	{
 
-		$value = esc_attr($this->get_option($args['id'], $args['section'], $args['std']));
+		$value = $this->get_option($args['id'], $args['section'], $args['std']);
 		$size  = isset($args['size']) && ! is_null($args['size']) ? $args['size'] : 'regular';
 
 		$html = sprintf('<select class="%1$s" name="%2$s[%3$s]" id="%2$s[%3$s]">', $size, $args['section'], $args['id']);
 		foreach ($args['options'] as $key => $label) {
-			$html .= sprintf('<option value="%s"%s>%s</option>', $key, selected($value, $key, false), $label);
+			$html .= sprintf('<option value="%s"%s>%s</option>', esc_attr($key), selected($value, $key, false), esc_html($label));
 		}
 		$html .= '</select>';
 		$html .= $this->get_field_description($args);
