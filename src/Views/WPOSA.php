@@ -34,7 +34,9 @@ class WPOSA
 			'class' => true,
 		],
 		'ol'       => [],
-		'li'       => [],
+		'li'       => [
+			'class' => true,
+		],
 		'br'       => [
 			'class' => true,
 		],
@@ -84,12 +86,6 @@ class WPOSA
 			'src'    => true,
 			'width'  => true,
 			'height' => true,
-		],
-		'ul'       => [
-			'class' => true,
-		],
-		'li'       => [
-			'class' => true,
 		],
 		'p'        => [
 			'class' => true,
@@ -280,6 +276,21 @@ class WPOSA
 	private $enable_blank_mode = false;
 
 	/**
+	 * Per-request option cache. Keyed by the prefixed section/option name.
+	 *
+	 * @var array
+	 */
+	private $option_cache = [];
+
+	/**
+	 * Flat sanitize-callback index built lazily on first sanitize call.
+	 * Keyed by field id, value is the callable (or false).
+	 *
+	 * @var array|null
+	 */
+	private $sanitize_index = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $plugin_name Plugin name.
@@ -331,6 +342,12 @@ class WPOSA
 	{
 		global $wp_version;
 
+		// Only load CrawlWP assets on CrawlWP admin pages.
+		$screen = get_current_screen();
+		if ( ! $screen || strpos($screen->id, 'crawlwp') === false) {
+			return;
+		}
+
 		// jQuery is needed.
 		wp_enqueue_script('jquery');
 
@@ -343,16 +360,13 @@ class WPOSA
 			true
 		);
 
-		// Admin stylesheet — only load on CrawlWP admin pages.
-		$screen = get_current_screen();
-		if ($screen && strpos($screen->id, 'crawlwp') !== false) {
-			wp_enqueue_style(
-				'crawlwp-admin',
-				CRAWLWP_PLUGIN_URL . 'src/Views/assets/admin.css',
-				array(),
-				CRAWLWP_VERSION
-			);
-		}
+		// Admin stylesheet.
+		wp_enqueue_style(
+			'crawlwp-admin',
+			CRAWLWP_PLUGIN_URL . 'src/Views/assets/admin.css',
+			array(),
+			CRAWLWP_VERSION
+		);
 	}
 
 
@@ -506,21 +520,23 @@ class WPOSA
 
 	private function convert_array_to_attributes(array $args): string
 	{
+		if (empty($args)) {
+			return '';
+		}
+
 		$result = [];
 
-		if (count($args)) {
-			foreach ($args as $attr_key => $attr_value) {
-				if ($attr_value === true || $attr_value === false) {
-					if ($attr_value === true) {
-						$result[] = esc_attr($attr_key);
-					}
-				} else {
-					$result[] = sprintf(
-						'%s="%s"',
-						esc_attr($attr_key),
-						esc_attr($attr_value)
-					);
+		foreach ($args as $attr_key => $attr_value) {
+			if ($attr_value === true || $attr_value === false) {
+				if ($attr_value === true) {
+					$result[] = esc_attr($attr_key);
 				}
+			} else {
+				$result[] = sprintf(
+					'%s="%s"',
+					esc_attr($attr_key),
+					esc_attr($attr_value)
+				);
 			}
 		}
 
@@ -802,19 +818,21 @@ class WPOSA
 			return false;
 		}
 
-		// Iterate over registered fields and see if we can find proper callback.
-		foreach ($this->fields_array as $section => $field_array) {
-			foreach ($field_array as $field) {
-				if ($field['name'] != $slug) {
-					continue;
+		// Build a flat slug→callback index on the first call instead of
+		// running a double-loop on every field during sanitization.
+		if ($this->sanitize_index === null) {
+			$this->sanitize_index = [];
+			foreach ($this->fields_array as $field_array) {
+				foreach ($field_array as $field) {
+					$cb = isset($field['sanitize_callback']) && is_callable($field['sanitize_callback'])
+						? $field['sanitize_callback']
+						: false;
+					$this->sanitize_index[$field['name']] = $cb;
 				}
-
-				// Return the callback name.
-				return isset($field['sanitize_callback']) && is_callable($field['sanitize_callback']) ? $field['sanitize_callback'] : false;
 			}
 		}
 
-		return false;
+		return $this->sanitize_index[$slug] ?? false;
 	}
 
 
@@ -1196,8 +1214,16 @@ class WPOSA
 	 */
 	public function get_option(string $option, string $section, $default = '')
 	{
-		$section = str_replace($this->get_prefix() . '_', '', $section);
-		$options = get_option($this->get_prefix() . '_' . $section);
+		$section     = str_replace($this->get_prefix() . '_', '', $section);
+		$option_name = $this->get_prefix() . '_' . $section;
+
+		// Cache the entire option row for the lifetime of this request so that
+		// rendering 30 fields in one section only triggers a single DB read.
+		if ( ! array_key_exists($option_name, $this->option_cache)) {
+			$this->option_cache[$option_name] = get_option($option_name);
+		}
+
+		$options = $this->option_cache[$option_name];
 
 		if (isset($options[$option])) {
 			return apply_filters('wposa/get_option', $options[$option], $option, $section, $default);
@@ -1210,15 +1236,18 @@ class WPOSA
 	{
 		$name = $this->get_prefix() . '_' . $section;
 
-		// Get option.
-		$options = get_option($name);
+		// Get option (use cache when available).
+		$options = array_key_exists($name, $this->option_cache)
+			? $this->option_cache[$name]
+			: get_option($name);
 
 		if ( ! $options) {
 			return false;
 		}
 
-		// Update option.
+		// Update option and invalidate the cache entry.
 		$options[$option] = $value;
+		unset($this->option_cache[$name]);
 
 		return update_option($name, $options);
 	}
