@@ -41,6 +41,7 @@ class SEOCoreInit
 		// so admins are alerted to critical site-wide issues.
 		new Notifications();
 
+		new AdvancedSettings();
 		new SiteVerificationSettings();
 		new SiteVerificationFrontendOutput();
 
@@ -57,7 +58,6 @@ class SEOCoreInit
 			new PermalinkTracker($redirects_manager);
 			new CoreSettings\CoreSettings();
 			new CoreSettings\Assets();
-			new AdvancedSettings();
 			new SiteInfoSettings();
 			new SocialSettings();
 			new RssSettings();

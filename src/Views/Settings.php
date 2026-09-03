@@ -132,13 +132,6 @@ class Settings
 		$this->wposa->sub_page_title = esc_html__('Settings', 'mihdan-index-now');
 
 		$this->wposa->add_header_menu([
-			'id'    => 'title_meta',
-			'title' => __('Title & Meta', 'mihdan-index-now'),
-		]);
-
-		do_action('crawlwp_setup_fields_after_title_meta', $this->wposa, $this);
-
-		$this->wposa->add_header_menu([
 			'id'    => 'index_settings',
 			'title' => __('Indexing', 'mihdan-index-now'),
 		]);
