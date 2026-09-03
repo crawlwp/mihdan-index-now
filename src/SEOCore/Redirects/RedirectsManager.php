@@ -338,7 +338,7 @@ class RedirectsManager
 		$clean = [];
 
 		if (isset($data['from_url'])) {
-			$clean['from_url'] = esc_url_raw(trim($data['from_url']));
+			$clean['from_url'] = $this->strip_home_url(trim($data['from_url']));
 		}
 
 		if (isset($data['to_url'])) {
@@ -368,6 +368,40 @@ class RedirectsManager
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * Strip the site's home URL origin from a "from" URL, keeping only the path/query/fragment.
+	 * If the value is already a relative path it is returned unchanged (after sanitizing).
+	 *
+	 * @param string $url Raw user input (full URL or relative path).
+	 * @return string Path-only value, e.g. "/old-page/" or "/page/?foo=bar".
+	 */
+	private function strip_home_url(string $url): string
+	{
+		if ($url === '') {
+			return '';
+		}
+
+		// Build the home origin (scheme + host, no trailing slash) for comparison.
+		$home   = untrailingslashit(home_url());
+		$parsed = wp_parse_url($home);
+		$origin = isset($parsed['scheme'], $parsed['host'])
+			? $parsed['scheme'] . '://' . $parsed['host']
+			: '';
+
+		// If the user pasted a full URL whose host matches ours, strip the origin prefix.
+		if ($origin !== '' && stripos($url, $origin) === 0) {
+			$url = substr($url, strlen($origin));
+		}
+
+		// Ensure the path starts with a slash so it is treated as site-relative.
+		if ($url !== '' && $url[0] !== '/') {
+			$url = '/' . $url;
+		}
+
+		// Sanitize: allow only path, query string, and fragment.
+		return esc_url_raw($url, ['http', 'https', '']);
 	}
 
 	/**

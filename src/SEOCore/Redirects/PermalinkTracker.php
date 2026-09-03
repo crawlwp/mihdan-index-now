@@ -61,7 +61,9 @@ class PermalinkTracker
 		}
 
 		// Avoid creating duplicate redirects for the same source URL.
-		if ($this->manager->exists_from_url($old_url)) {
+		// Compare against the path-only form used for storage (strip scheme + host).
+		$old_path = wp_parse_url($old_url, PHP_URL_PATH);
+		if ($old_path && $this->manager->exists_from_url($old_path)) {
 			return;
 		}
 

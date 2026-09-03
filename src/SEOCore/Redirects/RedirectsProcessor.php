@@ -21,7 +21,7 @@ class RedirectsProcessor
 	{
 		$this->manager = $manager;
 
-		add_action('template_redirect', [$this, 'process'], 1);
+		add_action('template_redirect', [$this, 'process'], -1);
 	}
 
 	/**
@@ -43,7 +43,7 @@ class RedirectsProcessor
 		}
 
 		// Build the current request path (and optionally full URL with query).
-		$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
+		$request_uri = $_SERVER['REQUEST_URI'] ?? '/';
 
 		// Normalise: decode percent-encoding and strip trailing slash for
 		// comparison, but preserve it in the original for regex capture groups.
