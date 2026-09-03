@@ -63,10 +63,17 @@ class CustomUrlsSitemapProvider extends \WP_Sitemaps_Provider
 		$offset = ($page_num - 1) * $this->per_page;
 		$page_urls = array_slice($all_urls, $offset, $this->per_page);
 
+		/*
+		 * Use the date the custom_urls option was last saved as lastmod.
+		 * WordPress stores option timestamps via alloptions; we fall back to
+		 * the current UTC date when no timestamp is available.
+		 */
+		$lastmod = $this->get_lastmod();
+
 		$entries = [];
 
 		foreach ($page_urls as $url) {
-			$entry = apply_filters('crawlwp_custom_sitemap_entry', ['loc' => $url], $url);
+			$entry = apply_filters('crawlwp_custom_sitemap_entry', ['loc' => $url, 'lastmod' => $lastmod], $url);
 
 			if ($entry !== false) {
 				$entries[] = $entry;
@@ -74,6 +81,26 @@ class CustomUrlsSitemapProvider extends \WP_Sitemaps_Provider
 		}
 
 		return $entries;
+	}
+
+	/**
+	 * Return an ISO 8601 lastmod date for the custom URL list.
+	 *
+	 * Uses the WordPress-recorded timestamp of when the SitemapSettings option
+	 * was last updated (stored as a companion option), falling back to today.
+	 *
+	 * @return string  e.g. "2026-09-03T10:03:00+00:00"
+	 */
+	private function get_lastmod(): string
+	{
+		/* SitemapSettings saves its data under the WPOSA section option key. */
+		$ts = (int) get_option('crawlwp_sitemap_settings_updated', 0);
+
+		if ($ts > 0) {
+			return gmdate('Y-m-d\TH:i:s+00:00', $ts);
+		}
+
+		return gmdate('Y-m-d\TH:i:s+00:00');
 	}
 
 	/**

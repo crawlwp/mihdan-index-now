@@ -23,6 +23,21 @@ class SitemapSettings
 	public function __construct()
 	{
 		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 40, 2);
+
+		/*
+		 * Record a timestamp whenever the sitemap settings option is saved.
+		 * CustomUrlsSitemapProvider uses this to populate the lastmod field.
+		 */
+		add_action('update_option_crawlwp_' . self::SECTION, [$this, 'record_save_timestamp']);
+		add_action('add_option_crawlwp_' . self::SECTION, [$this, 'record_save_timestamp']);
+	}
+
+	/**
+	 * Save the current UTC timestamp whenever the sitemap settings are written.
+	 */
+	public function record_save_timestamp(): void
+	{
+		update_option('crawlwp_sitemap_settings_updated', time(), false);
 	}
 
 	// -------------------------------------------------------------------------
