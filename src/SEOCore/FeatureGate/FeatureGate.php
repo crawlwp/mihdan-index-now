@@ -15,7 +15,8 @@ use Mihdan\IndexNow\Utils;
 
 class FeatureGate
 {
-	const OPTION_KEY = 'crawlwp_seo_features';
+	const OPTION_KEY = 'crawlwp_seo_features'; // Full WP option name (what get_option/update_option use directly)
+	const SECTION_ID = 'seo_features';         // Bare id passed to add_section(); WPOSA prepends 'crawlwp_' → 'crawlwp_seo_features'
 	const OPTION_FIELD = 'enabled';
 
 	/**
@@ -52,7 +53,7 @@ class FeatureGate
 			}
 
 			$options = is_array($raw) ? $raw : [];
-			self::$cache = !empty($options[self::OPTION_FIELD]);
+			self::$cache = isset($options[self::OPTION_FIELD]) && $options[self::OPTION_FIELD] === '1';
 		}
 
 		return self::$cache;
@@ -92,24 +93,24 @@ class FeatureGate
 			'title' => __('SEO Features', 'mihdan-index-now'),
 		]);
 
-		if ($wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_seo_features') {
+		if ($wposa->get_active_header_menu() == Utils::get_plugin_prefix() . '_' . self::SECTION_ID) {
 
 			$wposa->add_section([
-				'header_menu_id' => 'seo_features',
-				'id' => self::OPTION_KEY,
-				'title' => __('On-Page SEO Features', 'mihdan-index-now'),
+				'header_menu_id' => self::SECTION_ID,
+				'id' => self::SECTION_ID,
+				'title' => __('SEO Features', 'mihdan-index-now'),
 				'desc' => '',
 				'callback' => [$this, 'render_promo'],
 			]);
 
 			$wposa->add_field(
-				self::OPTION_KEY,
+				self::SECTION_ID,
 				[
 					'id' => self::OPTION_FIELD,
 					'type' => 'checkbox',
 					'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
 					'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
-					'desc' => __('Check this box to enable all on-page SEO features: meta tags, Open Graph, Schema/JSON-LD, breadcrumbs, canonical URLs, sitemap enhancements, redirects, RSS branding, robots.txt editing, social profile fields, and critical SEO notifications. Leave it unchecked if you prefer to keep using your current SEO plugin.', 'mihdan-index-now'),
+					'desc' => __('Check this box to enable all on-page SEO features. Leave it unchecked if you prefer to keep using your current SEO plugin.', 'mihdan-index-now'),
  				'default' => '1',
 				]
 			);
@@ -123,242 +124,237 @@ class FeatureGate
 	{
 		$features = [
 			[
-				'icon' => '🏷️',
 				'title' => __('Title & Meta Tags', 'mihdan-index-now'),
 				'desc' => __('Set precise SEO titles and meta descriptions for every post type, taxonomy, archive, author, and special page — with a live preview and variable tokens.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '📣',
 				'title' => __('Open Graph & Social Cards', 'mihdan-index-now'),
 				'desc' => __('Automatic og:title, og:description, og:image (with width/height), og:locale, article:section/tag and fb:app_id so your content looks perfect when shared on Facebook, LinkedIn, X/Twitter and more.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🔷',
 				'title' => __('Schema / JSON-LD', 'mihdan-index-now'),
 				'desc' => __('Rich structured data for every page — WebSite, Organization/Person, WebPage, Article, BlogPosting, BreadcrumbList and more — keeping your site eligible for Google rich results.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🗺️',
 				'title' => __('Breadcrumbs', 'mihdan-index-now'),
 				'desc' => __('Semantic breadcrumb HTML via the [crawlwp_breadcrumbs] shortcode and automatic BreadcrumbList JSON-LD on every page type including archives, taxonomies and 404s.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🤖',
 				'title' => __('Robots Directives & robots.txt', 'mihdan-index-now'),
 				'desc' => __('Fine-grained noindex, nofollow and noarchive controls per post and globally per post type. Edit and fully control your robots.txt file directly from the WordPress admin.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '📐',
 				'title' => __('Canonical URLs & Pagination', 'mihdan-index-now'),
 				'desc' => __('Automatic self-referencing canonical tags and rel=prev/next pagination links to prevent duplicate content issues across paginated archives.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🗂️',
 				'title' => __('XML Sitemap Enhancements', 'mihdan-index-now'),
 				'desc' => __('Noindexed content is excluded from the sitemap automatically. Add a Google News Sitemap, include custom non-WordPress URLs, and get multilingual sitemap support for Polylang, WPML and TranslatePress.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🔀',
 				'title' => __('URL Redirects', 'mihdan-index-now'),
 				'desc' => __('Manage 301, 302, 307, 410 and 451 redirects from a single admin table, with regex support, hit tracking, automatic permalink-change detection, and bulk actions.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '📰',
 				'title' => __('RSS Feed Branding', 'mihdan-index-now'),
 				'desc' => __('Prepend and append custom content to every post in your RSS feed — with variable tokens for post link, blog link and author link — to build brand recognition and discourage content scrapers.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🌐',
 				'title' => __('Site Information & Social Profiles', 'mihdan-index-now'),
 				'desc' => __('Declare your site as an Organization or Person, set your logo, and link your Facebook, X/Twitter and other social profiles so search engines build an accurate knowledge graph about your brand.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '👤',
 				'title' => __('Author Social Profiles', 'mihdan-index-now'),
 				'desc' => __('Authors can add their Facebook URL, X/Twitter handle and additional profile URLs on their profile page. These appear as article:author and sameAs properties in the JSON-LD output.', 'mihdan-index-now'),
 			],
 			[
-				'icon' => '🔔',
 				'title' => __('Critical SEO Notifications', 'mihdan-index-now'),
 				'desc' => __('A compact bell-icon notification centre in the admin bar alerts you to site-wide issues like "Search engines discouraged", conflicting plugins, missing robots.txt problems and more.', 'mihdan-index-now'),
 			],
 		];
 
 		$enabled = self::is_enabled();
-		$badge = $enabled
-			? '<span class="cwp-fg-badge cwp-fg-badge--on">' . esc_html__('Active', 'mihdan-index-now') . '</span>'
-			: '<span class="cwp-fg-badge cwp-fg-badge--off">' . esc_html__('Inactive', 'mihdan-index-now') . '</span>';
 
 		?>
 		<div class="cwp-fg-wrap">
 
-			<div class="cwp-fg-hero">
-				<div class="cwp-fg-hero__text">
-					<h2 class="cwp-fg-hero__title">
-						<?php esc_html_e('Supercharge your SEO with CrawlWP', 'mihdan-index-now'); ?>
-						<?php echo $badge; // phpcs:ignore WordPress.Security.EscapeOutput
-						?>
-					</h2>
-					<p class="cwp-fg-hero__intro">
-						<?php esc_html_e(
-							'CrawlWP includes a complete on-page SEO suite — title & meta templates, Open Graph, Schema/JSON-LD, breadcrumbs, canonical URLs, robots directives, a robots.txt editor, URL redirects, RSS feed branding, Google News sitemap, site information, author social profiles, and a notification centre for critical SEO issues. If you are migrating from another SEO plugin, review your settings first and then flip the switch below.',
-							'mihdan-index-now'
-						); ?>
-					</p>
-					<?php if (!$enabled): ?>
-						<p class="cwp-fg-hero__cta-note">
-							<?php esc_html_e(
-								'⚠️ On-page SEO features are currently INACTIVE. Enable them below to start outputting optimised meta tags, structured data and more on your website.',
-								'mihdan-index-now'
-							); ?>
-						</p>
-					<?php endif; ?>
-				</div>
-			</div>
+ 		<div class="cwp-fg-hero">
+ 			<div class="cwp-fg-hero__text">
+ 				<h2 class="cwp-fg-hero__title">
+ 					<?php esc_html_e('Supercharge your SEO with CrawlWP', 'mihdan-index-now'); ?>
+ 				</h2>
+ 				<p class="cwp-fg-hero__intro">
+ 					<?php esc_html_e(
+ 						'A complete on-page SEO suite built into CrawlWP — title & meta templates, Open Graph, Schema/JSON-LD, breadcrumbs, canonical URLs, robots directives, a robots.txt editor, URL redirects, RSS feed branding, Google News sitemap, site information, and author social profiles.',
+ 						'mihdan-index-now'
+ 					); ?>
+ 				</p>
+ 			</div>
+ 			<div class="cwp-fg-hero__status">
+ 				<div class="cwp-fg-status cwp-fg-status--<?php echo $enabled ? 'on' : 'off'; ?>">
+ 					<div class="cwp-fg-status__dot"></div>
+ 					<div class="cwp-fg-status__body">
+ 						<strong class="cwp-fg-status__label">
+ 							<?php echo $enabled ? esc_html__('Features Active', 'mihdan-index-now') : esc_html__('Features Inactive', 'mihdan-index-now'); ?>
+ 						</strong>
+ 						<span class="cwp-fg-status__hint">
+ 							<?php echo $enabled
+ 								? esc_html__('Meta tags and structured data are being output.', 'mihdan-index-now')
+ 								: esc_html__('Enable below to start outputting SEO meta tags.', 'mihdan-index-now'); ?>
+ 						</span>
+ 					</div>
+ 				</div>
+ 			</div>
+ 		</div>
 
 			<div class="cwp-fg-grid">
 				<?php foreach ($features as $feature): ?>
-					<div class="cwp-fg-card">
-						<div class="cwp-fg-card__icon"
-						     aria-hidden="true"><?php echo esc_html($feature['icon']); ?></div>
-						<div class="cwp-fg-card__body">
-							<h3 class="cwp-fg-card__title"><?php echo esc_html($feature['title']); ?></h3>
-							<p class="cwp-fg-card__desc"><?php echo esc_html($feature['desc']); ?></p>
-						</div>
-					</div>
+ 				<div class="cwp-fg-card">
+ 					<h3 class="cwp-fg-card__title"><?php echo esc_html($feature['title']); ?></h3>
+ 					<p class="cwp-fg-card__desc"><?php echo esc_html($feature['desc']); ?></p>
+ 				</div>
 				<?php endforeach; ?>
 			</div>
 
-			<div class="cwp-fg-note">
-				<strong><?php esc_html_e('Switching from another SEO plugin?', 'mihdan-index-now'); ?></strong>
-				<?php esc_html_e(
-  			'Enable the features below first to access the Title & Meta, Social Networks, and Site Information settings. Configure them to your liking, then deactivate your existing SEO plugin.',
-					'mihdan-index-now'
-				); ?>
-			</div>
+		<div class="cwp-fg-note">
+			<strong><?php esc_html_e('Migrating from another SEO plugin?', 'mihdan-index-now'); ?></strong>
+			<?php esc_html_e(
+				'Enable the features below first — this unlocks the Title & Meta, Social Networks, Site Information and all other settings tabs. Configure everything to your liking, then safely deactivate your old SEO plugin. Your existing per-post SEO meta will be honoured automatically.',
+				'mihdan-index-now'
+			); ?>
+		</div>
 
 		</div>
 
 		<style>
 			.cwp-fg-wrap {
-				max-width: 900px;
 				margin-bottom: 24px;
 			}
 
 			/* Hero */
 			.cwp-fg-hero {
-				background: linear-gradient(135deg, #1d2327 0%, #2c3338 100%);
-				border-radius: 8px;
+				background: #1d2327;
+				border-radius: 6px;
 				padding: 32px 36px;
 				margin-bottom: 24px;
 				color: #fff;
+				display: flex;
+				align-items: center;
+				gap: 40px;
+				justify-content: space-between;
+			}
+
+			.cwp-fg-hero__text {
+				flex: 1;
+				min-width: 0;
 			}
 
 			.cwp-fg-hero__title {
-				margin: 0 0 12px;
-				font-size: 22px;
+				margin: 0 0 10px;
+				font-size: 20px;
 				font-weight: 600;
 				color: #fff;
-				display: flex;
-				align-items: center;
-				gap: 12px;
-				flex-wrap: wrap;
+				line-height: 1.3;
 			}
 
 			.cwp-fg-hero__intro {
-				margin: 0 0 12px;
-				font-size: 14px;
-				line-height: 1.7;
-				color: #e8eaed;
-				max-width: 680px;
-			}
-
-			.cwp-fg-hero__cta-note {
 				margin: 0;
 				font-size: 13px;
-				color: #ffd700;
-				font-weight: 500;
+				line-height: 1.7;
+				color: #8a9099;
 			}
 
-			/* Status badge */
-			.cwp-fg-badge {
-				display: inline-block;
-				padding: 3px 10px;
-				border-radius: 20px;
+			.cwp-fg-hero__status {
+				flex-shrink: 0;
+			}
+
+			/* Status indicator */
+			.cwp-fg-status {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				border: 1px solid rgba(255, 255, 255, .1);
+				border-radius: 4px;
+				padding: 12px 16px;
+			}
+
+			.cwp-fg-status__dot {
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				flex-shrink: 0;
+				background: #8a9099;
+			}
+
+			.cwp-fg-status--on .cwp-fg-status__dot {
+				background: #fff;
+			}
+
+			.cwp-fg-status__body {
+				display: flex;
+				flex-direction: column;
+				gap: 2px;
+			}
+
+			.cwp-fg-status__label {
 				font-size: 12px;
 				font-weight: 600;
+				color: #fff;
 				letter-spacing: .03em;
 				text-transform: uppercase;
-				vertical-align: middle;
 			}
 
-			.cwp-fg-badge--on {
-				background: #00a32a;
-				color: #fff;
-			}
-
-			.cwp-fg-badge--off {
-				background: #d63638;
-				color: #fff;
+			.cwp-fg-status__hint {
+				font-size: 11px;
+				color: #646970;
+				line-height: 1.4;
 			}
 
 			/* Feature grid */
 			.cwp-fg-grid {
 				display: grid;
 				grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-				gap: 16px;
+				gap: 1px;
 				margin-bottom: 24px;
+				border: 1px solid #dcdcde;
+				border-radius: 4px;
+				overflow: hidden;
 			}
 
 			.cwp-fg-card {
 				background: #fff;
-				border: 1px solid #e0e0e0;
-				border-radius: 6px;
 				padding: 18px 20px;
-				display: flex;
-				gap: 14px;
-				align-items: flex-start;
-				transition: box-shadow .15s ease;
-			}
-
-			.cwp-fg-card:hover {
-				box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
-			}
-
-			.cwp-fg-card__icon {
-				font-size: 24px;
-				line-height: 1;
-				flex-shrink: 0;
-				margin-top: 2px;
 			}
 
 			.cwp-fg-card__title {
-				margin: 0 0 6px;
-				font-size: 14px;
+				margin: 0 0 4px;
+				font-size: 13px;
 				font-weight: 600;
 				color: #1d2327;
 			}
 
 			.cwp-fg-card__desc {
 				margin: 0;
-				font-size: 13px;
-				color: #50575e;
+				font-size: 12px;
+				color: #646970;
 				line-height: 1.6;
 			}
 
 			/* Migration note */
 			.cwp-fg-note {
-				background: #f0f6fc;
-				border-left: 4px solid #2271b1;
+				border: 1px solid #dcdcde;
+				border-radius: 4px;
 				padding: 14px 18px;
-				border-radius: 0 4px 4px 0;
 				font-size: 13px;
-				color: #1d2327;
+				color: #50575e;
 				line-height: 1.6;
 			}
 
 			.cwp-fg-note strong {
-				color: #2271b1;
+				display: block;
+				margin-bottom: 4px;
+				color: #1d2327;
+				font-weight: 600;
 			}
 		</style>
 		<?php

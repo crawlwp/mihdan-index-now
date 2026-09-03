@@ -495,11 +495,11 @@ input.wposa-field--switch:hover:after {
 	display: flex;
 }
 
-/* Hide the sidebar on the SEO Features gate page (section id is prefixed by WPOSA to crawlwp_crawlwp_seo_features). */
-.wposa__column.wposa__content:has(#crawlwp_crawlwp_seo_features) .wposa-nav-tab-wrapper {
+/* Hide the sidebar on the SEO Features gate page (section id = 'seo_features', WPOSA prefixes it → 'crawlwp_seo_features'). */
+.wposa__column.wposa__content:has(#crawlwp_seo_features) .wposa-nav-tab-wrapper {
 	display: none;
 }
-#wpbody-content .wposa__content:has(#crawlwp_crawlwp_seo_features) .metabox-holder {
+#wpbody-content .wposa__content:has(#crawlwp_seo_features) .metabox-holder {
 	width: 100%;
 	padding: 24px;
 }
