@@ -125,16 +125,16 @@ class FeatureGate
 				'desc' => '',
 				'callback' => [$this, 'render_promo'],
 			]);
-			$wposa->add_field(
-				self::SECTION_ID,
-				[
-					'id' => self::OPTION_FIELD,
-					'type' => 'checkbox',
-					'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
-					'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
-					'desc' => __('Check this box to enable all on-page SEO features. Leave it unchecked if you prefer to keep using your current SEO plugin.', 'mihdan-index-now'),
-				]
-			);
+ 		$wposa->add_field(
+ 			self::SECTION_ID,
+ 			[
+ 				'id' => self::OPTION_FIELD,
+ 				'type' => 'checkbox',
+ 				'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
+ 				'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
+ 				'desc' => __('Enables all 12 feature areas above. Migrating from another SEO plugin? Enable this first to unlock all settings, configure everything, then deactivate your old plugin.', 'mihdan-index-now'),
+ 			]
+ 		);
 		}
 	}
 
@@ -343,7 +343,7 @@ class FeatureGate
 				<div>
 					<strong><?php esc_html_e('Migrating from another SEO plugin?', 'mihdan-index-now'); ?></strong>
 					<?php esc_html_e(
-						'Enable the features below first — this unlocks the Title & Meta, Social Networks, Site Information and all other settings tabs. Configure everything to your liking, then safely deactivate your old SEO plugin. Migration tool to help you move from other SEO plugins is coming soon.',
+						'Enable the features below first — this unlocks the Title &amp; Meta, Social Networks, Site Information and all other settings tabs. Configure everything to your liking, then safely deactivate your old SEO plugin.',
 						'mihdan-index-now'
 					); ?>
 				</div>
@@ -474,6 +474,7 @@ class FeatureGate
 				font-size: 13px;
 				color: #50575e;
 				line-height: 1.6;
+				margin-bottom: 16px;
 			}
 
 			.cwp-fg-note__icon {
@@ -488,7 +489,49 @@ class FeatureGate
 				color: #1d2327;
 				font-weight: 600;
 			}
-		</style>
+
+			/* ── Enable checkbox highlight ── */
+			.wposa-form-table__row_crawlwp_seo_features_enabled {
+				background: #f0f6fc;
+				border-radius: 4px;
+				border: 1px solid #72aee6;
+				margin-bottom: 0;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled th {
+				padding: 18px 12px 18px 16px;
+				font-size: 14px;
+				font-weight: 700;
+				color: #1d2327;
+				vertical-align: middle;
+				border-left: 3px solid #2271b1;
+				border-radius: 4px 0 0 4px;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled td {
+				padding: 18px 16px;
+				vertical-align: middle;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled label {
+				font-size: 14px;
+				font-weight: 600;
+				color: #1d2327;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled input[type="checkbox"] {
+				width: 18px;
+				height: 18px;
+				margin-top: 1px;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled p.description {
+				font-size: 12px;
+				color: #50575e;
+				margin-top: 6px;
+			}
+
+ 	</style>
 		<?php
 	}
 }
