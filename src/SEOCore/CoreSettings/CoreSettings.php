@@ -221,12 +221,12 @@ class CoreSettings
 	 */
 	private function add_schema_field(WPOSA $wposa, string $section, array $entity): void
 	{
-		$this->add_heading($wposa, $section, 'heading_schema', __('Structured data', 'mihdan-index-now'));
+		$this->add_heading($wposa, $section, 'heading_schema', __('Schema Structured data', 'mihdan-index-now'));
 
 		$wposa->add_field($section, [
 			'id' => 'schema_page_type',
 			'type' => 'select',
-			'name' => __('Default page type', 'mihdan-index-now'),
+			'name' => __('Page type', 'mihdan-index-now'),
 			'default' => Entities::default_value($entity['key'], 'schema_page_type', 'WebPage'),
 			'options' => [
 				'WebPage' => __('Web Page', 'mihdan-index-now'),
@@ -241,13 +241,13 @@ class CoreSettings
 				'RealEstateListing' => __('Real Estate Listing', 'mihdan-index-now'),
 				'none' => __('None — no structured data', 'mihdan-index-now'),
 			],
-			'desc' => esc_html__('The general page type for posts of this type. Used as @type in JSON-LD unless overridden by the article type below.', 'mihdan-index-now'),
+			'desc' => esc_html__('Tells Google and other search engines what kind of page this is (for example, a regular page, an FAQ page, or a contact page), so they can understand and sometimes display it better in search results. If you also set an article type below, that choice takes priority over this one. Most sites can safely leave this on "Web Page".', 'mihdan-index-now'),
 		]);
 
 		$wposa->add_field($section, [
 			'id' => 'schema_article_type',
 			'type' => 'select',
-			'name' => __('Default article type', 'mihdan-index-now'),
+			'name' => __('Article type', 'mihdan-index-now'),
 			'default' => Entities::default_value($entity['key'], 'schema_article_type', 'Article'),
 			'options' => [
 				'Article' => __('Article', 'mihdan-index-now'),
@@ -261,7 +261,7 @@ class CoreSettings
 				'Report' => __('Report', 'mihdan-index-now'),
 				'none' => __('None — use page type only', 'mihdan-index-now'),
 			],
-			'desc' => esc_html__('When set, overrides the page type as the effective @type in JSON-LD. Set to "None" to use only the page type.', 'mihdan-index-now'),
+			'desc' => esc_html__('Choose this only if the content is written like an article — a blog post, news story, review, etc. It tells search engines to treat it as an article (helping show details like the author and publish date in search results) instead of a plain page, and it overrides the page type above when set. Choose "None" if this content isn\'t an article, so only the page type above is used.', 'mihdan-index-now'),
 		]);
 	}
 
