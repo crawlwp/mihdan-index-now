@@ -342,7 +342,18 @@ class RedirectsManager
 		$clean = [];
 
 		if (isset($data['from_url'])) {
-			$clean['from_url'] = $this->strip_home_url(trim($data['from_url']));
+			$match_type_hint = isset($data['match_type']) ? $data['match_type'] : 'exact';
+
+			// Regex patterns must never be passed through URL sanitisation:
+			// esc_url_raw()/esc_url() silently strips characters that are
+			// invalid in a URL — such as ^ $ ( ) [ ] \ — which are exactly
+			// the characters a regex pattern relies on. Doing so previously
+			// corrupted every saved regex rule into a broken pattern.
+			if ($match_type_hint === 'regex') {
+				$clean['from_url'] = sanitize_text_field(trim($data['from_url']));
+			} else {
+				$clean['from_url'] = $this->strip_home_url(trim($data['from_url']));
+			}
 		}
 
 		if (isset($data['to_url'])) {
@@ -379,13 +390,13 @@ class RedirectsManager
 	 * Strip the site's home URL origin from a "from" URL, keeping only the path/query/fragment.
 	 * If the value is already a relative path it is returned unchanged (after sanitizing).
 	 *
-	 * When the URL has no query string, both the leading and trailing slash are
-	 * stripped too (e.g. "old-page" instead of "/old-page/"). URLs that carry a
-	 * query string keep their leading slash so the path/query split stays
-	 * unambiguous (e.g. "/page/?foo=bar").
+	 * The leading slash is always stripped, whether or not a query string is
+	 * present (e.g. "old-page" or "old-page/?foo=bar"). When there is no query
+	 * string, the trailing slash is stripped too, so the stored value is a bare
+	 * path segment (e.g. "old-page" instead of "/old-page/").
 	 *
 	 * @param string $url Raw user input (full URL or relative path).
-	 * @return string Path-only value, e.g. "old-page" or "/page/?foo=bar".
+	 * @return string Path-only value, e.g. "old-page" or "old-page/?foo=bar".
 	 */
 	private function strip_home_url(string $url): string
 	{
@@ -417,10 +428,13 @@ class RedirectsManager
 		// sanitizing would turn "/old-page" into "http://old-page".
 		$url = esc_url_raw($url, ['http', 'https', '']);
 
-		// No query string: strip both the leading and trailing slash so the
-		// stored value is a bare path segment.
+		// Always strip the leading slash so the stored value is a bare path
+		// segment, regardless of whether a query string is present.
+		$url = ltrim($url, '/');
+
+		// No query string: also strip a trailing slash.
 		if (strpos($url, '?') === false) {
-			$url = trim($url, '/');
+			$url = rtrim($url, '/');
 		}
 
 		return $url;

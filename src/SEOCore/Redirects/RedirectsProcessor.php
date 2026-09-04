@@ -210,9 +210,24 @@ class RedirectsProcessor
 	 */
 	private function match_regex(string $pattern, string $subject, string $raw_to, string &$to_url = null): bool
 	{
-		// Wrap in delimiters if the user hasn't.
-		if ($pattern === '' || $pattern[0] !== '/') {
-			$pattern = '/' . $pattern . '/';
+		if ($pattern === '') {
+			return false;
+		}
+
+		// Detect whether the user already supplied PCRE delimiters themselves
+		// (e.g. "#^/blog/([^/]+)/?$#i"). Only a small set of common delimiter
+		// characters are recognised, and the character must also close the
+		// pattern — otherwise a bare pattern that merely starts with "^" or
+		// "[" would be misdetected as already delimited.
+		$first           = $pattern[0];
+		$common_delims   = ['/', '#', '~', '%', '!', '@'];
+		$already_wrapped = in_array($first, $common_delims, true) && strrpos($pattern, $first) > 0;
+
+		if (!$already_wrapped) {
+			// Use "#" rather than "/" as the delimiter: redirect patterns almost
+			// always target URL paths, which are full of literal "/" characters
+			// that would otherwise force the admin to escape every one of them.
+			$pattern = '#' . str_replace('#', '\#', $pattern) . '#';
 		}
 
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
