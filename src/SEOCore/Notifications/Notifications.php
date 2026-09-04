@@ -686,7 +686,7 @@ class Notifications
 				'severity' => 'error',
 				'message' => sprintf(
 				/* translators: 1: link opening tag, 2: link closing tag */
-					__('Your <strong>robots.txt file is blocking all search engine crawlers</strong> (Disallow: /). Search engines cannot index any of your pages. %1$sEdit robots.txt%2$s', 'mihdan-index-now'),
+					__('Your <strong>robots.txt file is blocking all search engine crawlers</strong>. Search engines cannot index any of your pages. %1$sEdit robots.txt%2$s', 'mihdan-index-now'),
 					'<a href="' . esc_url(CRAWLWP_ADVANCED_SETTINGS_URL . '#crawlwp_robots') . '">',
 					'</a>'
 				),
@@ -709,8 +709,7 @@ class Notifications
 				'severity' => 'warning',
 				'message' => sprintf(
 				/* translators: %s: absolute path to the physical robots.txt file */
-					__('A <strong>physical robots.txt file</strong> was found at %s. This file takes precedence over WordPress\'s virtual robots.txt, which means CrawlWP\'s Robots.txt editor (and any other plugin relying on the <code>robots_txt</code> filter) has no effect. Edit or remove that file directly to manage robots.txt through CrawlWP.', 'mihdan-index-now'),
-					'<code>' . esc_html($this->get_physical_robots_txt_path()) . '</code>'
+					__('A <strong>physical robots.txt file</strong> was found at in the root folder of your WordPress installation. This file takes precedence over WordPress\'s virtual robots.txt, which means CrawlWP\'s Robots.txt editor (and any other plugin relying on the <code>robots_txt</code> filter) has no effect. Edit or remove that file directly to manage robots.txt through CrawlWP.', 'mihdan-index-now')
 				),
 			];
 		}
@@ -798,11 +797,12 @@ class Notifications
 			return $checked;
 		}
 
-		$home_path = get_home_path();
-		$file_path = $home_path . 'robots.txt';
+		$file_path = $this->get_physical_robots_txt_path();
+		$fs = $this->get_filesystem();
+		$exists = $fs !== null ? $fs->exists($file_path) : file_exists($file_path);
 
-		if (file_exists($file_path)) {
-			$content = @file_get_contents($file_path);
+		if ($exists) {
+			$content = $fs !== null ? $fs->get_contents($file_path) : @file_get_contents($file_path);
 		} else {
 			$robots_url = home_url('/robots.txt');
 			$response = wp_remote_get($robots_url, [
@@ -875,11 +875,26 @@ class Notifications
 	 * before WordPress's own rewrite rules), so WordPress's virtual robots.txt
 	 * (and the `robots_txt` filter CrawlWP's Robots.txt editor relies on) never runs.
 	 *
+	 * Uses the WordPress Filesystem API (`WP_Filesystem`) rather than raw PHP
+	 * file functions, so the check honours the filesystem method WordPress is
+	 * actually configured to use (direct, ftpext, ssh2, etc.) instead of
+	 * assuming local PHP file access is always the right way to reach it.
+	 *
 	 * @return bool
 	 */
 	private function physical_robots_txt_exists(): bool
 	{
-		return file_exists($this->get_physical_robots_txt_path());
+		$path = $this->get_physical_robots_txt_path();
+		$fs = $this->get_filesystem();
+
+		if ($fs !== null) {
+			return $fs->exists($path);
+		}
+
+		// Fall back to a direct PHP check when the Filesystem API can't
+		// initialise without prompting for FTP/SSH credentials — this is a
+		// read-only existence check, so it must never block on credentials.
+		return file_exists($path);
 	}
 
 	/**
@@ -890,5 +905,34 @@ class Notifications
 	private function get_physical_robots_txt_path(): string
 	{
 		return get_home_path() . 'robots.txt';
+	}
+
+	/**
+	 * Get a ready-to-use WordPress Filesystem API instance for read-only checks.
+	 *
+	 * Only initialises when the "direct" filesystem method is available, so
+	 * this never triggers an FTP/SSH credentials prompt on hosts that require
+	 * one — callers should fall back to direct PHP file functions when this
+	 * returns null.
+	 *
+	 * @return \WP_Filesystem_Base|null
+	 */
+	private function get_filesystem()
+	{
+		global $wp_filesystem;
+
+		if ($wp_filesystem instanceof \WP_Filesystem_Base) {
+			return $wp_filesystem;
+		}
+
+		if (!function_exists('WP_Filesystem')) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+
+		if (get_filesystem_method() !== 'direct' || !WP_Filesystem()) {
+			return null;
+		}
+
+		return $wp_filesystem instanceof \WP_Filesystem_Base ? $wp_filesystem : null;
 	}
 }
