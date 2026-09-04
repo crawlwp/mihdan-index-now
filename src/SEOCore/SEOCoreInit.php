@@ -25,6 +25,7 @@ use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsSettings;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsProcessor;
 use Mihdan\IndexNow\SEOCore\Redirects\PermalinkTracker;
+use Mihdan\IndexNow\SEOCore\BulkEditor\BulkEditorSettings;
 use Mihdan\IndexNow\SEOCore\Integrations\WooCommerce;
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 
@@ -55,6 +56,7 @@ class SEOCoreInit
 			new RedirectsSettings($redirects_manager);
 			new RedirectsProcessor($redirects_manager);
 			new PermalinkTracker($redirects_manager);
+			new BulkEditorSettings();
 			new CoreSettings\CoreSettings();
 			new CoreSettings\Assets();
 			new SiteInfoSettings();

@@ -213,6 +213,24 @@ input.wposa-field--switch:hover:after {
 	padding: 0;
 }
 
+/* Bulk Editor manager — take the row out of the form-table column layout entirely */
+.wposa-form-table__row_crawlwp_bulk_editor_manager_ui {
+	display: block;
+	width: 100%;
+	padding-top: 12px;
+}
+
+.wposa-form-table__row_crawlwp_bulk_editor_manager_ui th {
+	display: none !important;
+}
+
+.wposa-form-table__row_crawlwp_bulk_editor_manager_ui td {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0;
+}
+
 .wposa-plugins {
 	display: grid;
 	grid-gap: 20px;
