@@ -24,6 +24,13 @@ use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
  *    on product pages, archives and the shop page.
  *  - Removes WooCommerce's own JSON-LD output so only CrawlWP's Product
  *    schema is printed (avoids duplicate/conflicting structured data).
+ *
+ * The Product schema replacement (both the removal of WooCommerce's native
+ * output and CrawlWP's own Product node) can be turned off entirely via the
+ * {@see crawlwp_woocommerce_schema_enabled} filter, letting store owners who
+ * prefer WooCommerce's built-in structured data (tax-aware pricing, @id
+ * graph linking, order-confirmation email schema, etc.) keep it untouched.
+ * The breadcrumb taxonomy change is unaffected by this filter.
  */
 class WooCommerce
 {
@@ -44,11 +51,34 @@ class WooCommerce
 	}
 
 	/**
+	 * Whether CrawlWP's own WooCommerce Product schema should replace
+	 * WooCommerce's native structured data. Defaults to enabled; return
+	 * `false` from the filter to keep WooCommerce's own Product/Order
+	 * JSON-LD completely untouched.
+	 *
+	 * @return bool
+	 */
+	private function is_schema_enabled(): bool
+	{
+		/**
+		 * Filters whether CrawlWP replaces WooCommerce's native Product
+		 * structured data with its own.
+		 *
+		 * @param bool $enabled Whether the feature is enabled. Default true.
+		 */
+		return (bool) apply_filters('crawlwp_woocommerce_schema_enabled', true);
+	}
+
+	/**
 	 * WooCommerce prints its own Product/Order JSON-LD on `wp_footer`. Remove
 	 * it so the page doesn't end up with two competing Product schema blocks.
 	 */
 	public function remove_woocommerce_schema(): void
 	{
+		if (! $this->is_schema_enabled()) {
+			return;
+		}
+
 		if (function_exists('WC') && isset(WC()->structured_data)) {
 			remove_action('wp_footer', [WC()->structured_data, 'output_structured_data'], 10);
 		}
@@ -80,6 +110,10 @@ class WooCommerce
 	 */
 	public function add_product_schema($schema, $post)
 	{
+		if (! $this->is_schema_enabled()) {
+			return $schema;
+		}
+
 		if (! $post instanceof \WP_Post || $post->post_type !== 'product') {
 			return $schema;
 		}
