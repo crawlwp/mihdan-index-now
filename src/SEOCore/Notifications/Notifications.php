@@ -22,6 +22,8 @@ use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
  *  7. A robots.txt file is actively blocking all crawlers.
  *  8. The site is using an HTTP URL (no SSL).
  *  9. A physical robots.txt file exists on the server, overriding WordPress's virtual one.
+ * 10. The site is not using a pretty permalink structure.
+ * 11. The RSS feed shows full post content instead of excerpts.
  */
 class Notifications
 {
@@ -710,6 +712,34 @@ class Notifications
 				'message' => sprintf(
 				/* translators: %s: absolute path to the physical robots.txt file */
 					__('A <strong>physical robots.txt file</strong> was found at in the root folder of your WordPress installation. This file takes precedence over WordPress\'s virtual robots.txt, which means CrawlWP\'s Robots.txt editor (and any other plugin relying on the <code>robots_txt</code> filter) has no effect. Edit or remove that file directly to manage robots.txt through CrawlWP.', 'mihdan-index-now')
+				),
+			];
+		}
+
+		/* 10. Not using a pretty permalink structure. */
+		if (!get_option('permalink_structure')) {
+			$notices[] = [
+				'id' => 'no_permalink_structure',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
+					__('You are <strong>not using a pretty permalink structure</strong>. Plain "?p=123" style URLs are less descriptive and can hurt SEO. %1$sFix this%2$s', 'mihdan-index-now'),
+					'<a href="' . esc_url(admin_url('options-permalink.php')) . '">',
+					'</a>'
+				),
+			];
+		}
+
+		/* 11. RSS feed shows full text instead of a summary. */
+		if (!get_option('rss_use_excerpt')) {
+			$notices[] = [
+				'id' => 'rss_full_text',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: 1: link opening tag, 2: link closing tag */
+					__('Your <strong>RSS feed shows full post content</strong> instead of a summary. This makes it easier for scrapers to republish your content as their own. %1$sFix this%2$s', 'mihdan-index-now'),
+					'<a href="' . esc_url(admin_url('options-reading.php')) . '">',
+					'</a>'
 				),
 			];
 		}
