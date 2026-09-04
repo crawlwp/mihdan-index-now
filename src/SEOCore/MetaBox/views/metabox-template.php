@@ -364,6 +364,8 @@ $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : []
             <option value="ProfilePage" <?php selected($data['schema_page_type'], 'ProfilePage'); ?>><?php esc_html_e('Profile Page', 'mihdan-index-now'); ?></option>
             <option value="ContactPage" <?php selected($data['schema_page_type'], 'ContactPage'); ?>><?php esc_html_e('Contact Page', 'mihdan-index-now'); ?></option>
             <option value="MedicalWebPage" <?php selected($data['schema_page_type'], 'MedicalWebPage'); ?>><?php esc_html_e('Medical Web Page', 'mihdan-index-now'); ?></option>
+            <option value="CollectionPage" <?php selected($data['schema_page_type'], 'CollectionPage'); ?>><?php esc_html_e('Collection Page', 'mihdan-index-now'); ?></option>
+            <option value="RealEstateListing" <?php selected($data['schema_page_type'], 'RealEstateListing'); ?>><?php esc_html_e('Real Estate Listing', 'mihdan-index-now'); ?></option>
             <option value="none" <?php selected($data['schema_page_type'], 'none'); ?>><?php esc_html_e('None — no structured data', 'mihdan-index-now'); ?></option>
           </select>
           <p class="cwp-hint"><?php esc_html_e('The general type for this page.', 'mihdan-index-now'); ?></p>

@@ -237,6 +237,8 @@ class CoreSettings
 				'ProfilePage' => __('Profile Page', 'mihdan-index-now'),
 				'ContactPage' => __('Contact Page', 'mihdan-index-now'),
 				'MedicalWebPage' => __('Medical Web Page', 'mihdan-index-now'),
+				'CollectionPage' => __('Collection Page', 'mihdan-index-now'),
+				'RealEstateListing' => __('Real Estate Listing', 'mihdan-index-now'),
 				'none' => __('None — no structured data', 'mihdan-index-now'),
 			],
 			'desc' => esc_html__('The general page type for posts of this type. Used as @type in JSON-LD unless overridden by the article type below.', 'mihdan-index-now'),
