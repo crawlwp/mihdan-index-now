@@ -21,6 +21,7 @@ use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
  *  6. WordPress core sitemaps are disabled.
  *  7. A robots.txt file is actively blocking all crawlers.
  *  8. The site is using an HTTP URL (no SSL).
+ *  9. A physical robots.txt file exists on the server, overriding WordPress's virtual one.
  */
 class Notifications
 {
@@ -701,6 +702,19 @@ class Notifications
 			];
 		}
 
+		/* 9. Physical robots.txt file on the server overrides WordPress's virtual one. */
+		if ($this->physical_robots_txt_exists()) {
+			$notices[] = [
+				'id' => 'physical_robots_txt_exists',
+				'severity' => 'warning',
+				'message' => sprintf(
+				/* translators: %s: absolute path to the physical robots.txt file */
+					__('A <strong>physical robots.txt file</strong> was found at %s. This file takes precedence over WordPress\'s virtual robots.txt, which means CrawlWP\'s Robots.txt editor (and any other plugin relying on the <code>robots_txt</code> filter) has no effect. Edit or remove that file directly to manage robots.txt through CrawlWP.', 'mihdan-index-now'),
+					'<code>' . esc_html($this->get_physical_robots_txt_path()) . '</code>'
+				),
+			];
+		}
+
 		/**
 		 * Filter the list of critical SEO notices before display.
 		 *
@@ -852,5 +866,29 @@ class Notifications
 	private function site_uses_https(): bool
 	{
 		return str_starts_with(get_option('home', ''), 'https://');
+	}
+
+	/**
+	 * Whether a physical robots.txt file exists in the site's root directory.
+	 *
+	 * When present, this file is served directly by the web server (or matched
+	 * before WordPress's own rewrite rules), so WordPress's virtual robots.txt
+	 * (and the `robots_txt` filter CrawlWP's Robots.txt editor relies on) never runs.
+	 *
+	 * @return bool
+	 */
+	private function physical_robots_txt_exists(): bool
+	{
+		return file_exists($this->get_physical_robots_txt_path());
+	}
+
+	/**
+	 * Absolute filesystem path where a physical robots.txt would live.
+	 *
+	 * @return string
+	 */
+	private function get_physical_robots_txt_path(): string
+	{
+		return get_home_path() . 'robots.txt';
 	}
 }
