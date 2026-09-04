@@ -315,6 +315,10 @@ class RedirectsManager
 	{
 		global $wpdb;
 
+		// Normalise the same way it would be stored, so callers can pass a
+		// raw path (with or without slashes) and still get a correct check.
+		$from_url = $this->strip_home_url($from_url);
+
 		$count = $wpdb->get_var($wpdb->prepare(
 			"SELECT COUNT(*) FROM {$this->table} WHERE from_url = %s",
 			$from_url
@@ -352,7 +356,8 @@ class RedirectsManager
 		}
 
 		if (isset($data['match_type'])) {
-			$clean['match_type'] = in_array($data['match_type'], ['exact', 'regex'], true) ? $data['match_type'] : 'exact';
+			$allowed_match_types = ['exact', 'regex', 'contains', 'starts_with', 'ends_with'];
+			$clean['match_type'] = in_array($data['match_type'], $allowed_match_types, true) ? $data['match_type'] : 'exact';
 		}
 
 		if (isset($data['note'])) {
@@ -374,8 +379,13 @@ class RedirectsManager
 	 * Strip the site's home URL origin from a "from" URL, keeping only the path/query/fragment.
 	 * If the value is already a relative path it is returned unchanged (after sanitizing).
 	 *
+	 * When the URL has no query string, both the leading and trailing slash are
+	 * stripped too (e.g. "old-page" instead of "/old-page/"). URLs that carry a
+	 * query string keep their leading slash so the path/query split stays
+	 * unambiguous (e.g. "/page/?foo=bar").
+	 *
 	 * @param string $url Raw user input (full URL or relative path).
-	 * @return string Path-only value, e.g. "/old-page/" or "/page/?foo=bar".
+	 * @return string Path-only value, e.g. "old-page" or "/page/?foo=bar".
 	 */
 	private function strip_home_url(string $url): string
 	{
@@ -400,8 +410,20 @@ class RedirectsManager
 			$url = '/' . $url;
 		}
 
-		// Sanitize: allow only path, query string, and fragment.
-		return esc_url_raw($url, ['http', 'https', '']);
+		// Sanitize while the leading slash is still in place — esc_url_raw()
+		// (via esc_url()) only treats a value as a relative path when it starts
+		// with "/"; otherwise it assumes it's a scheme-less absolute URL and
+		// prepends "http://" to it. Stripping the leading slash BEFORE
+		// sanitizing would turn "/old-page" into "http://old-page".
+		$url = esc_url_raw($url, ['http', 'https', '']);
+
+		// No query string: strip both the leading and trailing slash so the
+		// stored value is a bare path segment.
+		if (strpos($url, '?') === false) {
+			$url = trim($url, '/');
+		}
+
+		return $url;
 	}
 
 	/**

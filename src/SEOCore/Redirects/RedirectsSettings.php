@@ -415,6 +415,9 @@ class RedirectsSettings
 						<div class="cwp-redirect-from-row">
 							<select id="cwp-redirect-match-type" class="cwp-redirect-select">
 								<option value="exact"><?php esc_html_e('Exact Match', 'mihdan-index-now'); ?></option>
+								<option value="contains"><?php esc_html_e('Contains', 'mihdan-index-now'); ?></option>
+								<option value="starts_with"><?php esc_html_e('Starts With', 'mihdan-index-now'); ?></option>
+								<option value="ends_with"><?php esc_html_e('Ends With', 'mihdan-index-now'); ?></option>
 								<option value="regex"><?php esc_html_e('Regex', 'mihdan-index-now'); ?></option>
 							</select>
 							<input type="text" id="cwp-redirect-from-url" class="cwp-redirect-input"
@@ -484,8 +487,11 @@ class RedirectsSettings
 		];
 
 		$match_labels = [
-			'exact' => __('Exact Match', 'mihdan-index-now'),
-			'regex' => __('Regex', 'mihdan-index-now'),
+			'exact'       => __('Exact Match', 'mihdan-index-now'),
+			'contains'    => __('Contains', 'mihdan-index-now'),
+			'starts_with' => __('Starts With', 'mihdan-index-now'),
+			'ends_with'   => __('Ends With', 'mihdan-index-now'),
+			'regex'       => __('Regex', 'mihdan-index-now'),
 		];
 
 		$html = '';

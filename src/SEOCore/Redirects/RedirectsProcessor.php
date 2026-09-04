@@ -9,6 +9,8 @@ namespace Mihdan\IndexNow\SEOCore\Redirects;
  * redirects stored in the database, and performs the appropriate HTTP
  * response (redirect, 410 Gone, 451 Unavailable).
  *
+ * Supported match types: exact, regex, contains, starts_with, ends_with.
+ *
  * Uses a transient cache (via RedirectsManager::get_enabled()) so the DB
  * is only hit once per cache window rather than on every page load.
  */
@@ -106,6 +108,18 @@ class RedirectsProcessor
 			return $this->match_regex($from, $subject, $redirect->to_url, $to_url);
 		}
 
+		if ($match_type === 'contains') {
+			return $this->match_contains($from, $subject, $redirect->to_url, $to_url);
+		}
+
+		if ($match_type === 'starts_with') {
+			return $this->match_starts_with($from, $subject, $redirect->to_url, $to_url);
+		}
+
+		if ($match_type === 'ends_with') {
+			return $this->match_ends_with($from, $subject, $redirect->to_url, $to_url);
+		}
+
 		// Exact match — normalise both sides.
 		if (!$this->match_exact($from, $subject, $redirect->to_url, $to_url)) {
 			return false;
@@ -170,9 +184,12 @@ class RedirectsProcessor
 			$subject = urldecode(parse_url($subject, PHP_URL_PATH));
 		}
 
-		// Normalise trailing slashes.
-		$from    = rtrim($from, '/');
-		$subject = rtrim($subject, '/');
+		// Normalise leading/trailing slashes on both sides — the stored
+		// from_url may now be a bare path segment (e.g. "old-page") when it
+		// has no query string, so the request path must be trimmed the same
+		// way for the comparison to succeed.
+		$from    = trim($from, '/');
+		$subject = trim($subject, '/');
 
 		if (strcasecmp($from, $subject) !== 0) {
 			return false;
@@ -217,6 +234,83 @@ class RedirectsProcessor
 		}
 
 		$to_url = $resolved;
+		return true;
+	}
+
+	/**
+	 * Perform a case-insensitive "contains" match — the rule matches when
+	 * $from appears anywhere within the request subject.
+	 *
+	 * @param string $from Stored from_url (substring to look for).
+	 * @param string $subject Current request path or full URI.
+	 * @param string $raw_to Stored to_url.
+	 * @param string|null $to_url Resolved destination (output).
+	 * @return bool
+	 */
+	private function match_contains(string $from, string $subject, string $raw_to, string &$to_url = null): bool
+	{
+		$from = urldecode($from);
+
+		if ($from === '' || stripos($subject, $from) === false) {
+			return false;
+		}
+
+		$to_url = $raw_to;
+		return true;
+	}
+
+	/**
+	 * Perform a case-insensitive "starts with" match.
+	 *
+	 * @param string $from Stored from_url.
+	 * @param string $subject Current request path or full URI.
+	 * @param string $raw_to Stored to_url.
+	 * @param string|null $to_url Resolved destination (output).
+	 * @return bool
+	 */
+	private function match_starts_with(string $from, string $subject, string $raw_to, string &$to_url = null): bool
+	{
+		// The stored from_url may lack a leading slash (bare path segment), so
+		// strip the leading slash from the request subject too before comparing.
+		$from    = ltrim(urldecode($from), '/');
+		$subject = ltrim($subject, '/');
+
+		if ($from === '' || stripos($subject, $from) !== 0) {
+			return false;
+		}
+
+		$to_url = $raw_to;
+		return true;
+	}
+
+	/**
+	 * Perform a case-insensitive "ends with" match.
+	 *
+	 * @param string $from Stored from_url.
+	 * @param string $subject Current request path or full URI.
+	 * @param string $raw_to Stored to_url.
+	 * @param string|null $to_url Resolved destination (output).
+	 * @return bool
+	 */
+	private function match_ends_with(string $from, string $subject, string $raw_to, string &$to_url = null): bool
+	{
+		// The stored from_url may lack a trailing slash (bare path segment), so
+		// strip the trailing slash from the request subject too before comparing.
+		$from    = rtrim(urldecode($from), '/');
+		$subject = rtrim($subject, '/');
+
+		if ($from === '') {
+			return false;
+		}
+
+		$from_len    = strlen($from);
+		$subject_len = strlen($subject);
+
+		if ($subject_len < $from_len || strcasecmp(substr($subject, -$from_len), $from) !== 0) {
+			return false;
+		}
+
+		$to_url = $raw_to;
 		return true;
 	}
 }
