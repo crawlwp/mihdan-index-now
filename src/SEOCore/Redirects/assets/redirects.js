@@ -401,7 +401,7 @@
 
 		// Prev.
 		if (currentPage > 1) {
-			html += '<button class="cwp-redirect-page-btn button" data-page="' + (currentPage - 1) + '">&laquo;</button> ';
+			html += '<button type="button" class="cwp-redirect-page-btn button" data-page="' + (currentPage - 1) + '">&laquo;</button> ';
 		}
 
 		// Page buttons (show up to 7, window around current).
@@ -410,12 +410,12 @@
 
 		for (var p = start; p <= end; p++) {
 			var active = (p === currentPage) ? ' button-primary' : '';
-			html += '<button class="cwp-redirect-page-btn button' + active + '" data-page="' + p + '">' + p + '</button> ';
+			html += '<button type="button" class="cwp-redirect-page-btn button' + active + '" data-page="' + p + '">' + p + '</button> ';
 		}
 
 		// Next.
 		if (currentPage < totalPages) {
-			html += '<button class="cwp-redirect-page-btn button" data-page="' + (currentPage + 1) + '">&raquo;</button>';
+			html += '<button type="button" class="cwp-redirect-page-btn button" data-page="' + (currentPage + 1) + '">&raquo;</button>';
 		}
 
 		$pageLinks.html(html);

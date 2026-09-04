@@ -231,6 +231,14 @@ input.wposa-field--switch:hover:after {
 	padding: 0;
 }
 
+/* Redirects and Bulk Editor already have their own AJAX save controls —
+   hide the settings framework's default "Save Changes" submit button so
+   there is only one, unambiguous way to save on these two screens. */
+#crawlwp_redirects .wposa-footer,
+#crawlwp_bulk_editor .wposa-footer {
+	display: none;
+}
+
 .wposa-plugins {
 	display: grid;
 	grid-gap: 20px;

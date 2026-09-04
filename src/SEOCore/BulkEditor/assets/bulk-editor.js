@@ -306,7 +306,7 @@
 		var html = '';
 
 		if (currentPage > 1) {
-			html += '<button class="cwp-bulk-page-btn button" data-page="' + (currentPage - 1) + '">&laquo;</button> ';
+			html += '<button type="button" class="cwp-bulk-page-btn button" data-page="' + (currentPage - 1) + '">&laquo;</button> ';
 		}
 
 		var start = Math.max(1, currentPage - 3);
@@ -314,11 +314,11 @@
 
 		for (var p = start; p <= end; p++) {
 			var active = (p === currentPage) ? ' button-primary' : '';
-			html += '<button class="cwp-bulk-page-btn button' + active + '" data-page="' + p + '">' + p + '</button> ';
+			html += '<button type="button" class="cwp-bulk-page-btn button' + active + '" data-page="' + p + '">' + p + '</button> ';
 		}
 
 		if (currentPage < totalPages) {
-			html += '<button class="cwp-bulk-page-btn button" data-page="' + (currentPage + 1) + '">&raquo;</button>';
+			html += '<button type="button" class="cwp-bulk-page-btn button" data-page="' + (currentPage + 1) + '">&raquo;</button>';
 		}
 
 		$pageLinks.html(html);
