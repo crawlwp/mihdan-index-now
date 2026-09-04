@@ -25,6 +25,7 @@ use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsSettings;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsProcessor;
 use Mihdan\IndexNow\SEOCore\Redirects\PermalinkTracker;
+use Mihdan\IndexNow\SEOCore\Integrations\WooCommerce;
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 
 class SEOCoreInit
@@ -79,6 +80,7 @@ class SEOCoreInit
 
 			new FrontendOutput();
 			new Sitemap();
+			new WooCommerce();
 		}
 	}
 }
