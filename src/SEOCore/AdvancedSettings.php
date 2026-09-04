@@ -6,7 +6,7 @@ class AdvancedSettings
 {
 	public function __construct()
 	{
-		add_action('crawlwp_pre_setup_fields', [$this, 'advanced_settings_menu'], 1);
+		add_action('crawlwp_pre_setup_fields', [$this, 'advanced_settings_menu'], 5);
 	}
 	public function advanced_settings_menu($wposa)
 	{

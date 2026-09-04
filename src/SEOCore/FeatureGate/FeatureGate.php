@@ -125,16 +125,15 @@ class FeatureGate
 				'desc' => '',
 				'callback' => [$this, 'render_promo'],
 			]);
- 		$wposa->add_field(
- 			self::SECTION_ID,
- 			[
- 				'id' => self::OPTION_FIELD,
- 				'type' => 'checkbox',
- 				'name' => __('Enable on-page SEO features', 'mihdan-index-now'),
- 				'label' => __('Activate CrawlWP\'s complete on-page SEO suite for this website.', 'mihdan-index-now'),
- 				'desc' => __('Enables all 12 feature areas above. Migrating from another SEO plugin? Enable this first to unlock all settings, configure everything, then deactivate your old plugin.', 'mihdan-index-now'),
- 			]
- 		);
+			$wposa->add_field(
+				self::SECTION_ID,
+				[
+					'id' => self::OPTION_FIELD,
+					'type' => 'checkbox',
+					// callback_checkbox() renders `desc` as the label text next to the box.
+					'desc' => __('Enable all on-page SEO features on this website', 'mihdan-index-now'),
+				]
+			);
 		}
 	}
 
@@ -209,23 +208,24 @@ class FeatureGate
 		?>
 		<div class="cwp-fg-wrap">
 
- 		<div class="cwp-fg-hero">
- 			<h2 class="cwp-fg-hero__title">
- 				<?php esc_html_e('Complete on-page SEO, built into CrawlWP', 'mihdan-index-now'); ?>
- 			</h2>
- 			<p class="cwp-fg-hero__intro">
- 				<?php esc_html_e(
- 					'Everything you need to rank — title &amp; meta templates, Open Graph, Schema/JSON-LD, breadcrumbs, sitemaps, redirects and robots.txt — without installing a separate SEO plugin.',
- 					'mihdan-index-now'
- 				); ?>
- 			</p>
- 			<div class="cwp-fg-hero__badges">
- 				<span class="cwp-fg-badge"><?php esc_html_e('Zero extra plugins needed', 'mihdan-index-now'); ?></span>
- 				<span class="cwp-fg-badge"><?php esc_html_e('Multilingual ready', 'mihdan-index-now'); ?></span>
- 			</div>
- 		</div>
+			<div class="cwp-fg-hero">
+				<span class="cwp-fg-hero__eyebrow"><?php esc_html_e('On-page SEO', 'mihdan-index-now'); ?></span>
+				<h2 class="cwp-fg-hero__title">
+					<?php esc_html_e('Complete on-page SEO, built into CrawlWP', 'mihdan-index-now'); ?>
+				</h2>
+				<p class="cwp-fg-hero__intro">
+					<?php esc_html_e(
+						'Everything you need to rank — title &amp; meta templates, Open Graph, Schema/JSON-LD, breadcrumbs, sitemaps, redirects and robots.txt — without installing a separate SEO plugin.',
+						'mihdan-index-now'
+					); ?>
+				</p>
+				<div class="cwp-fg-hero__badges">
+					<span class="cwp-fg-badge"><?php esc_html_e('Zero extra plugins needed', 'mihdan-index-now'); ?></span>
+					<span class="cwp-fg-badge"><?php esc_html_e('Multilingual ready', 'mihdan-index-now'); ?></span>
+				</div>
+			</div>
 
- 		<div class="cwp-fg-hero__illustration" aria-hidden="true">
+			<div class="cwp-fg-hero__illustration" aria-hidden="true">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 800" role="img" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
 						<defs><clipPath id="cwp-fg-clip"><rect x="1" y="1" width="1358" height="798" rx="10"></rect></clipPath></defs>
 						<rect x="0.5" y="0.5" width="1359" height="799" rx="10" fill="#ffffff" stroke="#dcdcde"></rect>
@@ -323,10 +323,14 @@ class FeatureGate
 						<text x="1108" y="708" font-size="11.5" fill="#646970" text-anchor="middle">nosnippet</text>
 						<text x="732" y="752" font-size="12" fill="#646970">Canonical URL: https://yoursite.com/guides/wordpress-seo</text>
 						</g>
-  			</svg>
-		</div>
+					</svg>
+			</div>
 
-		<div class="cwp-fg-grid">
+			<div class="cwp-fg-section-head">
+				<h3 class="cwp-fg-section-head__title"><?php esc_html_e('What you get', 'mihdan-index-now'); ?></h3>
+			</div>
+
+			<div class="cwp-fg-grid">
 				<?php foreach ($features as $feature): ?>
 					<div class="cwp-fg-card">
 						<span class="cwp-fg-card__icon" aria-hidden="true"><?php echo $feature['icon']; // phpcs:ignore WordPress.Security.EscapeOutput ?></span>
@@ -349,34 +353,66 @@ class FeatureGate
 				</div>
 			</div>
 
+			<div class="cwp-fg-cta">
+				<span class="cwp-fg-cta__icon" aria-hidden="true">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+				</span>
+				<div class="cwp-fg-cta__body">
+					<h3 class="cwp-fg-cta__title"><?php esc_html_e('Turn on the SEO features', 'mihdan-index-now'); ?></h3>
+					<p class="cwp-fg-cta__text">
+						<?php esc_html_e(
+							'Tick the box below and save to activate everything listed above. Nothing is rewritten in your content.',
+							'mihdan-index-now'
+						); ?>
+					</p>
+				</div>
+			</div>
+
 		</div>
 
 		<style>
 			.cwp-fg-wrap {
-				margin-bottom: 24px;
+				margin: 0 0 0;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled th {
+				padding: 0;
 			}
 
 			/* ── Hero ── */
 			.cwp-fg-hero {
-				background: #1d2327;
-				border-radius: 6px 6px 0 0;
-				padding: 32px;
-				margin-bottom: 0;
+				position: relative;
+				overflow: hidden;
+				background: radial-gradient(circle at 88% -30%, #2c3b47 0%, #1d2327 55%);
+				border-radius: 8px 8px 0 0;
+				padding: 34px 36px 30px;
+			}
+
+			.cwp-fg-hero__eyebrow {
+				display: inline-block;
+				margin-bottom: 12px;
+				font-size: 11px;
+				font-weight: 600;
+				letter-spacing: .1em;
+				text-transform: uppercase;
+				color: #7fb5dd;
 			}
 
 			.cwp-fg-hero__title {
 				margin: 0 0 10px;
-				font-size: 20px;
+				font-size: 23px;
 				font-weight: 700;
 				color: #fff;
-				line-height: 1.3;
+				line-height: 1.25;
+				letter-spacing: -.01em;
 			}
 
 			.cwp-fg-hero__intro {
-				margin: 0 0 16px;
-				font-size: 13px;
+				margin: 0 0 18px;
+				max-width: 760px;
+				font-size: 13.5px;
 				line-height: 1.7;
-				color: #9aa0a6;
+				color: #b6bcc3;
 			}
 
 			.cwp-fg-hero__badges {
@@ -387,22 +423,22 @@ class FeatureGate
 
 			.cwp-fg-badge {
 				display: inline-block;
-				padding: 3px 10px;
-				border: 1px solid rgba(255,255,255,.15);
+				padding: 4px 11px;
+				background: rgba(255,255,255,.06);
+				border: 1px solid rgba(255,255,255,.14);
 				border-radius: 20px;
 				font-size: 11px;
 				font-weight: 500;
-				color: rgba(255,255,255,.7);
+				color: #d7dbdf;
 				letter-spacing: .02em;
 			}
 
 			.cwp-fg-hero__illustration {
 				border: 1px solid #dcdcde;
 				border-top: none;
-				border-radius: 0 0 6px 6px;
+				border-radius: 0 0 8px 8px;
 				overflow: hidden;
-				margin-bottom: 20px;
-				max-height: 320px;
+				margin-bottom: 28px;
 				background: #fff;
 			}
 
@@ -412,30 +448,64 @@ class FeatureGate
 				height: auto;
 			}
 
+			/* ── Section heading ── */
+			.cwp-fg-section-head {
+				display: flex;
+				align-items: baseline;
+				justify-content: space-between;
+				gap: 12px;
+				margin-bottom: 12px;
+			}
+
+			.cwp-fg-section-head__title {
+				margin: 0;
+				font-size: 13px;
+				font-weight: 600;
+				letter-spacing: .06em;
+				text-transform: uppercase;
+				color: #1d2327;
+			}
+
+			.cwp-fg-section-head__meta {
+				font-size: 12px;
+				color: #646970;
+			}
+
 			/* ── Feature grid ── */
 			.cwp-fg-grid {
 				display: grid;
 				grid-template-columns: repeat(4, 1fr);
-				gap: 1px;
-				margin-bottom: 16px;
-				border: 1px solid #dcdcde;
-				border-radius: 4px;
-				overflow: hidden;
-				background: #dcdcde;
+				gap: 12px;
+				margin-bottom: 20px;
 			}
 
 			.cwp-fg-card {
 				display: flex;
 				align-items: flex-start;
-				gap: 10px;
+				gap: 11px;
 				background: #fff;
-				padding: 14px 16px;
+				border: 1px solid #e2e4e7;
+				border-radius: 6px;
+				padding: 16px 18px;
+				transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+			}
+
+			.cwp-fg-card:hover {
+				border-color: #c3c4c7;
+				box-shadow: 0 2px 6px rgba(0,0,0,.05);
+				transform: translateY(-1px);
 			}
 
 			.cwp-fg-card__icon {
-				flex: 0 0 16px;
-				margin-top: 2px;
-				color: #646970;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex: 0 0 30px;
+				width: 30px;
+				height: 30px;
+				border-radius: 6px;
+				background: #f0f6fc;
+				color: #2271b1;
 				line-height: 1;
 			}
 
@@ -449,8 +519,8 @@ class FeatureGate
 			}
 
 			.cwp-fg-card__title {
-				margin: 0 0 3px;
-				font-size: 12.5px;
+				margin: 1px 0 4px;
+				font-size: 13px;
 				font-weight: 600;
 				color: #1d2327;
 				line-height: 1.4;
@@ -458,9 +528,9 @@ class FeatureGate
 
 			.cwp-fg-card__desc {
 				margin: 0;
-				font-size: 12px;
+				font-size: 12.5px;
 				color: #646970;
-				line-height: 1.5;
+				line-height: 1.55;
 			}
 
 			/* ── Migration note ── */
@@ -468,19 +538,20 @@ class FeatureGate
 				display: flex;
 				align-items: flex-start;
 				gap: 10px;
-				border: 1px solid #dcdcde;
-				border-radius: 4px;
-				padding: 14px 18px;
-				font-size: 13px;
+				background: #fbfbfc;
+				border: 1px solid #e2e4e7;
+				border-radius: 6px;
+				padding: 15px 18px;
+				font-size: 12.5px;
 				color: #50575e;
 				line-height: 1.6;
-				margin-bottom: 16px;
+				margin-bottom: 24px;
 			}
 
 			.cwp-fg-note__icon {
 				flex: 0 0 16px;
 				margin-top: 2px;
-				color: #646970;
+				color: #8c8f94;
 			}
 
 			.cwp-fg-note strong {
@@ -490,48 +561,112 @@ class FeatureGate
 				font-weight: 600;
 			}
 
-			/* ── Enable checkbox highlight ── */
-			.wposa-form-table__row_crawlwp_seo_features_enabled {
+			/* ──────────────────────────────────────────────────────────
+			   Call-to-action panel.
+			   The CTA block below is the visual header of a single card;
+			   the WPOSA settings row that renders the enable checkbox is
+			   restyled as that same card's body so the two read as one
+			   highlighted panel.
+			   ────────────────────────────────────────────────────────── */
+			.cwp-fg-cta {
+				display: flex;
+				align-items: flex-start;
+				gap: 12px;
 				background: #f0f6fc;
-				border-radius: 4px;
-				border: 1px solid #72aee6;
-				margin-bottom: 0;
+				border: 1px solid #9ec9e8;
+				border-bottom: none;
+				border-radius: 8px 8px 0 0;
+				padding: 20px 22px 16px;
+				box-shadow: 0 1px 0 rgba(34,113,177,.06);
+			}
+
+			.cwp-fg-cta__icon {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex: 0 0 32px;
+				width: 32px;
+				height: 32px;
+				border-radius: 50%;
+				background: #2271b1;
+				color: #fff;
+				line-height: 1;
+			}
+
+			.cwp-fg-cta__body {
+				flex: 1 1 auto;
+				min-width: 0;
+			}
+
+			.cwp-fg-cta__title {
+				margin: 3px 0 4px;
+				font-size: 15px;
+				font-weight: 600;
+				color: #0a4b78;
+				line-height: 1.3;
+			}
+
+			.cwp-fg-cta__text {
+				margin: 0;
+				font-size: 12.5px;
+				color: #40607a;
+				line-height: 1.6;
+			}
+
+			/* ── Enable checkbox row, styled as the CTA card body ── */
+			#crawlwp_seo_features .form-table {
+				margin-top: 0;
+			}
+
+			.wposa-form-table__row_crawlwp_seo_features_enabled {
+				display: block;
+				background: #f0f6fc;
+				border: 1px solid #9ec9e8;
+				border-top: none;
+				border-radius: 0 0 8px 8px;
+				padding: 4px 22px 20px 66px;
 			}
 
 			.wposa-form-table__row_crawlwp_seo_features_enabled th {
-				padding: 18px 12px 18px 16px;
-				font-size: 14px;
-				font-weight: 700;
-				color: #1d2327;
-				vertical-align: middle;
-				border-left: 3px solid #2271b1;
-				border-radius: 4px 0 0 4px;
+				display: none;
 			}
 
 			.wposa-form-table__row_crawlwp_seo_features_enabled td {
-				padding: 18px 16px;
-				vertical-align: middle;
+				display: block;
+				width: auto;
+				padding: 0;
 			}
 
 			.wposa-form-table__row_crawlwp_seo_features_enabled label {
-				font-size: 14px;
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				font-size: 13.5px;
 				font-weight: 600;
-				color: #1d2327;
+				color: #0a4b78;
 			}
 
 			.wposa-form-table__row_crawlwp_seo_features_enabled input[type="checkbox"] {
 				width: 18px;
 				height: 18px;
-				margin-top: 1px;
+				margin: 0;
+				border-color: #2271b1;
 			}
 
-			.wposa-form-table__row_crawlwp_seo_features_enabled p.description {
-				font-size: 12px;
-				color: #50575e;
-				margin-top: 6px;
+			.wposa-form-table__row_crawlwp_seo_features_enabled fieldset {
+				margin: 0;
 			}
 
- 	</style>
+			@media screen and (max-width: 960px) {
+				.cwp-fg-grid {
+					grid-template-columns: repeat(2, 1fr);
+				}
+
+				.wposa-form-table__row_crawlwp_seo_features_enabled {
+					padding-left: 22px;
+				}
+			}
+		</style>
 		<?php
 	}
 }
