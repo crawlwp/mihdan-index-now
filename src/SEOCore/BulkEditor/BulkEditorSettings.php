@@ -98,17 +98,41 @@ class BulkEditorSettings
 		);
 
 		wp_localize_script('crawlwp-bulk-editor', 'crawlwpBulkEditor', [
-			'ajaxUrl' => admin_url('admin-ajax.php'),
-			'nonce'   => wp_create_nonce('crawlwp_bulk_editor_nonce'),
-			'i18n'    => [
-				'saving'       => __('Saving…', 'mihdan-index-now'),
-				'saved'        => __('All changes saved.', 'mihdan-index-now'),
-				'saveError'    => __('Some changes could not be saved. Please try again.', 'mihdan-index-now'),
-				'noItems'      => __('No posts found.', 'mihdan-index-now'),
-				'confirmLeave' => __('You have unsaved changes. Leave anyway?', 'mihdan-index-now'),
-				'saveChanges'  => __('Save Table Changes', 'mihdan-index-now'),
+			'ajaxUrl'   => admin_url('admin-ajax.php'),
+			'nonce'     => wp_create_nonce('crawlwp_bulk_editor_nonce'),
+			'variables' => $this->get_variables(),
+			'i18n'      => [
+				'saving'          => __('Saving…', 'mihdan-index-now'),
+				'saved'           => __('All changes saved.', 'mihdan-index-now'),
+				'saveError'       => __('Some changes could not be saved. Please try again.', 'mihdan-index-now'),
+				'noItems'         => __('No posts found.', 'mihdan-index-now'),
+				'confirmLeave'    => __('You have unsaved changes. Leave anyway?', 'mihdan-index-now'),
+				'saveChanges'     => __('Save Table Changes', 'mihdan-index-now'),
+				'insertVariable'  => __('Insert variable', 'mihdan-index-now'),
+				'searchVariables' => __('Search variables…', 'mihdan-index-now'),
+				'noVariables'     => __('No matching variables.', 'mihdan-index-now'),
 			],
 		]);
+	}
+
+	/**
+	 * Variable tokens offered by the "Insert variable" dropdown on the
+	 * SEO Title / Meta Description cells — the same set available in the
+	 * per-post metabox, so a template typed here behaves identically.
+	 *
+	 * @return array<int, array{token:string, desc:string}>
+	 */
+	private function get_variables(): array
+	{
+		return [
+			['token' => 'post.title', 'desc' => __('Post title', 'mihdan-index-now')],
+			['token' => 'site.title', 'desc' => __('Site name', 'mihdan-index-now')],
+			['token' => 'sep', 'desc' => __('Separator', 'mihdan-index-now')],
+			['token' => 'post.category', 'desc' => __('Primary category', 'mihdan-index-now')],
+			['token' => 'post.auto_description', 'desc' => __('Post excerpt', 'mihdan-index-now')],
+			['token' => 'current.year', 'desc' => __('Current year', 'mihdan-index-now')],
+			['token' => 'post.author', 'desc' => __('Author name', 'mihdan-index-now')],
+		];
 	}
 
 	// -------------------------------------------------------------------------
@@ -370,16 +394,22 @@ class BulkEditorSettings
 				. '</td>';
 
 			$html .= '<td class="cwp-bulk-col-title">'
+				. '<div class="cwp-bulk-field">'
 				. '<textarea class="cwp-bulk-input cwp-bulk-input--title" rows="2" data-field="seo_title" '
 				. 'placeholder="' . esc_attr__('Leave blank to use the global template', 'mihdan-index-now') . '" '
 				. 'data-original="' . esc_attr($title) . '">' . esc_textarea($title) . '</textarea>'
+				. '<button type="button" class="cwp-bulk-vars" aria-haspopup="true" aria-expanded="false" title="' . esc_attr__('Insert variable', 'mihdan-index-now') . '">&hellip;</button>'
+				. '</div>'
 				. '<span class="cwp-bulk-count" data-max="' . self::TITLE_MAX . '"></span>'
 				. '</td>';
 
 			$html .= '<td class="cwp-bulk-col-desc">'
+				. '<div class="cwp-bulk-field">'
 				. '<textarea class="cwp-bulk-input cwp-bulk-input--desc" rows="3" data-field="seo_description" '
 				. 'placeholder="' . esc_attr__('Leave blank to use the global template', 'mihdan-index-now') . '" '
 				. 'data-original="' . esc_attr($desc) . '">' . esc_textarea($desc) . '</textarea>'
+				. '<button type="button" class="cwp-bulk-vars" aria-haspopup="true" aria-expanded="false" title="' . esc_attr__('Insert variable', 'mihdan-index-now') . '">&hellip;</button>'
+				. '</div>'
 				. '<span class="cwp-bulk-count" data-max="' . self::DESC_MAX . '"></span>'
 				. '</td>';
 

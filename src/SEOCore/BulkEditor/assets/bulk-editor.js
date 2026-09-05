@@ -32,6 +32,17 @@
 	var searchTimer = null;
 
 	// -------------------------------------------------------------------------
+	// "Insert variable" dropdown — one shared/reused panel for every
+	// SEO Title / Meta Description textarea in the table.
+	// -------------------------------------------------------------------------
+
+	var VARS = cfg.variables || [];
+	var $varsPanel   = null;
+	var $varsSearch  = null;
+	var $varsList    = null;
+	var $varsTarget  = null; // textarea currently receiving the insert.
+
+	// -------------------------------------------------------------------------
 	// Init
 	// -------------------------------------------------------------------------
 
@@ -104,6 +115,13 @@
 			markDirty($(this));
 		});
 
+		// "Insert variable" trigger — delegated since rows are added/removed
+		// dynamically by loadTable().
+		$wrap.on('click', '.cwp-bulk-vars', function (e) {
+			e.stopPropagation();
+			toggleVarsPanel($(this));
+		});
+
 		// Save all changes.
 		$wrap.on('click', '#cwp-bulk-save-btn', saveChanges);
 
@@ -121,6 +139,7 @@
 	// -------------------------------------------------------------------------
 
 	function loadTable() {
+		closeVarsPanel();
 		$tbody.html('<tr class="cwp-bulk-loading-row"><td colspan="3">' + escapeHtml('Loading…') + '</td></tr>');
 		dirty = {};
 		toggleSaveButton();
@@ -323,6 +342,155 @@
 
 		$pageLinks.html(html);
 	}
+
+	// -------------------------------------------------------------------------
+	// "Insert variable" dropdown
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Build the shared panel once (lazy) and append it to the wrap so it can
+	 * be repositioned/reused for whichever textarea's trigger was clicked.
+	 */
+	function buildVarsPanel() {
+		if ($varsPanel) {
+			return;
+		}
+
+		$varsPanel = $('<div class="cwp-bulk-vars-panel" hidden></div>');
+		$varsSearch = $('<input type="search" class="cwp-bulk-vars-panel__search" />')
+			.attr('placeholder', i18n.searchVariables || 'Search variables…');
+		$varsList = $('<div class="cwp-bulk-vars-panel__list"></div>');
+
+		$varsPanel.append($varsSearch).append($varsList);
+		$('body').append($varsPanel);
+
+		$varsSearch.on('input', function () {
+			renderVarsList($(this).val());
+		});
+
+		renderVarsList('');
+	}
+
+	/**
+	 * (Re)render the variable list, optionally filtered by a search term.
+	 */
+	function renderVarsList(filter) {
+		$varsList.empty();
+
+		var f = (filter || '').toLowerCase();
+		var shown = 0;
+
+		VARS.forEach(function (v) {
+			var token = v.token || '';
+			var desc  = v.desc || '';
+
+			if (f && token.toLowerCase().indexOf(f) === -1 && desc.toLowerCase().indexOf(f) === -1) {
+				return;
+			}
+
+			shown++;
+
+			var $item = $('<button type="button" class="cwp-bulk-vars-panel__item"></button>')
+				.append($('<code></code>').text('{{ ' + token + ' }}'))
+				.append($('<span></span>').text(desc));
+
+			$item.on('click', function () {
+				insertVariable('{{ ' + token + ' }}');
+			});
+
+			$varsList.append($item);
+		});
+
+		if (!shown) {
+			$varsList.append($('<p class="cwp-bulk-vars-panel__empty"></p>').text(i18n.noVariables || 'No matching variables.'));
+		}
+	}
+
+	/**
+	 * Insert the chosen token at the caret of the currently active textarea,
+	 * then trigger the usual dirty/char-count handling via a real input event.
+	 */
+	function insertVariable(text) {
+		if (!$varsTarget || !$varsTarget.length) {
+			closeVarsPanel();
+			return;
+		}
+
+		var el = $varsTarget.get(0);
+		var start = (typeof el.selectionStart === 'number') ? el.selectionStart : el.value.length;
+		var end   = (typeof el.selectionEnd === 'number') ? el.selectionEnd : el.value.length;
+		var val   = el.value;
+
+		el.value = val.slice(0, start) + text + val.slice(end);
+		el.selectionStart = el.selectionEnd = start + text.length;
+		el.focus();
+
+		$varsTarget.trigger('input');
+
+		closeVarsPanel();
+	}
+
+	/**
+	 * Toggle the shared panel for the textarea associated with the clicked
+	 * trigger button. Positions the panel with `position: fixed` (based on
+	 * the trigger's bounding rect) so it renders correctly regardless of the
+	 * table's own scroll/pagination state.
+	 */
+	function toggleVarsPanel($trigger) {
+		buildVarsPanel();
+
+		var $field    = $trigger.closest('.cwp-bulk-field');
+		var $textarea = $field.find('.cwp-bulk-input');
+
+		// Clicking the same trigger again closes it.
+		if (!$varsPanel.prop('hidden') && $varsTarget && $varsTarget.get(0) === $textarea.get(0)) {
+			closeVarsPanel();
+			return;
+		}
+
+		closeVarsPanel();
+
+		$varsTarget = $textarea;
+
+		var rect = $trigger.get(0).getBoundingClientRect();
+
+		$varsPanel.css({
+			position: 'fixed',
+			top:  (rect.bottom + 4) + 'px',
+			left: Math.max(8, rect.right - 340) + 'px'
+		});
+
+		$varsPanel.prop('hidden', false);
+		$trigger.attr('aria-expanded', 'true');
+		$varsSearch.val('');
+		renderVarsList('');
+		$varsSearch.trigger('focus');
+
+		$trigger.data('cwpBulkVarsOpen', true);
+	}
+
+	function closeVarsPanel() {
+		if (!$varsPanel) {
+			return;
+		}
+
+		$varsPanel.prop('hidden', true);
+		$wrap.find('.cwp-bulk-vars[aria-expanded="true"]').attr('aria-expanded', 'false');
+		$varsTarget = null;
+	}
+
+	// Close on outside click or Escape.
+	$(document).on('click', function (e) {
+		if ($varsPanel && !$varsPanel.prop('hidden') && !$(e.target).closest('.cwp-bulk-vars-panel, .cwp-bulk-vars').length) {
+			closeVarsPanel();
+		}
+	});
+
+	$(document).on('keydown', function (e) {
+		if (e.key === 'Escape') {
+			closeVarsPanel();
+		}
+	});
 
 	// -------------------------------------------------------------------------
 	// Helpers
