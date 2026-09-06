@@ -148,9 +148,6 @@
   animation:cwpSpin .6s linear infinite;
 }
 @keyframes cwpSpin{to{transform:rotate(360deg);}}
-.cwp-ai-error{
-  font-size:11px;color:#dc2626;margin-left:6px;font-weight:500;
-}
 
 /* variable inserter */
 .cwp-var{position:relative;}

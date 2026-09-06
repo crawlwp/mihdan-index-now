@@ -532,12 +532,15 @@
         success: function(resp) {
           if (resp.success && resp.data && resp.data.text) {
             $target.val(resp.data.text).trigger('input');
-          } else {
-            self.aiShowError($btn, L.aiError);
+            return;
           }
+
+          /* No AI provider connected, or the request failed: there is no
+             fallback, so tell the user how to fix it. */
+          self.aiShowError(resp.data);
         },
         error: function() {
-          self.aiShowError($btn, L.aiError);
+          self.aiShowError(null);
         },
         complete: function() {
           $btn.removeClass('is-loading').prop('disabled', false).html(origHtml);
@@ -545,14 +548,25 @@
       });
     },
 
-    aiShowError: function($btn, msg) {
-      var $row = $btn.closest('.cwp-label-row');
-      var $err = $row.find('.cwp-ai-error');
-      if (!$err.length) {
-        $err = $('<span class="cwp-ai-error"></span>').appendTo($row);
+    aiShowError: function(data) {
+      var L = crawlwpSEO.i18n;
+      var msg = (data && data.message) ? data.message : L.aiError;
+
+      window.alert(msg);
+
+      /* Offer to open the WordPress Connectors screen in a new tab so the
+         user can connect an AI provider without losing their edits. */
+      if (data && data.connectUrl && window.confirm(L.aiOpenConnectors)) {
+        var win = window.open(data.connectUrl, '_blank');
+        if (win) {
+          win.opener = null;
+          win.focus();
+        } else {
+          /* Popup blocked: fall back to the current tab, the user already
+             agreed to open the page. */
+          window.location.href = data.connectUrl;
+        }
       }
-      $err.text(msg).show();
-      setTimeout(function() { $err.fadeOut(300); }, 3000);
     },
 
     /* ---------- IndexNow submit ---------- */

@@ -303,302 +303,413 @@ class Assets
 		]);
 
 		if (! empty($generated)) {
-			wp_send_json_success(['text' => $generated]);
+			wp_send_json_success(['text' => $generated, 'source' => 'filter']);
 		}
 
-		$generated = $this->generate_seo_text_fallback($field, $title, $plain_content, $keyword);
+		// Ask the AI provider connected to WordPress (Settings > Connectors).
+		$generated = $this->generate_with_wp_ai($field, $title, $plain_content, $keyword);
 
-		wp_send_json_success(['text' => $generated]);
+		if (is_wp_error($generated)) {
+			wp_send_json_error([
+				'message'    => $this->ai_error_message($generated),
+				'connectUrl' => admin_url('options-connectors.php'),
+			]);
+		}
+
+		if ($generated === '') {
+			wp_send_json_error([
+				'message'    => $this->ai_error_message(),
+				'connectUrl' => admin_url('options-connectors.php'),
+			]);
+		}
+
+		wp_send_json_success(['text' => $generated, 'source' => 'ai']);
 	}
 
-	private function generate_seo_text_fallback(string $field, string $title, string $content, string $keyword): string
+	/**
+	 * Build the message shown to the user when AI generation is not possible.
+	 *
+	 * @param \WP_Error|null $error The provider error, when there was one.
+	 */
+	private function ai_error_message(?\WP_Error $error = null): string
 	{
-		if ($field === 'title') {
-			$seo_title = $title;
+		$instruction = __('AI generation is unavailable. Connect an AI provider in WordPress under Settings → Connectors, then try again.', 'mihdan-index-now');
 
-			if (! empty($keyword) && stripos($title, $keyword) === false) {
-				$seo_title = $keyword . ': ' . $title;
-			}
-
-			$site_name = get_bloginfo('name');
-			$candidate = $seo_title . ' — ' . $site_name;
-
-			if (mb_strlen($candidate) > 60) {
-				$candidate = mb_substr($seo_title, 0, 57 - mb_strlen($site_name)) . '… — ' . $site_name;
-			}
-
-			return $candidate;
+		if ($error instanceof \WP_Error && $error->get_error_message() !== '') {
+			return $instruction . "\n\n" . $error->get_error_message();
 		}
 
-		$sentences = preg_split('/(?<=[.!?])\s+/', $content, -1, PREG_SPLIT_NO_EMPTY);
+		return $instruction;
+	}
 
-		if (empty($sentences)) {
-			return ! empty($keyword)
-				? sprintf(
-					/* translators: 1: keyword, 2: post title */
-					__('Learn about %1$s in our guide: %2$s. Get actionable tips and best practices.', 'flavor'),
-					$keyword,
-					$title
-				)
-				: sprintf(
-					/* translators: %s: post title */
-					__('Read our comprehensive guide on %s. Get actionable tips and best practices.', 'flavor'),
-					$title
-				);
-		}
-
-		if (! empty($keyword)) {
-			foreach ($sentences as $s) {
-				if (stripos($s, $keyword) !== false) {
-					$desc = trim($s);
-					if (mb_strlen($desc) >= 50 && mb_strlen($desc) <= 160) {
-						return $desc;
-					}
-				}
-			}
-		}
-
-		$desc = '';
-		foreach ($sentences as $s) {
-			$candidate_desc = $desc ? $desc . ' ' . trim($s) : trim($s);
-			if (mb_strlen($candidate_desc) > 155) {
-				break;
-			}
-			$desc = $candidate_desc;
-		}
-
-		if (mb_strlen($desc) < 50 && ! empty($keyword)) {
-			$desc = sprintf(
-				/* translators: 1: keyword, 2: sentence(s) from post content */
-				__('Discover %1$s — %2$s', 'flavor'),
-				$keyword,
-				$desc
+	/**
+	 * Generate the SEO title or meta description with the AI provider
+	 * connected to WordPress, using the core AI Client API (WordPress 7.0+).
+	 *
+	 * Returns a WP_Error when AI is unavailable — no provider is connected,
+	 * the environment disabled AI, or the request failed — so the caller can
+	 * surface the reason to the user.
+	 *
+	 * @param string $field   Either 'title' or 'description'.
+	 * @param string $title   The post title.
+	 * @param string $content Plain-text excerpt of the post content.
+	 * @param string $keyword The focus keyword, if any.
+	 *
+	 * @return string|\WP_Error
+	 */
+	private function generate_with_wp_ai(string $field, string $title, string $content, string $keyword)
+	{
+		if (! function_exists('wp_ai_client_prompt') || ! function_exists('wp_supports_ai') || ! wp_supports_ai()) {
+			return new \WP_Error(
+				'crawlwp_ai_unavailable',
+				__('No AI provider is connected to this site.', 'mihdan-index-now')
 			);
 		}
 
-		return mb_strlen($desc) > 160 ? mb_substr($desc, 0, 157) . '...' : $desc;
+		$is_title = $field === 'title';
+
+		$system = $is_title
+			? __('You are an SEO copywriter. Write a single search engine result page title. Keep it under 60 characters, front-load the most important words, never use quotation marks, never add a trailing site name, and reply with the title only — no explanation, no markdown, no numbering.', 'mihdan-index-now')
+			: __('You are an SEO copywriter. Write a single meta description. Keep it between 120 and 155 characters, write in active voice, include a reason to click, never use quotation marks, and reply with the description only — no explanation, no markdown, no numbering.', 'mihdan-index-now');
+
+		$prompt = sprintf(
+			/* translators: 1: post title, 2: focus keyword or a dash, 3: site name, 4: post content excerpt */
+			__("Post title: %1\$s\nFocus keyword: %2\$s\nSite name: %3\$s\n\nPost content:\n%4\$s", 'mihdan-index-now'),
+			$title,
+			$keyword !== '' ? $keyword : '—',
+			get_bloginfo('name'),
+			$content
+		);
+
+		/**
+		 * Filter the system instruction sent to the AI provider.
+		 *
+		 * @param string $system The system instruction.
+		 * @param string $field  Either 'title' or 'description'.
+		 */
+		$system = (string) apply_filters('crawlwp_ai_system_instruction', $system, $field);
+
+		/**
+		 * Filter the user prompt sent to the AI provider.
+		 *
+		 * @param string $prompt  The prompt.
+		 * @param string $field   Either 'title' or 'description'.
+		 * @param array  $context Post context: title, content excerpt, keyword.
+		 */
+		$prompt = (string) apply_filters('crawlwp_ai_prompt', $prompt, $field, [
+			'title'   => $title,
+			'content' => $content,
+			'keyword' => $keyword,
+		]);
+
+		$text = $this->request_ai_text($prompt, $system, $is_title ? 60 : 160);
+
+		// Reasoning models (OpenAI GPT-5 / o-series, and others) reject the
+		// tuning parameters with "Unsupported parameter: 'temperature' is not
+		// supported with this model.". Retry once with the prompt only.
+		if (is_wp_error($text)) {
+			$text = $this->request_ai_text($prompt, $system, 0);
+		}
+
+		if (is_wp_error($text)) {
+			return $text;
+		}
+
+		if (! is_string($text)) {
+			return new \WP_Error(
+				'crawlwp_ai_empty',
+				__('The AI provider returned no text.', 'mihdan-index-now')
+			);
+		}
+
+		return $this->sanitize_ai_text($text, $field);
+	}
+
+	/**
+	 * Send one text-generation request to the connected AI provider.
+	 *
+	 * @param string $prompt     The user prompt.
+	 * @param string $system     The system instruction.
+	 * @param int    $max_tokens Token cap, or 0 to send no tuning parameters
+	 *                           at all (models that reject them).
+	 *
+	 * @return string|\WP_Error The generated text, or the provider error.
+	 */
+	private function request_ai_text(string $prompt, string $system, int $max_tokens)
+	{
+		$builder = wp_ai_client_prompt($prompt)->using_system_instruction($system);
+
+		if ($max_tokens > 0) {
+			$builder = $builder->using_temperature(0.7)->using_max_tokens($max_tokens);
+		}
+
+		// Bail out before spending a request when no connected provider can
+		// handle text generation.
+		if (true !== $builder->is_supported_for_text_generation()) {
+			return new \WP_Error('crawlwp_ai_unsupported', __('No connected AI model supports text generation.', 'mihdan-index-now'));
+		}
+
+		try {
+			$text = $builder->generate_text();
+		} catch (\Throwable $e) {
+			return new \WP_Error('crawlwp_ai_exception', $e->getMessage());
+		}
+
+		if (is_wp_error($text)) {
+			return $text;
+		}
+
+		return is_string($text) ? $text : '';
+	}
+
+	/**
+	 * Normalise the raw model output into a value that can be dropped
+	 * straight into the SEO title or meta description field.
+	 */
+	private function sanitize_ai_text(string $text, string $field): string
+	{
+		$text = wp_strip_all_tags($text);
+		$text = preg_replace('/\s+/u', ' ', $text);
+		$text = trim((string) $text);
+
+		// Models frequently wrap the answer in quotes or prefix it with a label.
+		$text = preg_replace('/^(?:seo\s+)?(?:title|meta\s+description|description)\s*:\s*/iu', '', $text);
+		$text = trim((string) $text, " \t\n\r\0\x0B\"'“”‘’");
+
+		if ($text === '') {
+			return '';
+		}
+
+		$max = $field === 'title' ? 60 : 160;
+
+		if (mb_strlen($text) > $max) {
+			$text = rtrim(mb_substr($text, 0, $max - 1), " ,;:.-") . '…';
+		}
+
+		return $text;
 	}
 
 	private function get_i18n_strings(): array
 	{
 		return [
 			/* Pixel meter labels */
-			'meterTooShort'    => __('Too short', 'flavor'),
-			'meterGoodLength'  => __('Good length', 'flavor'),
-			'meterWillBeCut'   => __('Will be cut off', 'flavor'),
+			'meterTooShort'    => __('Too short', 'mihdan-index-now'),
+			'meterGoodLength'  => __('Good length', 'mihdan-index-now'),
+			'meterWillBeCut'   => __('Will be cut off', 'mihdan-index-now'),
 			/* translators: %1$s: pixel width, %2$s: pixel limit, %3$s: character count */
-			'meterDetail'      => __('%1$s / %2$s px · %3$s chars', 'flavor'),
+			'meterDetail'      => __('%1$s / %2$s px · %3$s chars', 'mihdan-index-now'),
 
 			/* Live preview placeholders */
-			'enterTitle'       => __('Enter a title', 'flavor'),
-			'addMetaDesc'      => __('Add a meta description to control what appears here.', 'flavor'),
+			'enterTitle'       => __('Enter a title', 'mihdan-index-now'),
+			'addMetaDesc'      => __('Add a meta description to control what appears here.', 'mihdan-index-now'),
 
 			/* JSON-LD toggle */
-			'hideJsonLd'       => __('Hide JSON-LD', 'flavor'),
-			'showJsonLd'       => __('Show JSON-LD', 'flavor'),
+			'hideJsonLd'       => __('Hide JSON-LD', 'mihdan-index-now'),
+			'showJsonLd'       => __('Show JSON-LD', 'mihdan-index-now'),
 
 			/* Schema preview */
-			'noStructuredData' => __('// No structured data will be output for this post.', 'flavor'),
+			'noStructuredData' => __('// No structured data will be output for this post.', 'mihdan-index-now'),
 
 			/* Image picker */
-			'selectImage'      => __('Select Image', 'flavor'),
+			'selectImage'      => __('Select Image', 'mihdan-index-now'),
 
 			/* Show-all toggle */
 			/* translators: %s: total number of links */
-			'showAllLinks'     => __('Show all %s links', 'flavor'),
+			'showAllLinks'     => __('Show all %s links', 'mihdan-index-now'),
 
 			/* Link chips */
-			'internal'         => __('Internal', 'flavor'),
-			'external'         => __('External', 'flavor'),
-			'suggested'        => __('Suggested', 'flavor'),
+			'internal'         => __('Internal', 'mihdan-index-now'),
+			'external'         => __('External', 'mihdan-index-now'),
+			'suggested'        => __('Suggested', 'mihdan-index-now'),
 
 			/* Inbound link meta */
 			/* translators: %s: anchor text */
-			'anchorLabel'      => __('Anchor: "%s"', 'flavor'),
+			'anchorLabel'      => __('Anchor: "%s"', 'mihdan-index-now'),
 			/* translators: %s: date string */
-			'publishedDate'    => __('published %s', 'flavor'),
+			'publishedDate'    => __('published %s', 'mihdan-index-now'),
 
 			/* Links notice */
-			'noInternalLinks'  => __('This post links to nothing on your site. Adding two or three internal links helps crawlers reach related posts and passes ranking signals along.', 'flavor'),
+			'noInternalLinks'  => __('This post links to nothing on your site. Adding two or three internal links helps crawlers reach related posts and passes ranking signals along.', 'mihdan-index-now'),
 
 			/* Copy URL */
-			'copyUrl'          => __('Copy URL', 'flavor'),
-			'copied'           => __('Copied!', 'flavor'),
+			'copyUrl'          => __('Copy URL', 'mihdan-index-now'),
+			'copied'           => __('Copied!', 'mihdan-index-now'),
 
 			/* Analysis notice */
-			'enterFocusKw'     => __('Enter a focus keyword above to run the analysis.', 'flavor'),
+			'enterFocusKw'     => __('Enter a focus keyword above to run the analysis.', 'mihdan-index-now'),
 			/* translators: %s: keyword */
-			'scoredAgainst'    => __('Scored against %s. Change the focus keyword above to rescore.', 'flavor'),
+			'scoredAgainst'    => __('Scored against %s. Change the focus keyword above to rescore.', 'mihdan-index-now'),
 
 			/* Analysis: 1 – Keyword in title */
-			'kwInTitleGood'    => __('Keyword is in the SEO title.', 'flavor'),
-			'kwInTitleStart'   => __('It appears near the start, where it carries the most weight.', 'flavor'),
-			'kwInTitleMove'    => __('Try moving it closer to the beginning for more impact.', 'flavor'),
-			'kwInTitleBad'     => __('Keyword is missing from the SEO title.', 'flavor'),
-			'kwInTitleFix'     => __('Add it to the title so search engines and users see it immediately.', 'flavor'),
+			'kwInTitleGood'    => __('Keyword is in the SEO title.', 'mihdan-index-now'),
+			'kwInTitleStart'   => __('It appears near the start, where it carries the most weight.', 'mihdan-index-now'),
+			'kwInTitleMove'    => __('Try moving it closer to the beginning for more impact.', 'mihdan-index-now'),
+			'kwInTitleBad'     => __('Keyword is missing from the SEO title.', 'mihdan-index-now'),
+			'kwInTitleFix'     => __('Add it to the title so search engines and users see it immediately.', 'mihdan-index-now'),
 
 			/* Analysis: 2 – Keyword in slug */
-			'kwInSlugGood'     => __('Keyword is in the URL slug.', 'flavor'),
-			'kwInSlugBad'      => __('Keyword is missing from the URL slug.', 'flavor'),
-			'kwInSlugFix'      => __('Include it in the slug for better URL relevance.', 'flavor'),
+			'kwInSlugGood'     => __('Keyword is in the URL slug.', 'mihdan-index-now'),
+			'kwInSlugBad'      => __('Keyword is missing from the URL slug.', 'mihdan-index-now'),
+			'kwInSlugFix'      => __('Include it in the slug for better URL relevance.', 'mihdan-index-now'),
 
 			/* Analysis: 3 – Title length */
-			'titleLenGood'     => __('Title length fits.', 'flavor'),
+			'titleLenGood'     => __('Title length fits.', 'mihdan-index-now'),
 			/* translators: %s: pixel width */
-			'titleLenDetail'   => __('%s px of the 580 px Google shows.', 'flavor'),
-			'titleLenLong'     => __('Title is too long.', 'flavor'),
+			'titleLenDetail'   => __('%s px of the 580 px Google shows.', 'mihdan-index-now'),
+			'titleLenLong'     => __('Title is too long.', 'mihdan-index-now'),
 			/* translators: %s: pixel width */
-			'titleLenLongD'    => __('%s px exceeds the 580 px limit — it will be cut off in search results.', 'flavor'),
-			'titleLenShort'    => __('Title is too short.', 'flavor'),
+			'titleLenLongD'    => __('%s px exceeds the 580 px limit — it will be cut off in search results.', 'mihdan-index-now'),
+			'titleLenShort'    => __('Title is too short.', 'mihdan-index-now'),
 			/* translators: %s: pixel width */
-			'titleLenShortD'   => __('%s px of the 580 px Google shows. Aim for at least 200 px.', 'flavor'),
+			'titleLenShortD'   => __('%s px of the 580 px Google shows. Aim for at least 200 px.', 'mihdan-index-now'),
 
 			/* Analysis: 4 – Meta description keyword */
-			'kwInDescGood'     => __('Keyword is in the meta description.', 'flavor'),
-			'kwInDescWarn'     => __('Meta description does not contain the keyword.', 'flavor'),
-			'kwInDescWarnD'    => __('Mentioning it helps bold the term in search results.', 'flavor'),
-			'noDescBad'        => __('No meta description set.', 'flavor'),
-			'noDescFix'        => __('Write a compelling description that includes the keyword.', 'flavor'),
+			'kwInDescGood'     => __('Keyword is in the meta description.', 'mihdan-index-now'),
+			'kwInDescWarn'     => __('Meta description does not contain the keyword.', 'mihdan-index-now'),
+			'kwInDescWarnD'    => __('Mentioning it helps bold the term in search results.', 'mihdan-index-now'),
+			'noDescBad'        => __('No meta description set.', 'mihdan-index-now'),
+			'noDescFix'        => __('Write a compelling description that includes the keyword.', 'mihdan-index-now'),
 
 			/* Analysis: 5 – Meta description length */
-			'descLenGood'      => __('Meta description length is good.', 'flavor'),
+			'descLenGood'      => __('Meta description length is good.', 'mihdan-index-now'),
 			/* translators: %s: pixel width */
-			'descLenGoodD'     => __('%s px of the 920 px limit.', 'flavor'),
-			'descLenLong'      => __('Meta description is too long.', 'flavor'),
+			'descLenGoodD'     => __('%s px of the 920 px limit.', 'mihdan-index-now'),
+			'descLenLong'      => __('Meta description is too long.', 'mihdan-index-now'),
 			/* translators: %s: pixel width */
-			'descLenLongD'     => __('%s px exceeds 920 px — it may be truncated.', 'flavor'),
-			'descLenShort'     => __('Meta description is too short.', 'flavor'),
-			'descLenShortD'    => __('Aim for at least 400 px to use the available space.', 'flavor'),
+			'descLenLongD'     => __('%s px exceeds 920 px — it may be truncated.', 'mihdan-index-now'),
+			'descLenShort'     => __('Meta description is too short.', 'mihdan-index-now'),
+			'descLenShortD'    => __('Aim for at least 400 px to use the available space.', 'mihdan-index-now'),
 
 			/* Analysis: 6 – Keyword in first paragraph */
-			'kwFirstParaGood'  => __('Keyword appears in the first paragraph.', 'flavor'),
-			'kwFirstParaWarn'  => __('Keyword is missing from the first paragraph.', 'flavor'),
-			'kwFirstParaFix'   => __('Introduce the topic early so readers and engines see it upfront.', 'flavor'),
+			'kwFirstParaGood'  => __('Keyword appears in the first paragraph.', 'mihdan-index-now'),
+			'kwFirstParaWarn'  => __('Keyword is missing from the first paragraph.', 'mihdan-index-now'),
+			'kwFirstParaFix'   => __('Introduce the topic early so readers and engines see it upfront.', 'mihdan-index-now'),
 
 			/* Analysis: 7 – Keyword in subheadings */
 			/* translators: %s: number of subheadings */
-			'kwSubheadGood'    => __('Keyword appears in %s subheadings.', 'flavor'),
-			'kwSubheadOne'     => __('Only one subheading uses the keyword.', 'flavor'),
-			'kwSubheadOneFix'  => __('Work it into one or two more H2s where it reads naturally.', 'flavor'),
-			'kwSubheadBad'     => __('No subheading uses the keyword.', 'flavor'),
-			'kwSubheadFix'     => __('Add the keyword to at least one H2 or H3.', 'flavor'),
+			'kwSubheadGood'    => __('Keyword appears in %s subheadings.', 'mihdan-index-now'),
+			'kwSubheadOne'     => __('Only one subheading uses the keyword.', 'mihdan-index-now'),
+			'kwSubheadOneFix'  => __('Work it into one or two more H2s where it reads naturally.', 'mihdan-index-now'),
+			'kwSubheadBad'     => __('No subheading uses the keyword.', 'mihdan-index-now'),
+			'kwSubheadFix'     => __('Add the keyword to at least one H2 or H3.', 'mihdan-index-now'),
 
 			/* translators: %s: number of H1 tags */
-			'h1Multiple'       => __('Multiple H1 tags found (%s).', 'flavor'),
-			'h1MultipleFix'    => __('Use only one H1 per page for best SEO practice.', 'flavor'),
+			'h1Multiple'       => __('Multiple H1 tags found (%s).', 'mihdan-index-now'),
+			'h1MultipleFix'    => __('Use only one H1 per page for best SEO practice.', 'mihdan-index-now'),
 
 			/* Analysis: 9 – Images alt text */
-			'noImages'         => __('No images found.', 'flavor'),
-			'noImagesFix'      => __('Adding relevant images can improve engagement and image search traffic.', 'flavor'),
-			'allImgAlt'        => __('All images have alt text.', 'flavor'),
+			'noImages'         => __('No images found.', 'mihdan-index-now'),
+			'noImagesFix'      => __('Adding relevant images can improve engagement and image search traffic.', 'mihdan-index-now'),
+			'allImgAlt'        => __('All images have alt text.', 'mihdan-index-now'),
 			/* translators: %s: number of images */
-			'imgAltDetail'     => __('%s image(s) found.', 'flavor'),
+			'imgAltDetail'     => __('%s image(s) found.', 'mihdan-index-now'),
 			/* translators: %s: number of images missing alt */
-			'imgAltMissing'    => __('%s image(s) missing alt text.', 'flavor'),
-			'imgAltFix'        => __('Describe what each one shows for accessibility and SEO.', 'flavor'),
+			'imgAltMissing'    => __('%s image(s) missing alt text.', 'mihdan-index-now'),
+			'imgAltFix'        => __('Describe what each one shows for accessibility and SEO.', 'mihdan-index-now'),
 
 			/* Analysis: 10 – Keyword in image alt */
-			'kwImgAltGood'     => __('Keyword found in an image alt attribute.', 'flavor'),
-			'kwImgAltWarn'     => __('No image alt text contains the keyword.', 'flavor'),
-			'kwImgAltFix'      => __('Add the keyword to at least one relevant image alt tag.', 'flavor'),
+			'kwImgAltGood'     => __('Keyword found in an image alt attribute.', 'mihdan-index-now'),
+			'kwImgAltWarn'     => __('No image alt text contains the keyword.', 'mihdan-index-now'),
+			'kwImgAltFix'      => __('Add the keyword to at least one relevant image alt tag.', 'mihdan-index-now'),
 
 			/* Analysis: 11 – Internal links */
 			/* translators: %s: number of internal links */
-			'intLinksGood'     => __('%s internal links.', 'flavor'),
-			'intLinksGoodD'    => __('Good internal linking structure.', 'flavor'),
-			'intLinksOne'      => __('Only 1 internal link.', 'flavor'),
-			'intLinksOneFix'   => __('Add at least one more internal link to improve crawlability.', 'flavor'),
-			'intLinksNone'     => __('No internal links.', 'flavor'),
-			'intLinksNoneFix'  => __('Link to at least two related posts so crawlers can reach them from here.', 'flavor'),
+			'intLinksGood'     => __('%s internal links.', 'mihdan-index-now'),
+			'intLinksGoodD'    => __('Good internal linking structure.', 'mihdan-index-now'),
+			'intLinksOne'      => __('Only 1 internal link.', 'mihdan-index-now'),
+			'intLinksOneFix'   => __('Add at least one more internal link to improve crawlability.', 'mihdan-index-now'),
+			'intLinksNone'     => __('No internal links.', 'mihdan-index-now'),
+			'intLinksNoneFix'  => __('Link to at least two related posts so crawlers can reach them from here.', 'mihdan-index-now'),
 
 			/* Analysis: 12 – External links */
 			/* translators: %s: number of external links */
-			'extLinksGood'     => __('%s external link(s).', 'flavor'),
-			'extLinksGoodD'    => __('Linking to authoritative sources adds credibility.', 'flavor'),
-			'extLinksNone'     => __('No external links.', 'flavor'),
-			'extLinksNoneFix'  => __('Consider linking to a relevant authoritative source to add context.', 'flavor'),
+			'extLinksGood'     => __('%s external link(s).', 'mihdan-index-now'),
+			'extLinksGoodD'    => __('Linking to authoritative sources adds credibility.', 'mihdan-index-now'),
+			'extLinksNone'     => __('No external links.', 'mihdan-index-now'),
+			'extLinksNoneFix'  => __('Consider linking to a relevant authoritative source to add context.', 'mihdan-index-now'),
 
 			/* Analysis: 13 – Content length */
 			/* translators: %s: word count */
-			'wordsLabel'       => __('%s words.', 'flavor'),
-			'wordsEnough'      => __('Long enough to cover the topic.', 'flavor'),
-			'wordsAim300'      => __('Aim for at least 300 words to provide enough depth.', 'flavor'),
-			'wordsThin'        => __('Content is too thin. Search engines prefer in-depth articles.', 'flavor'),
+			'wordsLabel'       => __('%s words.', 'mihdan-index-now'),
+			'wordsEnough'      => __('Long enough to cover the topic.', 'mihdan-index-now'),
+			'wordsAim300'      => __('Aim for at least 300 words to provide enough depth.', 'mihdan-index-now'),
+			'wordsThin'        => __('Content is too thin. Search engines prefer in-depth articles.', 'mihdan-index-now'),
 
 			/* Analysis: 14 – Keyword density */
 			/* translators: %s: density percentage */
-			'densityLabel'     => __('Keyword density is %s%%.', 'flavor'),
-			'densityGoodD'     => __('Within the recommended 0.5–3% range.', 'flavor'),
-			'densityHighD'     => __('This may look like keyword stuffing. Aim for 0.5–3%.', 'flavor'),
-			'densityLowD'      => __('Try to mention the keyword a few more times naturally.', 'flavor'),
+			'densityLabel'     => __('Keyword density is %s%%.', 'mihdan-index-now'),
+			'densityGoodD'     => __('Within the recommended 0.5–3% range.', 'mihdan-index-now'),
+			'densityHighD'     => __('This may look like keyword stuffing. Aim for 0.5–3%.', 'mihdan-index-now'),
+			'densityLowD'      => __('Try to mention the keyword a few more times naturally.', 'mihdan-index-now'),
 
 			/* Analysis: 15 – Readability */
 			/* translators: %s: average sentence length */
-			'readability'      => __('Average sentence length is %s words.', 'flavor'),
-			'readabilityGoodD' => __('Easy to read.', 'flavor'),
-			'readabilityWarnD' => __('Some sentences may be hard to follow. Try breaking them up.', 'flavor'),
-			'readabilityBadD'  => __('Sentences are too long. Aim for under 20 words on average.', 'flavor'),
+			'readability'      => __('Average sentence length is %s words.', 'mihdan-index-now'),
+			'readabilityGoodD' => __('Easy to read.', 'mihdan-index-now'),
+			'readabilityWarnD' => __('Some sentences may be hard to follow. Try breaking them up.', 'mihdan-index-now'),
+			'readabilityBadD'  => __('Sentences are too long. Aim for under 20 words on average.', 'mihdan-index-now'),
 
 			/* Analysis: 16 – Heading hierarchy */
 			/* translators: %s: number of H2 tags */
-			'h2Good'           => __('%s H2 subheadings structure the content.', 'flavor'),
-			'h2One'            => __('Only 1 H2 subheading found.', 'flavor'),
-			'h2OneFix'         => __('Adding more H2s improves readability and SEO.', 'flavor'),
-			'h2None'           => __('No H2 subheadings found.', 'flavor'),
-			'h2NoneFix'        => __('Break up long content with H2 headings for better structure.', 'flavor'),
+			'h2Good'           => __('%s H2 subheadings structure the content.', 'mihdan-index-now'),
+			'h2One'            => __('Only 1 H2 subheading found.', 'mihdan-index-now'),
+			'h2OneFix'         => __('Adding more H2s improves readability and SEO.', 'mihdan-index-now'),
+			'h2None'           => __('No H2 subheadings found.', 'mihdan-index-now'),
+			'h2NoneFix'        => __('Break up long content with H2 headings for better structure.', 'mihdan-index-now'),
 
 			/* Analysis dot */
 			/* translators: %s: number of issues */
-			'issueCount'       => __('%s issue(s)', 'flavor'),
+			'issueCount'       => __('%s issue(s)', 'mihdan-index-now'),
 
 			/* Insights */
 			/* translators: %s: search engine name */
-			'insightsQueriesDesc' => __('Search queries where this page appeared in %s results.', 'flavor'),
-			'insightsNoKw'     => __('No keyword data available for this period.', 'flavor'),
+			'insightsQueriesDesc' => __('Search queries where this page appeared in %s results.', 'mihdan-index-now'),
+			'insightsNoKw'     => __('No keyword data available for this period.', 'mihdan-index-now'),
 			/* translators: %s: engine name */
-			'insightsIndex'    => __('%s Index', 'flavor'),
-			'indexed'          => __('Indexed', 'flavor'),
-			'notIndexed'       => __('Not indexed', 'flavor'),
-			'savPostFirst'     => __('Save the post first to load search performance data.', 'flavor'),
+			'insightsIndex'    => __('%s Index', 'mihdan-index-now'),
+			'indexed'          => __('Indexed', 'mihdan-index-now'),
+			'notIndexed'       => __('Not indexed', 'mihdan-index-now'),
+			'savPostFirst'     => __('Save the post first to load search performance data.', 'mihdan-index-now'),
 
 			/* AI generate */
-			'aiGenerate'       => __('Generate with AI', 'flavor'),
-			'aiGenerating'     => __('Generating…', 'flavor'),
-			'aiError'          => __('AI generation failed. Please try again.', 'flavor'),
+			'aiGenerate'       => __('Generate with AI', 'mihdan-index-now'),
+			'aiGenerating'     => __('Generating…', 'mihdan-index-now'),
+			'aiError'          => __('AI generation is unavailable. Connect an AI provider in WordPress under Settings → Connectors, then try again.', 'mihdan-index-now'),
+			'aiOpenConnectors' => __('Open the Connectors settings page in a new tab?', 'mihdan-index-now'),
 
 			/* IndexNow submit */
-			'submitIndexNow'   => __('Submit to IndexNow', 'flavor'),
-			'submitting'       => __('Submitting…', 'flavor'),
+			'submitIndexNow'   => __('Submit to IndexNow', 'mihdan-index-now'),
+			'submitting'       => __('Submitting…', 'mihdan-index-now'),
 			/* translators: %s: date string */
-			'lastSubmitted'    => __('Last submitted to IndexNow on %s.', 'flavor'),
-			'notSubmittedYet'  => __('This URL has not been submitted to IndexNow yet.', 'flavor'),
-			'submitSuccess'    => __('Successfully submitted to IndexNow!', 'flavor'),
-			'submitError'      => __('Failed to submit. Please try again.', 'flavor'),
-			'savePostFirst'    => __('Please save the post first before submitting to IndexNow.', 'flavor'),
+			'lastSubmitted'    => __('Last submitted to IndexNow on %s.', 'mihdan-index-now'),
+			'notSubmittedYet'  => __('This URL has not been submitted to IndexNow yet.', 'mihdan-index-now'),
+			'submitSuccess'    => __('Successfully submitted to IndexNow!', 'mihdan-index-now'),
+			'submitError'      => __('Failed to submit. Please try again.', 'mihdan-index-now'),
+			'savePostFirst'    => __('Please save the post first before submitting to IndexNow.', 'mihdan-index-now'),
 
 			/* Readability badge */
-			'readabilityGood'       => __('Good readability', 'flavor'),
-			'readabilityOk'         => __('Fairly readable', 'flavor'),
-			'readabilityPoor'       => __('Needs improvement', 'flavor'),
-			'readabilityNA'         => __('Readability analysis will run when content is available.', 'flavor'),
+			'readabilityGood'       => __('Good readability', 'mihdan-index-now'),
+			'readabilityOk'         => __('Fairly readable', 'mihdan-index-now'),
+			'readabilityPoor'       => __('Needs improvement', 'mihdan-index-now'),
+			'readabilityNA'         => __('Readability analysis will run when content is available.', 'mihdan-index-now'),
 			/* translators: %1$s: Flesch score, %2$s: avg sentence length, %3$s: percentage of long sentences */
-			'readabilityDetail'     => __('Flesch score %1$s · avg. sentence %2$s words · %3$s%% long sentences', 'flavor'),
+			'readabilityDetail'     => __('Flesch score %1$s · avg. sentence %2$s words · %3$s%% long sentences', 'mihdan-index-now'),
 
 			/* Focus keyword duplicate warning */
 			/* translators: %1$s: post title, %2$s: edit link */
-			'kwDuplicateWarn'       => __('This keyword is already used by "%1$s". Using the same keyword on multiple posts may cause keyword cannibalization.', 'flavor'),
-			'kwChecking'            => __('Checking…', 'flavor'),
+			'kwDuplicateWarn'       => __('This keyword is already used by "%1$s". Using the same keyword on multiple posts may cause keyword cannibalization.', 'mihdan-index-now'),
+			'kwChecking'            => __('Checking…', 'mihdan-index-now'),
 
 			/* Breadcrumb preview */
-			'breadcrumbHome'        => __('Home', 'flavor'),
+			'breadcrumbHome'        => __('Home', 'mihdan-index-now'),
 
 			/* Social image dimensions */
 			/* translators: %1$s: actual width, %2$s: actual height */
-			'imgDimensions'         => __('%1$s × %2$s px', 'flavor'),
-			'imgTooSmall'           => __('Image is too small. Minimum recommended:', 'flavor'),
-			'imgSizeGood'           => __('Image meets the recommended size.', 'flavor'),
-			'imgOgMin'              => __('1200 × 630 px', 'flavor'),
-			'imgXMin'               => __('800 × 418 px', 'flavor'),
+			'imgDimensions'         => __('%1$s × %2$s px', 'mihdan-index-now'),
+			'imgTooSmall'           => __('Image is too small. Minimum recommended:', 'mihdan-index-now'),
+			'imgSizeGood'           => __('Image meets the recommended size.', 'mihdan-index-now'),
+			'imgOgMin'              => __('1200 × 630 px', 'mihdan-index-now'),
+			'imgXMin'               => __('800 × 418 px', 'mihdan-index-now'),
 		];
 	}
 
