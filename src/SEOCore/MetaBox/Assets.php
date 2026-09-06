@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\MetaBox;
 
+use Mihdan\IndexNow\SEOCore\AI\Generator;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Variables;
 
 class Assets
@@ -268,225 +269,86 @@ class Assets
 	{
 		check_ajax_referer('crawlwp_ai_generate', 'nonce');
 
-		if (! current_user_can('edit_posts')) {
-			wp_send_json_error(['message' => 'Unauthorized'], 403);
-		}
-
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
-		$field   = isset($_POST['field']) ? sanitize_text_field($_POST['field']) : '';
+		$field   = isset($_POST['field']) ? sanitize_key($_POST['field']) : '';
 		$title   = isset($_POST['post_title']) ? sanitize_text_field($_POST['post_title']) : '';
 		$content = isset($_POST['post_content']) ? wp_kses_post($_POST['post_content']) : '';
 		$keyword = isset($_POST['focus_keyword']) ? sanitize_text_field($_POST['focus_keyword']) : '';
+		$previous = isset($_POST['previous_value']) ? sanitize_textarea_field($_POST['previous_value']) : '';
 
-		if (! in_array($field, ['title', 'description'], true)) {
-			wp_send_json_error(['message' => 'Invalid field']);
+		// Check the capability against the actual post being edited, not just
+		// the generic edit_posts capability.
+		$allowed = $post_id ? current_user_can('edit_post', $post_id) : current_user_can('edit_posts');
+
+		if (! $allowed) {
+			wp_send_json_error(['message' => __('You are not allowed to generate SEO text for this post.', 'mihdan-index-now')], 403);
 		}
 
-		$plain_content = wp_strip_all_tags($content);
-		$plain_content = mb_substr($plain_content, 0, 1500);
+		if (! in_array($field, Generator::fields(), true)) {
+			wp_send_json_error(['message' => __('Unsupported field.', 'mihdan-index-now')]);
+		}
+
+		$context = [
+			'post_id'  => $post_id,
+			'title'    => $title,
+			'content'  => $content,
+			'keyword'  => $keyword,
+			'previous' => $previous,
+		];
 
 		/**
 		 * Filter the AI-generated SEO text.
 		 *
 		 * Third-party plugins or the pro add-on can hook into this filter
-		 * to provide real AI-generated content via an external API.
+		 * to provide the text from their own service instead.
 		 *
-		 * @param string $text     The generated text (empty by default).
-		 * @param string $field    Either 'title' or 'description'.
-		 * @param array  $context  Post context: title, content excerpt, keyword.
+		 * @param string $text    The generated text (empty by default).
+		 * @param string $field   The field being generated.
+		 * @param array  $context Post context: post_id, title, content, keyword, previous.
 		 */
-		$generated = apply_filters('crawlwp_ai_generate_seo', '', $field, [
-			'post_id'  => $post_id,
-			'title'    => $title,
-			'content'  => $plain_content,
-			'keyword'  => $keyword,
-		]);
+		$generated = apply_filters('crawlwp_ai_generate_seo', '', $field, $context);
 
 		if (! empty($generated)) {
 			wp_send_json_success(['text' => $generated, 'source' => 'filter']);
 		}
 
 		// Ask the AI provider connected to WordPress (Settings > Connectors).
-		$generated = $this->generate_with_wp_ai($field, $title, $plain_content, $keyword);
+		$generated = (new Generator())->generate($field, $context);
 
 		if (is_wp_error($generated)) {
-			wp_send_json_error([
-				'message'    => $this->ai_error_message($generated),
-				'connectUrl' => admin_url('options-connectors.php'),
-			]);
-		}
-
-		if ($generated === '') {
-			wp_send_json_error([
-				'message'    => $this->ai_error_message(),
-				'connectUrl' => admin_url('options-connectors.php'),
-			]);
+			wp_send_json_error($this->ai_error_response($generated));
 		}
 
 		wp_send_json_success(['text' => $generated, 'source' => 'ai']);
 	}
 
 	/**
-	 * Build the message shown to the user when AI generation is not possible.
+	 * Build the payload shown to the user when AI generation failed.
 	 *
-	 * @param \WP_Error|null $error The provider error, when there was one.
+	 * Only errors that the user fixes by connecting a provider link to the
+	 * Connectors screen; content and provider errors are shown as they are so
+	 * the message stays truthful.
 	 */
-	private function ai_error_message(?\WP_Error $error = null): string
+	private function ai_error_response(\WP_Error $error): array
 	{
-		$instruction = __('AI generation is unavailable. Connect an AI provider in WordPress under Settings → Connectors, then try again.', 'mihdan-index-now');
+		$code    = $error->get_error_code();
+		$message = $error->get_error_message();
 
-		if ($error instanceof \WP_Error && $error->get_error_message() !== '') {
-			return $instruction . "\n\n" . $error->get_error_message();
+		$connection_codes = ['crawlwp_ai_unavailable', 'crawlwp_ai_unsupported'];
+
+		if (in_array($code, $connection_codes, true)) {
+			return [
+				'message'    => __('AI generation is unavailable. Connect an AI provider in WordPress under Settings → Connectors, then try again.', 'mihdan-index-now')
+					. ($message !== '' ? "\n\n" . $message : ''),
+				'connectUrl' => admin_url('options-connectors.php'),
+			];
 		}
 
-		return $instruction;
-	}
-
-	/**
-	 * Generate the SEO title or meta description with the AI provider
-	 * connected to WordPress, using the core AI Client API (WordPress 7.0+).
-	 *
-	 * Returns a WP_Error when AI is unavailable — no provider is connected,
-	 * the environment disabled AI, or the request failed — so the caller can
-	 * surface the reason to the user.
-	 *
-	 * @param string $field   Either 'title' or 'description'.
-	 * @param string $title   The post title.
-	 * @param string $content Plain-text excerpt of the post content.
-	 * @param string $keyword The focus keyword, if any.
-	 *
-	 * @return string|\WP_Error
-	 */
-	private function generate_with_wp_ai(string $field, string $title, string $content, string $keyword)
-	{
-		if (! function_exists('wp_ai_client_prompt') || ! function_exists('wp_supports_ai') || ! wp_supports_ai()) {
-			return new \WP_Error(
-				'crawlwp_ai_unavailable',
-				__('No AI provider is connected to this site.', 'mihdan-index-now')
-			);
-		}
-
-		$is_title = $field === 'title';
-
-		$system = $is_title
-			? __('You are an SEO copywriter. Write a single search engine result page title. Keep it under 60 characters, front-load the most important words, never use quotation marks, never add a trailing site name, and reply with the title only — no explanation, no markdown, no numbering.', 'mihdan-index-now')
-			: __('You are an SEO copywriter. Write a single meta description. Keep it between 120 and 155 characters, write in active voice, include a reason to click, never use quotation marks, and reply with the description only — no explanation, no markdown, no numbering.', 'mihdan-index-now');
-
-		$prompt = sprintf(
-			/* translators: 1: post title, 2: focus keyword or a dash, 3: site name, 4: post content excerpt */
-			__("Post title: %1\$s\nFocus keyword: %2\$s\nSite name: %3\$s\n\nPost content:\n%4\$s", 'mihdan-index-now'),
-			$title,
-			$keyword !== '' ? $keyword : '—',
-			get_bloginfo('name'),
-			$content
-		);
-
-		/**
-		 * Filter the system instruction sent to the AI provider.
-		 *
-		 * @param string $system The system instruction.
-		 * @param string $field  Either 'title' or 'description'.
-		 */
-		$system = (string) apply_filters('crawlwp_ai_system_instruction', $system, $field);
-
-		/**
-		 * Filter the user prompt sent to the AI provider.
-		 *
-		 * @param string $prompt  The prompt.
-		 * @param string $field   Either 'title' or 'description'.
-		 * @param array  $context Post context: title, content excerpt, keyword.
-		 */
-		$prompt = (string) apply_filters('crawlwp_ai_prompt', $prompt, $field, [
-			'title'   => $title,
-			'content' => $content,
-			'keyword' => $keyword,
-		]);
-
-		$text = $this->request_ai_text($prompt, $system, $is_title ? 60 : 160);
-
-		// Reasoning models (OpenAI GPT-5 / o-series, and others) reject the
-		// tuning parameters with "Unsupported parameter: 'temperature' is not
-		// supported with this model.". Retry once with the prompt only.
-		if (is_wp_error($text)) {
-			$text = $this->request_ai_text($prompt, $system, 0);
-		}
-
-		if (is_wp_error($text)) {
-			return $text;
-		}
-
-		if (! is_string($text)) {
-			return new \WP_Error(
-				'crawlwp_ai_empty',
-				__('The AI provider returned no text.', 'mihdan-index-now')
-			);
-		}
-
-		return $this->sanitize_ai_text($text, $field);
-	}
-
-	/**
-	 * Send one text-generation request to the connected AI provider.
-	 *
-	 * @param string $prompt     The user prompt.
-	 * @param string $system     The system instruction.
-	 * @param int    $max_tokens Token cap, or 0 to send no tuning parameters
-	 *                           at all (models that reject them).
-	 *
-	 * @return string|\WP_Error The generated text, or the provider error.
-	 */
-	private function request_ai_text(string $prompt, string $system, int $max_tokens)
-	{
-		$builder = wp_ai_client_prompt($prompt)->using_system_instruction($system);
-
-		if ($max_tokens > 0) {
-			$builder = $builder->using_temperature(0.7)->using_max_tokens($max_tokens);
-		}
-
-		// Bail out before spending a request when no connected provider can
-		// handle text generation.
-		if (true !== $builder->is_supported_for_text_generation()) {
-			return new \WP_Error('crawlwp_ai_unsupported', __('No connected AI model supports text generation.', 'mihdan-index-now'));
-		}
-
-		try {
-			$text = $builder->generate_text();
-		} catch (\Throwable $e) {
-			return new \WP_Error('crawlwp_ai_exception', $e->getMessage());
-		}
-
-		if (is_wp_error($text)) {
-			return $text;
-		}
-
-		return is_string($text) ? $text : '';
-	}
-
-	/**
-	 * Normalise the raw model output into a value that can be dropped
-	 * straight into the SEO title or meta description field.
-	 */
-	private function sanitize_ai_text(string $text, string $field): string
-	{
-		$text = wp_strip_all_tags($text);
-		$text = preg_replace('/\s+/u', ' ', $text);
-		$text = trim((string) $text);
-
-		// Models frequently wrap the answer in quotes or prefix it with a label.
-		$text = preg_replace('/^(?:seo\s+)?(?:title|meta\s+description|description)\s*:\s*/iu', '', $text);
-		$text = trim((string) $text, " \t\n\r\0\x0B\"'“”‘’");
-
-		if ($text === '') {
-			return '';
-		}
-
-		$max = $field === 'title' ? 60 : 160;
-
-		if (mb_strlen($text) > $max) {
-			$text = rtrim(mb_substr($text, 0, $max - 1), " ,;:.-") . '…';
-		}
-
-		return $text;
+		return [
+			'message' => $message !== ''
+				? $message
+				: __('AI generation failed. Please try again.', 'mihdan-index-now'),
+		];
 	}
 
 	private function get_i18n_strings(): array
@@ -676,6 +538,7 @@ class Assets
 			'aiGenerating'     => __('Generating…', 'mihdan-index-now'),
 			'aiError'          => __('AI generation is unavailable. Connect an AI provider in WordPress under Settings → Connectors, then try again.', 'mihdan-index-now'),
 			'aiOpenConnectors' => __('Open the Connectors settings page in a new tab?', 'mihdan-index-now'),
+			'aiRewrite'        => __('Rewrite with AI', 'mihdan-index-now'),
 
 			/* IndexNow submit */
 			'submitIndexNow'   => __('Submit to IndexNow', 'mihdan-index-now'),

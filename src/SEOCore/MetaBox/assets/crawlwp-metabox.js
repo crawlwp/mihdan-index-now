@@ -238,9 +238,24 @@
 
       /* AI generate buttons */
       this.$mb.find('.cwp-ai-btn').on('click', function() {
-        var targetId = $(this).data('aiTarget');
-        var field = targetId === 'cwpTitle' ? 'title' : 'description';
-        self.aiGenerate(field, $(this));
+        var $btn = $(this);
+        var field = $btn.data('aiField');
+
+        /* Legacy markup only carried the target element id. */
+        if (!field) {
+          field = $btn.data('aiTarget') === 'cwpTitle' ? 'title' : 'description';
+        }
+
+        self.aiGenerate(field, $btn);
+      });
+
+      /* Keep the button label honest: a field with a value gets rewritten. */
+      this.$mb.find('.cwp-ai-btn').each(function() {
+        self.aiSyncLabel($(this));
+      });
+      this.$mb.on('input change', '[id^=cwp]', function() {
+        var $btn = self.$mb.find('.cwp-ai-btn[data-ai-target="' + this.id + '"]');
+        if ($btn.length) self.aiSyncLabel($btn);
       });
 
       /* IndexNow submit button */
@@ -313,6 +328,17 @@
       this.$fbDesc.prop('disabled', this.$fbSync.prop('checked'));
       this.$xTitle.prop('disabled', this.$xSync.prop('checked'));
       this.$xDesc.prop('disabled', this.$xSync.prop('checked'));
+
+      /* Nothing to generate into while the field mirrors another value. */
+      var self = this;
+      this.$mb.find('.cwp-ai-btn[data-ai-target]').each(function() {
+        var $btn = $(this);
+        var $target = $('#' + $btn.data('aiTarget'));
+        if ($target.length) {
+          $btn.prop('disabled', $target.prop('disabled'));
+        }
+      });
+
       this.emit('sync');
     },
 
@@ -494,10 +520,33 @@
     },
 
     /* ---------- AI generation ---------- */
+
+    /* Which input each generatable field writes into. */
+    aiTargets: {
+      'title':          '#cwpTitle',
+      'description':    '#cwpDesc',
+      'og_title':       '#cwpFbTitle',
+      'og_description': '#cwpFbDesc',
+      'x_title':        '#cwpXTitle',
+      'x_description':  '#cwpXDesc'
+    },
+
+    /* The tooltip tells the user whether the value will be written or rewritten. */
+    aiSyncLabel: function($btn) {
+      var L = crawlwpSEO.i18n;
+      var $target = $('#' + $btn.data('aiTarget'));
+      var hasValue = $target.length && $.trim($target.val() || '') !== '';
+
+      $btn.attr('title', hasValue && L.aiRewrite ? L.aiRewrite : L.aiGenerate);
+    },
+
     aiGenerate: function(field, $btn) {
       var self = this;
       var L = crawlwpSEO.i18n;
-      var $target = field === 'title' ? this.$title : this.$desc;
+      var selector = this.aiTargets[field];
+      var $target = selector ? $(selector) : $();
+
+      if (!$target.length) return;
 
       if ($btn.hasClass('is-loading')) return;
 
@@ -527,11 +576,14 @@
           field: field,
           post_title: postTitle,
           post_content: content,
-          focus_keyword: keyword
+          focus_keyword: keyword,
+          /* Sent so the model rewrites instead of repeating itself. */
+          previous_value: $target.val() || ''
         },
         success: function(resp) {
           if (resp.success && resp.data && resp.data.text) {
-            $target.val(resp.data.text).trigger('input');
+            $target.val(resp.data.text).trigger('input').trigger('change');
+            self.aiSyncLabel($btn);
             return;
           }
 
