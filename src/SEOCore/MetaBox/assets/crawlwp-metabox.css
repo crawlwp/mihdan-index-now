@@ -159,20 +159,25 @@
 .cwp-var-btn:hover{border-color:var(--cwp-accent-line);color:var(--cwp-accent-dark);background:var(--cwp-accent-soft);}
 .cwp-var-menu{
   display:none;position:absolute;right:0;top:calc(100% + 5px);z-index:30;
-  width:230px;max-height:230px;overflow-y:auto;
+  width:300px;max-width:calc(100vw - 40px);max-height:260px;overflow-y:auto;
   background:#fff;border:1px solid var(--cwp-line);border-radius:7px;
   box-shadow:0 6px 20px rgba(0,0,0,.12);padding:5px;
 }
 .cwp-var-menu.is-open{display:block;}
+/* Tokens stack above their description so long ones like
+   {{ post.auto_description }} never wrap mid-token. */
 .cwp-var-item{
-  display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+  display:flex;flex-direction:column;gap:2px;align-items:flex-start;
   width:100%;box-sizing:border-box;text-align:left;
   border:0;background:transparent;font:inherit;cursor:pointer;
   padding:6px 8px;border-radius:5px;
 }
 .cwp-var-item:hover{background:var(--cwp-accent-soft);}
-.cwp-var-item code{font-size:11px;color:var(--cwp-accent-dark);font-family:Menlo,Consolas,monospace;}
-.cwp-var-item span{font-size:10px;color:var(--cwp-ink-4);}
+.cwp-var-item code{
+  font-size:11px;color:var(--cwp-accent-dark);font-family:Menlo,Consolas,monospace;
+  white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
+.cwp-var-item span{font-size:10px;color:var(--cwp-ink-4);line-height:1.4;}
 
 /* ---------- preview card ---------- */
 .cwp-preview{

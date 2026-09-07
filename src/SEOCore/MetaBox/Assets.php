@@ -14,6 +14,7 @@ class Assets
 		add_action('wp_ajax_crawlwp_ai_generate', [$this, 'ajax_ai_generate']);
 		add_action('wp_ajax_crawlwp_submit_indexnow', [$this, 'ajax_submit_indexnow']);
 		add_action('wp_ajax_crawlwp_check_duplicate_keyword', [$this, 'ajax_check_duplicate_keyword']);
+		add_action('wp_ajax_crawlwp_suggested_links', [$this, 'ajax_suggested_links']);
 		add_action('crawlwp/index_pinged', [$this, 'store_last_pinged_time'], 10, 2);
 	}
 
@@ -85,6 +86,9 @@ class Assets
 			'suggestedLinks' => $suggested ?? [],
 			'isProActive' => defined('CRAWLWP_PRO_VERSION'),
 			'kwCheckNonce'  => wp_create_nonce('crawlwp_check_keyword'),
+			'suggestedNonce' => wp_create_nonce('crawlwp_suggested_links'),
+			'datePublished' => $post instanceof \WP_Post ? (string) get_the_date('c', $post) : '',
+			'dateModified'  => $post instanceof \WP_Post ? (string) get_the_modified_date('c', $post) : '',
 			'breadcrumbs' => $this->get_breadcrumb_trail($post),
 			'ajaxUrl'     => admin_url('admin-ajax.php'),
 			'insightsNonce' => wp_create_nonce('crawlwp_insights'),
@@ -171,7 +175,15 @@ class Assets
 		wp_send_json_success($data);
 	}
 
-	private function get_suggested_links(int $post_id): array
+	/**
+	 * Related posts an editor could link to from this content.
+	 *
+	 * @param int         $post_id The post being edited.
+	 * @param string|null $keyword Focus keyword to search for. Defaults to the
+	 *                             saved meta value; pass a string to preview a
+	 *                             keyword that has not been saved yet.
+	 */
+	private function get_suggested_links(int $post_id, ?string $keyword = null): array
 	{
 		$post = get_post($post_id);
 
@@ -191,8 +203,11 @@ class Assets
 		];
 
 		/* Try keyword-based search first */
-		$keyword = get_post_meta($post_id, MetaFields::FOCUS_KEYWORD, true);
-		if ($keyword) {
+		if ($keyword === null) {
+			$keyword = (string) get_post_meta($post_id, MetaFields::FOCUS_KEYWORD, true);
+		}
+
+		if ($keyword !== '') {
 			$args['s'] = $keyword;
 		} elseif (! empty($categories)) {
 			/* Fall back to same-category posts */
@@ -226,6 +241,31 @@ class Assets
 		wp_reset_postdata();
 
 		return $links;
+	}
+
+	/**
+	 * Refresh the suggested links for a keyword typed in the editor.
+	 *
+	 * The list is localized once on page load, so without this the suggestions
+	 * would stay stale until the editor reloaded the screen.
+	 */
+	public function ajax_suggested_links(): void
+	{
+		check_ajax_referer('crawlwp_suggested_links', 'nonce');
+
+		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+		if (! $post_id || ! current_user_can('edit_post', $post_id)) {
+			wp_send_json_error(['message' => __('Unauthorized', 'mihdan-index-now')], 403);
+		}
+
+		$keyword = isset($_POST['keyword'])
+			? sanitize_text_field(wp_unslash($_POST['keyword']))
+			: '';
+
+		wp_send_json_success([
+			'links' => $this->get_suggested_links($post_id, $keyword),
+		]);
 	}
 
 	private function get_inbound_links(int $post_id): array
@@ -556,7 +596,7 @@ class Assets
 			'readabilityPoor'       => __('Needs improvement', 'mihdan-index-now'),
 			'readabilityNA'         => __('Readability analysis will run when content is available.', 'mihdan-index-now'),
 			/* translators: %1$s: Flesch score, %2$s: avg sentence length, %3$s: percentage of long sentences */
-			'readabilityDetail'     => __('Flesch score %1$s · avg. sentence %2$s words · %3$s%% long sentences', 'mihdan-index-now'),
+			'readabilityDetail'     => __('Flesch score %1$s · avg. sentence %2$s words · %3$s% long sentences', 'mihdan-index-now'),
 
 			/* Focus keyword duplicate warning */
 			/* translators: %1$s: post title, %2$s: edit link */

@@ -107,8 +107,9 @@ $cwp_ai_button = static function (string $target, string $field): void {
       <div class="cwp-label-row">
         <label class="cwp-label" for="cwpSlug"><?php esc_html_e('URL slug', 'mihdan-index-now'); ?></label>
       </div>
-      <input class="cwp-input" id="cwpSlug" name="<?php echo esc_attr(MetaFields::SEO_SLUG); ?>" type="text" value="<?php echo esc_attr($data['seo_slug'] ?: sanitize_title($post->post_title)); ?>">
-      <p class="cwp-hint"><?php echo esc_url($site_url); ?><b id="cwpSlugEcho"><?php echo esc_html($data['seo_slug'] ?: sanitize_title($post->post_title)); ?></b></p>
+      <?php $cwp_slug = $post->post_name ?: sanitize_title($post->post_title); ?>
+      <input class="cwp-input" id="cwpSlug" type="text" value="<?php echo esc_attr($cwp_slug); ?>">
+      <p class="cwp-hint"><?php echo esc_url($site_url); ?><b id="cwpSlugEcho"><?php echo esc_html($cwp_slug); ?></b></p>
     </div>
 
     <!-- Readability badge -->

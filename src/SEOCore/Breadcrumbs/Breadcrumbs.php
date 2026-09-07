@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore\Breadcrumbs;
 
 use Mihdan\IndexNow\SEOCore\Breadcrumbs\BreadcrumbSettings;
+use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 
 /**
  * Builds and renders HTML breadcrumbs for every public front-end context.
@@ -289,7 +290,10 @@ class Breadcrumbs
 			return;
 		}
 
-		$this->current = (string) single_post_title('', false);
+		/* An editor can override the crumb text in the SEO metabox. */
+		$label = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_BREADCRUMB);
+
+		$this->current = $label !== '' ? $label : (string) single_post_title('', false);
 
 		$this->add_post_type_archive_link($post->post_type);
 

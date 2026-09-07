@@ -7,7 +7,6 @@ class MetaFields
 	public const SEO_TITLE       = '_crawlwp_seo_title';
 	public const SEO_DESCRIPTION = '_crawlwp_seo_description';
 	public const FOCUS_KEYWORD   = '_crawlwp_focus_keyword';
-	public const SEO_SLUG        = '_crawlwp_seo_slug';
 
 	public const ROBOTS_INDEX    = '_crawlwp_robots_index';
 	public const ROBOTS_FOLLOW   = '_crawlwp_robots_follow';
@@ -49,7 +48,6 @@ class MetaFields
 		self::SEO_TITLE,
 		self::SEO_DESCRIPTION,
 		self::FOCUS_KEYWORD,
-		self::SEO_SLUG,
 		self::CANONICAL_URL,
 		self::OG_TITLE,
 		self::OG_DESCRIPTION,
@@ -151,7 +149,6 @@ class MetaFields
 			'seo_title'           => self::get($post_id, self::SEO_TITLE),
 			'seo_description'     => self::get($post_id, self::SEO_DESCRIPTION),
 			'focus_keyword'       => self::get($post_id, self::FOCUS_KEYWORD),
-			'seo_slug'            => self::get($post_id, self::SEO_SLUG),
 			'robots_index'        => self::get($post_id, self::ROBOTS_INDEX, 'index'),
 			'robots_follow'       => self::get($post_id, self::ROBOTS_FOLLOW, 'follow'),
 			'robots_advanced'     => self::get($post_id, self::ROBOTS_ADVANCED, []),

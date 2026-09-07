@@ -34,7 +34,8 @@
     $xTitle: null,
     $xDesc: null,
     $jsonPre: null,
-    $schemaType: null,
+    $pageType: null,
+    $articleType: null,
     $schemaHeadline: null,
     $schemaSection: null,
 
@@ -92,7 +93,8 @@
       this.$xDesc   = $('#cwpXDesc');
 
       this.$jsonPre        = $('#cwpJson');
-      this.$schemaType     = $('#cwpSchema');
+      this.$pageType       = $('#cwpPageType');
+      this.$articleType    = $('#cwpArticleType');
       this.$schemaHeadline = $('#cwpHeadline');
       this.$schemaSection  = $('#cwpSection');
     },
@@ -202,11 +204,13 @@
       /* focus keyword drives both analysis and suggested links */
       var _kwDebounce = null;
       $('#cwpKeyword').on('input', function() {
+        var keyword = $(this).val();
         self.emit('analyze');
         self.emit('renderLinks');
         clearTimeout(_kwDebounce);
         _kwDebounce = setTimeout(function() {
           self.checkDuplicateKeyword();
+          self.refreshSuggestedLinks(keyword);
         }, 600);
       });
 
@@ -227,9 +231,7 @@
       }
 
       /* schema type / fields update the preview */
-      if (this.$schemaType.length) {
-        this.$schemaType.on('change', function() { self.updateSchemaPreview(); });
-      }
+      this.$pageType.add(this.$articleType).on('change', function() { self.updateSchemaPreview(); });
       if (this.$schemaHeadline.length) this.$schemaHeadline.on('input', function() { self.updateSchemaPreview(); });
       if (this.$schemaSection.length) this.$schemaSection.on('input', function() { self.updateSchemaPreview(); });
 
@@ -342,13 +344,20 @@
       this.emit('sync');
     },
 
+    /* Mirrors FrontendOutput::output_schema(): the article type wins over the
+       page type unless it is set to "none". */
     updateSchemaPreview: function() {
       if (!this.$jsonPre.length) return;
-      var type = this.$schemaType.length ? this.$schemaType.val() : 'Article';
-      if (type === 'None \u2014 output nothing') {
+
+      var pageType    = (this.$pageType.length ? this.$pageType.val() : '') || 'WebPage';
+      var articleType = (this.$articleType.length ? this.$articleType.val() : '') || '';
+      var type        = (articleType && articleType !== 'none') ? articleType : pageType;
+
+      if (!type || type === 'none') {
         this.$jsonPre.text(crawlwpSEO.i18n.noStructuredData);
         return;
       }
+
       var headline = (this.$schemaHeadline.length && this.$schemaHeadline.val()) || this.resolve(this.$title.val()) || crawlwpSEO.postTitle;
       var section  = this.$schemaSection.length ? this.$schemaSection.val() : '';
       var schema = {
@@ -356,9 +365,13 @@
         '@type': type,
         'headline': headline
       };
+      if (crawlwpSEO.permalink) schema.url = crawlwpSEO.permalink;
       if (section) schema.articleSection = section;
-      schema.author = { '@type': 'Person', 'name': crawlwpSEO.author || '' };
-      schema.datePublished = new Date().toISOString().slice(0, 10);
+      if (crawlwpSEO.author) {
+        schema.author = { '@type': 'Person', 'name': crawlwpSEO.author };
+      }
+      if (crawlwpSEO.datePublished) schema.datePublished = crawlwpSEO.datePublished;
+      if (crawlwpSEO.dateModified)  schema.dateModified  = crawlwpSEO.dateModified;
       this.$jsonPre.text(JSON.stringify(schema, null, 2));
     },
 
@@ -1028,6 +1041,37 @@
           }
         });
       }
+    },
+
+    /* Suggestions are keyword-driven, so refetch them whenever the focus
+       keyword changes instead of waiting for a page reload. */
+    _suggestReq: 0,
+
+    refreshSuggestedLinks: function(keyword) {
+      var self = this;
+
+      if (!crawlwpSEO.postId || !crawlwpSEO.suggestedNonce) return;
+
+      var token = ++this._suggestReq;
+
+      $.ajax({
+        url: crawlwpSEO.ajaxUrl,
+        type: 'POST',
+        data: {
+          action: 'crawlwp_suggested_links',
+          nonce: crawlwpSEO.suggestedNonce,
+          keyword: $.trim(keyword || ''),
+          post_id: crawlwpSEO.postId
+        },
+        success: function(resp) {
+          /* Ignore responses that a newer request has already superseded. */
+          if (token !== self._suggestReq) return;
+          if (resp.success && resp.data && $.isArray(resp.data.links)) {
+            crawlwpSEO.suggestedLinks = resp.data.links;
+            self.emit('renderLinks');
+          }
+        }
+      });
     },
 
     /* ---------- readability badge ---------- */

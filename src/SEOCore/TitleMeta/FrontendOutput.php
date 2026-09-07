@@ -234,8 +234,20 @@ class FrontendOutput
 
 		/* When "Remove site title from social titles" is on and no custom social title is set,
 		 * strip the separator + site name from the generated title for social use. */
-		$og_title_base = $social_title !== '' ? $social_title : $this->maybe_strip_site_name($title);
-		$x_title_base  = $og_title_base;
+		$og_title_base       = $social_title !== '' ? $social_title : $this->maybe_strip_site_name($title);
+		$og_description_base = $social_description !== '' ? $social_description : $description;
+
+		/* X/Twitter can carry its own copy; it falls back to the OG values. */
+		$x_title = isset($overrides['x_title'])
+			? Variables::replace($overrides['x_title'], $context)
+			: '';
+
+		$x_description = isset($overrides['x_description'])
+			? Variables::replace($overrides['x_description'], $context)
+			: '';
+
+		$x_title_base       = $x_title !== '' ? $x_title : $og_title_base;
+		$x_description_base = $x_description !== '' ? $x_description : $og_description_base;
 
 		$canonical = $this->canonical($post, $overrides);
 
@@ -258,10 +270,10 @@ class FrontendOutput
 			'robots'         => $this->robots($entity_key, $prefix, $post),
 			'canonical'      => $canonical,
 			'og_title'       => $og_title_base,
-			'og_description' => $social_description !== '' ? $social_description : $description,
+			'og_description' => $og_description_base,
 			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post),
 			'x_title'        => $x_title_base,
-			'x_description'  => $social_description !== '' ? $social_description : $description,
+			'x_description'  => $x_description_base,
 			'x_image'        => $this->image($entity_key, $prefix, 'x_image', $post),
 			'og_type'        => $post !== null && ! is_front_page() ? 'article' : 'website',
 		];
@@ -390,6 +402,11 @@ class FrontendOutput
 
 	/**
 	 * Non-empty per-post metabox values, keyed like the global fields.
+	 *
+	 * The two "use the SEO title/description" and "use the Facebook values"
+	 * toggles disable their fields in the editor, so a previously saved value
+	 * is never re-submitted. Honour the flags here, otherwise that stale value
+	 * would keep winning on the frontend.
 	 */
 	private function post_overrides(int $post_id): array
 	{
@@ -402,6 +419,14 @@ class FrontendOutput
 			'x_description'  => MetaFields::X_DESCRIPTION,
 			'canonical_url'  => MetaFields::CANONICAL_URL,
 		];
+
+		if (MetaFields::get($post_id, MetaFields::OG_SYNC) === '1') {
+			unset($map['og_title'], $map['og_description']);
+		}
+
+		if (MetaFields::get($post_id, MetaFields::X_SYNC) === '1') {
+			unset($map['x_title'], $map['x_description']);
+		}
 
 		$overrides = [];
 
@@ -457,6 +482,8 @@ class FrontendOutput
 					}
 				}
 			}
+
+			$directives = array_merge($directives, $this->preview_directives($post));
 		}
 
 		$directives = array_values(array_unique($directives));
@@ -468,6 +495,36 @@ class FrontendOutput
 		 * @param string   $entity_key  The matched entity key.
 		 */
 		return (array) apply_filters('crawlwp_robots_directives', $directives, $entity_key);
+	}
+
+	/**
+	 * Per-post snippet and image preview limits.
+	 *
+	 * The metabox lets an editor cap how much of a post Google may show in the
+	 * result snippet and how large the image preview may be. Both map onto the
+	 * `max-snippet:` / `max-image-preview:` robots directives.
+	 *
+	 * @return string[]
+	 */
+	private function preview_directives(\WP_Post $post): array
+	{
+		$directives = [];
+
+		$snippet = (string) MetaFields::get($post->ID, MetaFields::MAX_SNIPPET);
+
+		if ($snippet === 'none') {
+			$directives[] = 'max-snippet:0';
+		} elseif ($snippet !== '' && is_numeric($snippet)) {
+			$directives[] = 'max-snippet:' . (int) $snippet;
+		}
+
+		$image = (string) MetaFields::get($post->ID, MetaFields::MAX_IMAGE);
+
+		if (in_array($image, ['none', 'standard', 'large'], true)) {
+			$directives[] = 'max-image-preview:' . $image;
+		}
+
+		return $directives;
 	}
 
 	/**
