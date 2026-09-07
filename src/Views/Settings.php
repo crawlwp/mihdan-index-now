@@ -8,6 +8,7 @@
 namespace Mihdan\IndexNow\Views;
 
 use Mihdan\IndexNow\Logger\Logger;
+use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 use Mihdan\IndexNow\Utils;
 
 /**
@@ -127,13 +128,14 @@ class Settings
 	{
 		if (wp_doing_ajax()) return;
 
-		// doing this so Indexing tab page comes before Advanced.
+		$priority = FeatureGate::is_enabled() ? 6 : 1;
+
 		add_action('crawlwp_pre_setup_fields', function ($wposa) {
 			$wposa->add_header_menu([
 				'id'    => 'index_settings',
 				'title' => __('Indexing', 'mihdan-index-now'),
 			]);
-		}, 1);
+		}, $priority);
 
 		do_action('crawlwp_pre_setup_fields', $this->wposa, $this);
 
