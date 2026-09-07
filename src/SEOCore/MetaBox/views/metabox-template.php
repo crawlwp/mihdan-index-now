@@ -34,9 +34,6 @@ $cwp_ai_button = static function (string $target, string $field): void {
     </button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="advanced" type="button"><?php esc_html_e('Advanced', 'mihdan-index-now'); ?></button>
     <?php if (! defined('CRAWLWP_PRO_VERSION')) : ?>
-    <!-- Insights lives in mihdan-index-now-pro when active (via the crawlwp_metabox_tabs
-         hook below). Without pro, we still show the tab so users discover the feature,
-         but its panel is an upsell rather than real data. -->
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="insights" type="button">
       <?php esc_html_e('Insights', 'mihdan-index-now'); ?> <span class="cwp-pro-badge"><?php esc_html_e('PRO', 'mihdan-index-now'); ?></span>
     </button>

@@ -355,7 +355,7 @@
 .cwp-btn-primary{background:var(--cwp-accent);border-color:var(--cwp-accent);color:#fff;font-weight:600;}
 .cwp-btn-primary:hover{background:var(--cwp-accent-dark);border-color:var(--cwp-accent-dark);}
 .cwp-btn-link{border:0;background:none;color:var(--cwp-blue);padding:6px 0;}
-.cwp-btn-link:hover{background:none;text-decoration:underline;}
+.cwp-btn-link:hover{background:none !important;text-decoration:underline !important;}
 .cwp-btn:focus-visible{outline:2px solid var(--cwp-blue);outline-offset:1px;}
 .cwp-btn-primary.is-loading{opacity:.7;cursor:wait;}
 

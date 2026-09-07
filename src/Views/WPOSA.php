@@ -1615,14 +1615,6 @@ class WPOSA
 		return ob_get_clean();
 	}
 
-	/**
-	 * Tabbable JavaScript codes & Initiate Color Picker.
-	 *
-	 * Previously contained 200 lines of inline JS; now the JS lives in
-	 * src/Views/assets/admin.js and is enqueued via admin_scripts() with
-	 * dynamic values passed through wp_localize_script( 'crawlwp-admin', … ).
-	 * This method is kept as a no-op so callers (show_forms) don't break.
-	 */
 	public function script()
 	{
 		// All JS is now in assets/admin.js — nothing to output inline.
