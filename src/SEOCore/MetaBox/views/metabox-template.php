@@ -33,6 +33,14 @@ $cwp_ai_button = static function (string $target, string $field): void {
       <?php esc_html_e('Links', 'mihdan-index-now'); ?> <span class="cwp-dot cwp-dot-links" title="<?php esc_attr_e('No internal links yet', 'mihdan-index-now'); ?>" hidden></span>
     </button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="advanced" type="button"><?php esc_html_e('Advanced', 'mihdan-index-now'); ?></button>
+    <?php if (! defined('CRAWLWP_PRO_VERSION')) : ?>
+    <!-- Insights lives in mihdan-index-now-pro when active (via the crawlwp_metabox_tabs
+         hook below). Without pro, we still show the tab so users discover the feature,
+         but its panel is an upsell rather than real data. -->
+    <button class="cwp-tab" role="tab" aria-selected="false" data-panel="insights" type="button">
+      <?php esc_html_e('Insights', 'mihdan-index-now'); ?> <span class="cwp-pro-badge"><?php esc_html_e('PRO', 'mihdan-index-now'); ?></span>
+    </button>
+    <?php endif; ?>
     <?php
     /**
      * Fires inside the SEO metabox tab bar, right after the "Advanced" tab.
@@ -625,6 +633,29 @@ $cwp_ai_button = static function (string $target, string $field): void {
 
     <div class="cwp-checklist" id="cwpChecklist"></div>
   </div>
+
+  <?php if (! defined('CRAWLWP_PRO_VERSION')) : ?>
+  <!-- INSIGHTS (upsell — the real panel is rendered by mihdan-index-now-pro
+       via the crawlwp_metabox_panels hook below when that plugin is active) -->
+  <div class="cwp-panel" id="cwp-panel-insights" role="tabpanel">
+    <div class="cwp-insights-upsell">
+      <div class="cwp-insights-upsell__icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 5-7"/></svg>
+      </div>
+      <h4 class="cwp-insights-upsell__title"><?php esc_html_e('Search performance insights, right in this editor', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-insights-upsell__desc"><?php esc_html_e('See this page\'s real clicks, impressions, average position and indexing status across Google, Bing and Yandex, plus its top search queries, without ever leaving the post editor.', 'mihdan-index-now'); ?></p>
+      <ul class="cwp-insights-upsell__list">
+        <li><?php esc_html_e('Clicks, impressions, average position and CTR for every search engine', 'mihdan-index-now'); ?></li>
+        <li><?php esc_html_e('Top search queries driving traffic to this exact page', 'mihdan-index-now'); ?></li>
+        <li><?php esc_html_e('Live indexing status and last crawl date for Google, Bing and Yandex', 'mihdan-index-now'); ?></li>
+      </ul>
+      <a class="cwp-btn cwp-btn-primary cwp-insights-upsell__cta" target="_blank" rel="noopener noreferrer" href="<?php echo esc_url('https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-metabox-insights-upsell'); ?>">
+        <?php esc_html_e('Upgrade to CrawlWP Premium', 'mihdan-index-now'); ?>
+      </a>
+      <p class="cwp-insights-upsell__note"><?php esc_html_e('Already have CrawlWP Premium? Make sure it\'s activated to see real data here.', 'mihdan-index-now'); ?></p>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <?php
   /**

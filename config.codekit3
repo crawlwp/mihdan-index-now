@@ -33,6 +33,25 @@
       "oAP" : "\/.gitignore",
       "oF" : 0
     },
+    "\/AGENTS.md" : {
+      "cB" : 0,
+      "cS" : 0,
+      "eF" : 1,
+      "eL" : 1,
+      "ema" : 1,
+      "eSQ" : 1,
+      "ft" : 4096,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/AGENTS.html",
+      "oF" : 0,
+      "oFM" : 0,
+      "oS" : 0,
+      "pHT" : 0,
+      "pME" : 1,
+      "rFN" : 0,
+      "uCM" : 0
+    },
     "\/assets\/images\/crawlwp-bing-top-section-stat.png" : {
       "ft" : 32768,
       "iS" : 870895,
@@ -410,12 +429,126 @@
       "oAP" : "\/src\/SearchEngineInterface.php",
       "oF" : 0
     },
-    "\/src\/SEOCore\/CoreSettings.php" : {
+    "\/src\/SEOCore\/AdvancedSettings.php" : {
       "cB" : 0,
       "ft" : 8192,
       "hM" : 0,
       "oA" : 0,
-      "oAP" : "\/src\/SEOCore\/CoreSettings.php",
+      "oAP" : "\/src\/SEOCore\/AdvancedSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/AI\/Generator.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/AI\/Generator.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Breadcrumbs\/assets\/breadcrumbs.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Breadcrumbs\/assets\/breadcrumbs.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/Breadcrumbs\/Breadcrumbs.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Breadcrumbs\/Breadcrumbs.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Breadcrumbs\/BreadcrumbSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Breadcrumbs\/BreadcrumbSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/BulkEditor\/assets\/bulk-editor.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/BulkEditor\/assets\/bulk-editor.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/BulkEditor\/assets\/bulk-editor.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/BulkEditor\/assets\/bulk-editor.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
+    "\/src\/SEOCore\/BulkEditor\/BulkEditorSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/BulkEditor\/BulkEditorSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/CoreSettings\/Assets.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/CoreSettings\/Assets.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/CoreSettings\/assets\/crawlwp-title-meta.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/CoreSettings\/assets\/crawlwp-title-meta.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/CoreSettings\/assets\/crawlwp-title-meta.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/CoreSettings\/assets\/crawlwp-title-meta.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
+    "\/src\/SEOCore\/CoreSettings\/CoreSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/CoreSettings\/CoreSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/FeatureGate\/FeatureGate.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/FeatureGate\/FeatureGate.php",
       "oF" : 0
     },
     "\/src\/SEOCore\/GetInstanceTrait.php" : {
@@ -426,12 +559,234 @@
       "oAP" : "\/src\/SEOCore\/GetInstanceTrait.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/Integrations\/WooCommerce.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Integrations\/WooCommerce.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/Assets.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/Assets.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/assets\/crawlwp-metabox.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/assets\/crawlwp-metabox.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/assets\/crawlwp-metabox.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/assets\/crawlwp-metabox.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/FrontendHead.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/FrontendHead.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/MetaBox.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/MetaBox.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/MetaFields.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/MetaFields.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/PostListColumn.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/PostListColumn.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/MetaBox\/views\/metabox-template.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/views\/metabox-template.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Notifications\/Notifications.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Notifications\/Notifications.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/assets\/redirects.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/assets\/redirects.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/assets\/redirects.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/assets\/redirects.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/PermalinkTracker.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/PermalinkTracker.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/RedirectsManager.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/RedirectsManager.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/RedirectsProcessor.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/RedirectsProcessor.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/RedirectsSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/RedirectsSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/RobotsSettings\/RobotsSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/RobotsSettings\/RobotsSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/RssSettings\/RssSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/RssSettings\/RssSettings.php",
+      "oF" : 0
+    },
     "\/src\/SEOCore\/SEOCoreInit.php" : {
       "cB" : 0,
       "ft" : 8192,
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/src\/SEOCore\/SEOCoreInit.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/SiteInfoSettings\/SiteInfoSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SiteInfoSettings\/SiteInfoSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Sitemap.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Sitemap.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Sitemap\/Polylang.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Sitemap\/Polylang.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Sitemap\/TranslatePress.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Sitemap\/TranslatePress.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Sitemap\/WPML.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Sitemap\/WPML.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/SitemapSettings\/CustomUrlsSitemapProvider.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SitemapSettings\/CustomUrlsSitemapProvider.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/SitemapSettings\/NewsSitemapProvider.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SitemapSettings\/NewsSitemapProvider.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/SitemapSettings\/SitemapSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SitemapSettings\/SitemapSettings.php",
       "oF" : 0
     },
     "\/src\/SEOCore\/SiteVerification\/SiteVerificationFrontendOutput.php" : {
@@ -450,6 +805,54 @@
       "oAP" : "\/src\/SEOCore\/SiteVerification\/SiteVerificationSettings.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/SocialSettings\/SocialSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SocialSettings\/SocialSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/SocialSettings\/UserProfile.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SocialSettings\/UserProfile.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/TitleMeta\/Entities.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/TitleMeta\/Entities.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/TitleMeta\/FrontendOutput.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/TitleMeta\/FrontendOutput.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/TitleMeta\/Options.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/TitleMeta\/Options.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/TitleMeta\/Variables.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/TitleMeta\/Variables.php",
+      "oF" : 0
+    },
     "\/src\/Utils.php" : {
       "cB" : 0,
       "ft" : 8192,
@@ -457,6 +860,29 @@
       "oA" : 0,
       "oAP" : "\/src\/Utils.php",
       "oF" : 0
+    },
+    "\/src\/Views\/assets\/admin.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/Views\/assets\/admin.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/Views\/assets\/admin.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/Views\/assets\/admin.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
     },
     "\/src\/Views\/Log_List_Table.php" : {
       "cB" : 0,
