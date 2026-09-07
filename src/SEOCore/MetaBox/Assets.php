@@ -572,7 +572,7 @@ class Assets
 		 * Trigger the same action the plugin fires when a post is updated,
 		 * so all registered IndexNow providers will ping the URL.
 		 */
-		do_action('crawlwp/post_added', $post->ID, $post);
+		do_action('crawlwp/post_updated', $post->ID, $post);
 
 		$timestamp = time();
 		update_post_meta($post_id, '_crawlwp_last_indexnow', $timestamp);

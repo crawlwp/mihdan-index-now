@@ -140,10 +140,6 @@ class Main
 			add_action('wp_ajax_dismiss_admin_notice', ['\Mihdan\IndexNow\Dependencies\PAnD', 'dismiss_admin_notice']);
 		}
 
-		/** @todo */
-		//add_filter( 'post_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
-		//add_filter( 'page_row_actions', [ $this, 'post_row_actions' ], 10, 2 );
-
 		// Add last update column.
 		if ($this->wposa->get_option('show_last_update_column', 'general', 'on') === 'on') {
 			foreach ((array)$this->wposa->get_option('post_types', 'general', []) as $post_type) {
@@ -236,25 +232,6 @@ class Main
 		}
 
 		echo esc_html(date('d.m.Y H:i', $last_update));
-	}
-
-	public function post_row_actions(array $actions, WP_Post $post): array
-	{
-		if (!in_array($post->post_type, (array)$this->wposa->get_option('post_types', 'general', []), true)) {
-			return $actions;
-		}
-
-		if (!is_post_publicly_viewable($post)) {
-			return $actions;
-		}
-
-		$actions['index_now'] = sprintf(
-			'<a title="%s" href="%s">IndexNow</a>',
-			esc_attr(__('Notify the search engine', 'mihdan-index-now')),
-			1
-		);
-
-		return $actions;
 	}
 
 	/**
