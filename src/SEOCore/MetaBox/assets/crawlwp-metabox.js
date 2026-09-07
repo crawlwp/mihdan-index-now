@@ -54,7 +54,6 @@
       this.watchPostSlug();
       this.watchPostContent();
       this.watchFeaturedImage();
-      this.initInsights();
 
       /* initial paint */
       this.emit('measure');
@@ -138,6 +137,11 @@
         /* re-scan when switching to links/analysis */
         if ($(this).data('panel') === 'links') self.emit('renderLinks');
         if ($(this).data('panel') === 'analysis') self.emit('analyze');
+
+        /* Notify add-on plugins (e.g. mihdan-index-now-pro) that a tab
+           became active, so they can lazy-load their own panel's data
+           instead of fetching it on every page load. */
+        $(document).trigger('crawlwp:metabox:tabActivated', [$(this).data('panel')]);
       });
 
       /* social sub-tabs */
@@ -1479,158 +1483,6 @@
       if ($cache.length && total > 0) {
         $cache.val(pct);
       }
-    },
-
-    /* ---------- insights panel (pro only) ---------- */
-    initInsights: function() {
-      if (!crawlwpSEO.isProActive) return;
-
-      var self = this;
-      var $insightsPeriod = $('#cwpInsightsPeriod');
-      var _insightsLoading = false;
-      var _insightsCache = {};
-      var _currentEngine = 'google';
-      var engineLabels = { google: 'Google', bing: 'Bing', yandex: 'Yandex' };
-      var L = crawlwpSEO.i18n;
-
-      function populateInsightsForEngine(data, engine) {
-        var label = engineLabels[engine] || engine;
-        $('#cwpInsClicks').text(data.clicks !== undefined ? Number(data.clicks).toLocaleString() : '\u2014');
-        $('#cwpInsImpressions').text(data.impressions !== undefined ? Number(data.impressions).toLocaleString() : '\u2014');
-        $('#cwpInsPosition').text(data.position !== undefined ? Number(data.position).toFixed(1) : '\u2014');
-        $('#cwpInsCTR').text(data.ctr !== undefined ? (Number(data.ctr) * 100).toFixed(1) + '%' : '\u2014');
-
-        /* Update keywords description */
-        $('#cwpKeywordsDesc').text(self.fmt(L.insightsQueriesDesc, label));
-
-        /* keywords table */
-        var $tbody = $('#cwpInsightsKeywordsBody');
-        if ($tbody.length && data.keywords && data.keywords.length > 0) {
-          $tbody.empty();
-          $.each(data.keywords, function(i, kw) {
-            var $tr = $('<tr>').html(
-              '<td>' + self.escHtml(kw.keyword) + '</td>' +
-              '<td>' + (kw.clicks || 0) + '</td>' +
-              '<td>' + (kw.impressions || 0) + '</td>' +
-              '<td>' + (kw.position ? Number(kw.position).toFixed(1) : '\u2014') + '</td>' +
-              '<td>' + (kw.ctr ? (Number(kw.ctr) * 100).toFixed(1) + '%' : '\u2014') + '</td>'
-            );
-            $tbody.append($tr);
-          });
-        } else if ($tbody.length && (!data.keywords || data.keywords.length === 0)) {
-          $tbody.html('<tr><td colspan="5" class="cwp-empty-msg">' + L.insightsNoKw + '</td></tr>');
-        }
-
-        /* indexing status: null means "unavailable" (e.g. pro plugin/API not
-           connected for this engine) and must not be shown as "Not indexed". */
-        $('#cwpEngineIndexLabel').text(self.fmt(L.insightsIndex, label));
-        var $engineIndex = $('#cwpEngineIndex');
-        if ($engineIndex.length && data.indexStatus !== undefined) {
-          if (data.indexStatus === null) {
-            $engineIndex.text(L.insightsUnknown).attr('class', 'cwp-chip');
-          } else {
-            $engineIndex.text(data.indexStatus ? L.indexed : L.notIndexed)
-              .attr('class', 'cwp-chip ' + (data.indexStatus ? 'is-good' : 'is-warn'));
-          }
-        }
-        $('#cwpLastCrawled').text(data.lastCrawled || L.insightsUnknown);
-        $('#cwpIndexNowStatus').text(data.indexNowSubmitted || L.insightsUnknown);
-      }
-
-      function loadInsights(days) {
-        var postId = crawlwpSEO.postId || 0;
-        if (!postId) {
-          $('#cwpInsightsNoticeText').text(L.savPostFirst);
-          return;
-        }
-
-        if (_insightsLoading) return;
-        _insightsLoading = true;
-
-        /* Show loading state */
-        var cardIds = ['cwpInsClicks', 'cwpInsImpressions', 'cwpInsPosition', 'cwpInsCTR'];
-        $.each(cardIds, function(i, id) {
-          $('#' + id).text('\u2026');
-        });
-
-        $.ajax({
-          url: crawlwpSEO.ajaxUrl,
-          type: 'POST',
-          data: {
-            action: 'crawlwp_load_insights',
-            nonce: crawlwpSEO.insightsNonce,
-            post_id: postId,
-            days: parseInt(days, 10)
-          },
-          success: function(response) {
-            _insightsLoading = false;
-            if (response.success && response.data) {
-              if (response.data.engines) {
-                _insightsCache = response.data.engines;
-                var engineData = _insightsCache[_currentEngine] || {};
-                populateInsightsForEngine(engineData, _currentEngine);
-              } else {
-                /* Legacy flat format — treat as google */
-                _insightsCache = { google: response.data };
-                populateInsightsForEngine(response.data, _currentEngine);
-              }
-            }
-          },
-          error: function() {
-            _insightsLoading = false;
-            $.each(cardIds, function(i, id) {
-              $('#' + id).text('\u2014');
-            });
-          }
-        });
-
-        /* Also fire custom event for additional pro plugin listeners */
-        $(document).trigger('crawlwp:loadInsights', {
-          permalink: crawlwpSEO.permalink || '',
-          days: parseInt(days, 10)
-        });
-      }
-
-      /* Engine tab switching */
-      var $engineTabs = this.$mb.find('.cwp-engine-tab');
-      $engineTabs.on('click', function() {
-        $engineTabs.removeClass('is-active');
-        $(this).addClass('is-active');
-        _currentEngine = $(this).data('engine');
-        if (_insightsCache[_currentEngine]) {
-          populateInsightsForEngine(_insightsCache[_currentEngine], _currentEngine);
-        } else {
-          var period = $insightsPeriod.length ? $insightsPeriod.val() : '28';
-          loadInsights(period);
-        }
-      });
-
-      if ($insightsPeriod.length) {
-        $insightsPeriod.on('change', function() {
-          _insightsCache = {};
-          loadInsights($insightsPeriod.val());
-        });
-      }
-
-      /* Also listen for insights data from the pro plugin via custom event */
-      $(document).on('crawlwp:insightsData', function(e, detail) {
-        if (detail) {
-          if (detail.engines) {
-            _insightsCache = detail.engines;
-            populateInsightsForEngine(_insightsCache[_currentEngine] || {}, _currentEngine);
-          } else {
-            populateInsightsForEngine(detail, _currentEngine);
-          }
-        }
-      });
-
-      /* load insights when switching to the tab */
-      this.$mb.find('.cwp-tab').on('click', function() {
-        if ($(this).data('panel') === 'insights') {
-          var period = $insightsPeriod.length ? $insightsPeriod.val() : '28';
-          loadInsights(period);
-        }
-      });
     }
 
   };
