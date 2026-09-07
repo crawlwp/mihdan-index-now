@@ -21,12 +21,10 @@
     $mb: null,
     TOKENS: {},
     ctx: null,
-    _slugSyncLock: false,
 
     /* cached fields (populated in cacheElements) */
     $title: null,
     $desc: null,
-    $slug: null,
     $fbSync: null,
     $fbTitle: null,
     $fbDesc: null,
@@ -82,7 +80,6 @@
     cacheElements: function() {
       this.$title = $('#cwpTitle');
       this.$desc  = $('#cwpDesc');
-      this.$slug  = $('#cwpSlug');
 
       this.$fbSync  = $('#cwpFbSync');
       this.$fbTitle = $('#cwpFbTitle');
@@ -199,11 +196,6 @@
         self.emit('sync');
         self.emit('analyze');
       });
-      this.$slug.on('input', function() {
-        self.emit('sync');
-        self.pushSlugToWP(self.$slug.val());
-        self.emit('analyze');
-      });
 
       /* focus keyword drives both analysis and suggested links */
       var _kwDebounce = null;
@@ -316,8 +308,7 @@
       $('#cwpSerpDesc').text(d);
 
       var urlParts = crawlwpSEO.siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-      $('#cwpSerpUrl').text(urlParts + ' \u203a ' + (this.$slug.val() || '\u2026'));
-      $('#cwpSlugEcho').text(this.$slug.val() || '\u2026');
+      $('#cwpSerpUrl').text(urlParts + ' \u203a ' + (this.getSlug() || '\u2026'));
 
       /* social mirrors */
       var fbT = this.$fbSync.prop('checked') ? t : (this.$fbTitle.val() || t);
@@ -379,18 +370,24 @@
       this.$jsonPre.text(JSON.stringify(schema, null, 2));
     },
 
-    /* ---------- slug push (metabox -> WP) ---------- */
-    pushSlugToWP: function(val) {
-      this._slugSyncLock = true;
-      /* Classic editor */
-      $('#post_name').val(val);
-      $('#editable-post-name').text(val);
-      $('#editable-post-name-full').text(val);
+    /* ---------- read the current slug straight from WP (no metabox field) ---------- */
+    getSlug: function() {
       /* Gutenberg */
-      if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
-        wp.data.dispatch('core/editor').editPost({ slug: val });
+      if (typeof wp !== 'undefined' && wp.data && wp.data.select && wp.data.select('core/editor')) {
+        var sel = wp.data.select('core/editor');
+        var slug = sel ? sel.getEditedPostAttribute('slug') : '';
+        if (slug) return slug;
       }
-      this._slugSyncLock = false;
+      /* Classic editor: #post_name input (permalink editor) */
+      var $wpSlug = $('#post_name');
+      if ($wpSlug.length && $wpSlug.val()) return $wpSlug.val();
+      /* Classic editor: read-only permalink display */
+      var editSlug = document.getElementById('editable-post-name');
+      if (editSlug) {
+        var text = $.trim($(editSlug).text());
+        if (text) return text;
+      }
+      return '';
     },
 
     /* ---------- watch WP post title -> metabox ---------- */
@@ -428,7 +425,10 @@
       }
     },
 
-    /* ---------- two-way slug sync (WP -> metabox) ---------- */
+    /* ---------- watch WP's own slug controls -> refresh previews ---------- */
+    /* There is no metabox slug field anymore (removed) -- the search preview
+       reads the slug live via getSlug(), so this just needs to know when to
+       refresh it. */
     watchPostSlug: function() {
       var self = this;
 
@@ -436,21 +436,12 @@
       var wpSlugInput = document.getElementById('post_name');
       if (wpSlugInput) {
         new MutationObserver(function() {
-          if (self._slugSyncLock) return;
-          var val = wpSlugInput.value;
-          if (val && val !== self.$slug.val()) {
-            self.$slug.val(val);
-            self.emit('sync');
-            self.emit('analyze');
-          }
+          self.emit('sync');
+          self.emit('analyze');
         }).observe(wpSlugInput, { attributes: true, attributeFilter: ['value'] });
         $(wpSlugInput).on('change', function() {
-          if (self._slugSyncLock) return;
-          if (wpSlugInput.value && wpSlugInput.value !== self.$slug.val()) {
-            self.$slug.val(wpSlugInput.value);
-            self.emit('sync');
-            self.emit('analyze');
-          }
+          self.emit('sync');
+          self.emit('analyze');
         });
       }
 
@@ -458,27 +449,20 @@
       var editSlug = document.getElementById('editable-post-name');
       if (editSlug) {
         new MutationObserver(function() {
-          if (self._slugSyncLock) return;
-          var val = $.trim($(editSlug).text());
-          if (val && val !== self.$slug.val()) {
-            self.$slug.val(val);
-            self.emit('sync');
-            self.emit('analyze');
-          }
+          self.emit('sync');
+          self.emit('analyze');
         }).observe(editSlug, { childList: true, characterData: true, subtree: true });
       }
 
       /* Gutenberg */
       if (typeof wp !== 'undefined' && wp.data && wp.data.subscribe && wp.data.select('core/editor')) {
-        var lastSlug = this.$slug.val();
+        var lastSlug = this.getSlug();
         wp.data.subscribe(function() {
-          if (self._slugSyncLock) return;
           var sel = wp.data.select('core/editor');
           if (!sel) return;
           var newSlug = sel.getEditedPostAttribute('slug');
           if (newSlug !== undefined && newSlug !== lastSlug) {
             lastSlug = newSlug;
-            self.$slug.val(newSlug);
             self.emit('sync');
             self.emit('analyze');
           }
@@ -1262,7 +1246,7 @@
 
       var seoTitle = this.resolve(this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}').toLowerCase();
       var seoDesc = this.resolve(this.$desc.val() || '').toLowerCase();
-      var slugVal = (this.$slug.val() || '').toLowerCase();
+      var slugVal = (this.getSlug() || '').toLowerCase();
       var parsed = this.parseLinks(html);
 
       /* extract headings */
