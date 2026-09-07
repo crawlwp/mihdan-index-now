@@ -418,7 +418,8 @@ $cwp_ai_button = static function (string $target, string $field): void {
 
       <div class="cwp-field">
         <div class="cwp-label-row"><label class="cwp-label" for="cwpSection"><?php esc_html_e('Article section', 'mihdan-index-now'); ?></label></div>
-        <input class="cwp-input" id="cwpSection" name="<?php echo esc_attr(MetaFields::SCHEMA_SECTION); ?>" type="text" value="<?php echo esc_attr($data['schema_section']); ?>">
+        <input class="cwp-input" id="cwpSection" name="<?php echo esc_attr(MetaFields::SCHEMA_SECTION); ?>" type="text" value="<?php echo esc_attr($data['schema_section']); ?>" placeholder="<?php esc_attr_e('e.g. Reviews, Tutorials, News', 'mihdan-index-now'); ?>">
+        <p class="cwp-hint"><?php esc_html_e('The main category or topic this article belongs to, e.g. "Reviews" or "Tutorials". Only used when the type is an Article.', 'mihdan-index-now'); ?></p>
       </div>
     </div>
 

@@ -1521,15 +1521,20 @@
           $tbody.html('<tr><td colspan="5" class="cwp-empty-msg">' + L.insightsNoKw + '</td></tr>');
         }
 
-        /* indexing status */
+        /* indexing status: null means "unavailable" (e.g. pro plugin/API not
+           connected for this engine) and must not be shown as "Not indexed". */
         $('#cwpEngineIndexLabel').text(self.fmt(L.insightsIndex, label));
         var $engineIndex = $('#cwpEngineIndex');
         if ($engineIndex.length && data.indexStatus !== undefined) {
-          $engineIndex.text(data.indexStatus ? L.indexed : L.notIndexed)
-            .attr('class', 'cwp-chip ' + (data.indexStatus ? 'is-good' : 'is-warn'));
+          if (data.indexStatus === null) {
+            $engineIndex.text(L.insightsUnknown).attr('class', 'cwp-chip');
+          } else {
+            $engineIndex.text(data.indexStatus ? L.indexed : L.notIndexed)
+              .attr('class', 'cwp-chip ' + (data.indexStatus ? 'is-good' : 'is-warn'));
+          }
         }
-        if (data.lastCrawled) $('#cwpLastCrawled').text(data.lastCrawled);
-        if (data.indexNowSubmitted) $('#cwpIndexNowStatus').text(data.indexNowSubmitted);
+        $('#cwpLastCrawled').text(data.lastCrawled || L.insightsUnknown);
+        $('#cwpIndexNowStatus').text(data.indexNowSubmitted || L.insightsUnknown);
       }
 
       function loadInsights(days) {

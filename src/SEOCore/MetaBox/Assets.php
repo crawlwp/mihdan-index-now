@@ -114,51 +114,9 @@ class Assets
 
 		$data = [
 			'engines' => [
-				'google' => [
-					'clicks'      => 1247,
-					'impressions' => 18340,
-					'position'    => 12.4,
-					'ctr'         => 0.068,
-					'keywords'    => [
-						['keyword' => 'wordpress seo plugin',    'clicks' => 312, 'impressions' => 4520, 'position' => 8.2,  'ctr' => 0.069],
-						['keyword' => 'index now wordpress',     'clicks' => 245, 'impressions' => 3100, 'position' => 5.6,  'ctr' => 0.079],
-						['keyword' => 'search engine indexing',  'clicks' => 198, 'impressions' => 2980, 'position' => 11.3, 'ctr' => 0.066],
-						['keyword' => 'crawlwp seo',             'clicks' => 156, 'impressions' => 2150, 'position' => 3.1,  'ctr' => 0.073],
-						['keyword' => 'seo meta tags wordpress', 'clicks' => 134, 'impressions' => 1890, 'position' => 14.7, 'ctr' => 0.071],
-					],
-					'indexStatus'       => true,
-					'lastCrawled'       => gmdate('j M Y', strtotime('-2 days')),
-					'indexNowSubmitted' => gmdate('j M Y', strtotime('-1 day')),
-				],
-				'bing' => [
-					'clicks'      => 384,
-					'impressions' => 6120,
-					'position'    => 9.7,
-					'ctr'         => 0.063,
-					'keywords'    => [
-						['keyword' => 'wordpress seo plugin',   'clicks' => 98,  'impressions' => 1540, 'position' => 6.4,  'ctr' => 0.064],
-						['keyword' => 'index now wordpress',    'clicks' => 76,  'impressions' => 1120, 'position' => 8.1,  'ctr' => 0.068],
-						['keyword' => 'bing indexing api',       'clicks' => 65,  'impressions' => 980,  'position' => 4.3,  'ctr' => 0.066],
-						['keyword' => 'instant indexing plugin', 'clicks' => 52,  'impressions' => 890,  'position' => 11.2, 'ctr' => 0.058],
-					],
-					'indexStatus'       => true,
-					'lastCrawled'       => gmdate('j M Y', strtotime('-3 days')),
-					'indexNowSubmitted' => gmdate('j M Y', strtotime('-1 day')),
-				],
-				'yandex' => [
-					'clicks'      => 215,
-					'impressions' => 4280,
-					'position'    => 15.3,
-					'ctr'         => 0.050,
-					'keywords'    => [
-						['keyword' => 'wordpress seo плагин',      'clicks' => 62, 'impressions' => 1080, 'position' => 12.1, 'ctr' => 0.057],
-						['keyword' => 'yandex indexnow protocol',  'clicks' => 48, 'impressions' => 940,  'position' => 7.5,  'ctr' => 0.051],
-						['keyword' => 'индексация сайта wordpress','clicks' => 41, 'impressions' => 820,  'position' => 18.4, 'ctr' => 0.050],
-					],
-					'indexStatus'       => false,
-					'lastCrawled'       => gmdate('j M Y', strtotime('-5 days')),
-					'indexNowSubmitted' => gmdate('j M Y', strtotime('-1 day')),
-				],
+				'google' => $this->get_google_insights($post_id, $permalink, $days),
+				'bing'   => $this->get_bing_insights($post_id, $permalink, $days),
+				'yandex' => $this->get_yandex_insights($post_id),
 			],
 		];
 
@@ -173,6 +131,329 @@ class Assets
 		$data = apply_filters('crawlwp_insights_data', $data, $post_id, $days, $permalink);
 
 		wp_send_json_success($data);
+	}
+
+	/**
+	 * Real Google Search Console + indexing data for this post, sourced from
+	 * the mihdan-index-now-pro plugin's SEOStat/AutoIndex modules.
+	 *
+	 * Every pro-only class is guarded with class_exists() so this keeps
+	 * working when pro is inactive, an older version, or simply hasn't
+	 * finished loading its classes yet — in which case the fields are left
+	 * out and the metabox JS renders its own empty state ("\u2014" / no data).
+	 */
+	private function get_google_insights(int $post_id, string $permalink, int $days): array
+	{
+		$engine = [
+			'indexStatus'       => null,
+			'lastCrawled'       => '',
+			'indexNowSubmitted' => $this->format_indexnow_date($post_id),
+		];
+
+		if (! $post_id) {
+			return $engine;
+		}
+
+		try {
+			if (class_exists(\CrawlWP\Libsodium\AutoIndex\Commons::class)) {
+				$status = \CrawlWP\Libsodium\AutoIndex\Commons::get_autoindex_table_column_data(
+					'google_index_status',
+					\CrawlWP\Libsodium\AutoIndex\Commons::POST_OBJECT_TYPE,
+					$post_id
+				);
+
+				if ($status) {
+					$engine['indexStatus'] = in_array($status, [
+						\CrawlWP\Libsodium\AutoIndex\Commons::INDEXED_STATUS,
+						\CrawlWP\Libsodium\AutoIndex\Commons::LIKELY_INDEXED_STATUS,
+					], true);
+				}
+
+				$last_check = \CrawlWP\Libsodium\AutoIndex\Commons::get_autoindex_table_column_data(
+					'last_index_status_check',
+					\CrawlWP\Libsodium\AutoIndex\Commons::POST_OBJECT_TYPE,
+					$post_id
+				);
+
+				if ($last_check) {
+					$engine['lastCrawled'] = mysql2date(get_option('date_format'), $last_check);
+				}
+			}
+
+			$google_connected = class_exists(\Mihdan\IndexNow\Utils::class)
+				&& \Mihdan\IndexNow\Utils::wposa_get_option('json_key', 'google_webmaster');
+
+			if (
+				$permalink !== ''
+				&& $google_connected
+				&& class_exists(\CrawlWP\Libsodium\SEOStat\Admin\DataGenerator::class)
+				&& isset($GLOBALS['crawlwp_seostat_commons_instance'])
+			) {
+				$end   = gmdate('Y-m-d', strtotime('-1 day'));
+				$start = gmdate('Y-m-d', strtotime('-' . max(1, $days) . ' days', strtotime($end)));
+
+				$generator = new \CrawlWP\Libsodium\SEOStat\Admin\DataGenerator($start, $end, ['page' => $permalink], true);
+
+				$chart = $generator->get_top_chart_data();
+
+				if (! empty($chart['main'])) {
+					$engine['clicks']      = (int) $chart['main']['clicks'];
+					$engine['impressions'] = (int) $chart['main']['impressions'];
+					$engine['position']    = (float) $chart['main']['position'];
+
+					/* get_top_chart_data() returns ctr as a 0-100 percentage;
+					 * everywhere else in this payload ctr is a 0-1 decimal. */
+					$engine['ctr'] = ((float) $chart['main']['ctr']) / 100;
+				}
+
+				$rows = $generator->get_card_data('query', ['rowLimit' => 10]);
+
+				if (! empty($rows)) {
+					$keywords = [];
+
+					foreach ($rows as $row) {
+						$keys = $row->getKeys();
+
+						$keywords[] = [
+							'keyword'     => $keys[0] ?? '',
+							'clicks'      => (int) $row->getClicks(),
+							'impressions' => (int) $row->getImpressions(),
+							'position'    => (float) $row->getPosition(),
+							'ctr'         => (float) $row->getCtr(),
+						];
+					}
+
+					$engine['keywords'] = $keywords;
+				}
+			}
+		} catch (\Throwable $e) {
+			/* A Search Console API hiccup shouldn't break the metabox — fall
+			 * back to whatever real data (e.g. index status) was already set. */
+		}
+
+		return $engine;
+	}
+
+	/**
+	 * Real Bing Webmaster data for this post, sourced from mihdan-index-now-pro.
+	 */
+	private function get_bing_insights(int $post_id, string $permalink, int $days): array
+	{
+		$engine = [
+			'indexStatus'       => null,
+			'lastCrawled'       => '',
+			'indexNowSubmitted' => $this->format_indexnow_date($post_id),
+		];
+
+		if (! $post_id) {
+			return $engine;
+		}
+
+		try {
+			if (class_exists(\CrawlWP\Libsodium\AutoIndex\Commons::class)) {
+				$status = \CrawlWP\Libsodium\AutoIndex\Commons::get_autoindex_table_column_data(
+					'bing_index_status',
+					\CrawlWP\Libsodium\AutoIndex\Commons::POST_OBJECT_TYPE,
+					$post_id
+				);
+
+				if ($status) {
+					$engine['indexStatus'] = $status === \CrawlWP\Libsodium\AutoIndex\Commons::LIKELY_INDEXED_STATUS;
+				}
+
+				$last_check = \CrawlWP\Libsodium\AutoIndex\Commons::get_autoindex_table_column_data(
+					'last_bing_index_status_check',
+					\CrawlWP\Libsodium\AutoIndex\Commons::POST_OBJECT_TYPE,
+					$post_id
+				);
+
+				if ($last_check) {
+					$engine['lastCrawled'] = mysql2date(get_option('date_format'), $last_check);
+				}
+			}
+
+			if ($permalink !== '' && class_exists(\CrawlWP\Libsodium\BingService::class)) {
+				$bing = \CrawlWP\Libsodium\BingService::init();
+
+				if ($bing->is_api_key_connected()) {
+					$response = $bing->getPageQueryStats($permalink);
+
+					/* Bing's raw API response is OData-style ({"d": [...]})
+					 * rather than the flat array the class docblock implies. */
+					$rows = is_array($response) && isset($response['d']) ? $response['d'] : $response;
+
+					$this->apply_bing_query_stats($engine, $rows, $days);
+				}
+			}
+		} catch (\Throwable $e) {
+			/* A Bing Webmaster API hiccup shouldn't break the metabox. */
+		}
+
+		return $engine;
+	}
+
+	/**
+	 * Aggregate Bing's per-query/per-day rows for a page (Query, Clicks,
+	 * Impressions, AvgImpressionPosition, Date) into the totals and top-10
+	 * keyword list the metabox expects, limited to the requested period.
+	 */
+	private function apply_bing_query_stats(array &$engine, $rows, int $days): void
+	{
+		if (! is_array($rows)) {
+			return;
+		}
+
+		$cutoff  = time() - (max(1, $days) * DAY_IN_SECONDS);
+		$grouped = [];
+
+		foreach ($rows as $row) {
+			$query = is_array($row) ? ($row['Query'] ?? '') : '';
+
+			if ($query === '') {
+				continue;
+			}
+
+			$timestamp = $this->parse_bing_date($row['Date'] ?? '');
+
+			if ($timestamp !== null && $timestamp < $cutoff) {
+				continue;
+			}
+
+			if (! isset($grouped[$query])) {
+				$grouped[$query] = ['clicks' => 0, 'impressions' => 0, 'position_sum' => 0.0, 'position_weight' => 0];
+			}
+
+			$clicks      = (int) ($row['Clicks'] ?? 0);
+			$impressions = (int) ($row['Impressions'] ?? 0);
+			$position    = isset($row['AvgImpressionPosition']) ? (float) $row['AvgImpressionPosition'] : 0.0;
+
+			$grouped[$query]['clicks']      += $clicks;
+			$grouped[$query]['impressions'] += $impressions;
+
+			if ($position > 0 && $impressions > 0) {
+				$grouped[$query]['position_sum']    += $position * $impressions;
+				$grouped[$query]['position_weight'] += $impressions;
+			}
+		}
+
+		if (empty($grouped)) {
+			return;
+		}
+
+		$keywords     = [];
+		$total_clicks = 0;
+		$total_impr   = 0;
+		$position_sum = 0.0;
+		$position_wt  = 0;
+
+		foreach ($grouped as $query => $agg) {
+			$total_clicks += $agg['clicks'];
+			$total_impr   += $agg['impressions'];
+
+			$avg_position = $agg['position_weight'] > 0 ? $agg['position_sum'] / $agg['position_weight'] : 0.0;
+
+			if ($avg_position > 0 && $agg['impressions'] > 0) {
+				$position_sum += $avg_position * $agg['impressions'];
+				$position_wt  += $agg['impressions'];
+			}
+
+			$keywords[] = [
+				'keyword'     => $query,
+				'clicks'      => $agg['clicks'],
+				'impressions' => $agg['impressions'],
+				'position'    => round($avg_position, 1),
+				'ctr'         => $agg['impressions'] > 0 ? $agg['clicks'] / $agg['impressions'] : 0,
+			];
+		}
+
+		usort($keywords, static function ($a, $b) {
+			return $b['clicks'] <=> $a['clicks'];
+		});
+
+		$engine['clicks']      = $total_clicks;
+		$engine['impressions'] = $total_impr;
+		$engine['ctr']         = $total_impr > 0 ? $total_clicks / $total_impr : 0;
+		$engine['position']    = $position_wt > 0 ? round($position_sum / $position_wt, 1) : 0.0;
+		$engine['keywords']    = array_slice($keywords, 0, 10);
+	}
+
+	/**
+	 * Extract the Unix timestamp from Bing's ".NET JSON date" format,
+	 * e.g. "/Date(1748588400000-0700)/".
+	 */
+	private function parse_bing_date($value): ?int
+	{
+		if (! is_string($value) || $value === '') {
+			return null;
+		}
+
+		if (preg_match('/Date\((-?\d+)/', $value, $matches)) {
+			return (int) ($matches[1] / 1000);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Real Yandex indexing status for this post, sourced from mihdan-index-now-pro.
+	 *
+	 * The Yandex Webmaster API only exposes host-wide query stats, not a
+	 * per-URL breakdown, so clicks/impressions/keywords are intentionally
+	 * left out here rather than showing misleading site-wide numbers as if
+	 * they belonged to this one post.
+	 */
+	private function get_yandex_insights(int $post_id): array
+	{
+		$engine = [
+			'indexStatus'       => null,
+			'lastCrawled'       => '',
+			'indexNowSubmitted' => $this->format_indexnow_date($post_id),
+		];
+
+		if (! $post_id || ! class_exists(\CrawlWP\Libsodium\AutoIndex\Commons::class)) {
+			return $engine;
+		}
+
+		try {
+			$status = \CrawlWP\Libsodium\AutoIndex\Commons::get_autoindex_table_column_data(
+				'yandex_index_status',
+				\CrawlWP\Libsodium\AutoIndex\Commons::POST_OBJECT_TYPE,
+				$post_id
+			);
+
+			if ($status) {
+				$engine['indexStatus'] = $status === \CrawlWP\Libsodium\AutoIndex\Commons::LIKELY_INDEXED_STATUS;
+			}
+
+			$last_check = \CrawlWP\Libsodium\AutoIndex\Commons::get_autoindex_table_column_data(
+				'last_yandex_index_status_check',
+				\CrawlWP\Libsodium\AutoIndex\Commons::POST_OBJECT_TYPE,
+				$post_id
+			);
+
+			if ($last_check) {
+				$engine['lastCrawled'] = mysql2date(get_option('date_format'), $last_check);
+			}
+		} catch (\Throwable $e) {
+			/* An AutoIndex table hiccup shouldn't break the metabox. */
+		}
+
+		return $engine;
+	}
+
+	/**
+	 * The date this post was last submitted to IndexNow, shared by all three
+	 * engine tabs since IndexNow submission isn't per-engine.
+	 */
+	private function format_indexnow_date(int $post_id): string
+	{
+		if (! $post_id) {
+			return '';
+		}
+
+		$last_pinged = get_post_meta($post_id, '_crawlwp_last_indexnow', true);
+
+		return $last_pinged ? wp_date(get_option('date_format'), (int) $last_pinged) : '';
 	}
 
 	/**
@@ -571,6 +852,7 @@ class Assets
 			'insightsIndex'    => __('%s Index', 'mihdan-index-now'),
 			'indexed'          => __('Indexed', 'mihdan-index-now'),
 			'notIndexed'       => __('Not indexed', 'mihdan-index-now'),
+			'insightsUnknown'  => __('Not available', 'mihdan-index-now'),
 			'savPostFirst'     => __('Save the post first to load search performance data.', 'mihdan-index-now'),
 
 			/* AI generate */
@@ -671,7 +953,10 @@ class Assets
 			return [];
 		}
 
-		$crumbs = [get_bloginfo('name')];
+		/* WordPress KSES-encodes literal "&" in term/site names when they are
+		 * saved (so "Computer & Internet" is stored as "Computer &amp; Internet").
+		 * Decode before sending to JS, otherwise the preview shows the raw entity. */
+		$crumbs = [wp_specialchars_decode(get_bloginfo('name'), ENT_QUOTES)];
 
 		$terms = get_the_terms($post->ID, 'category');
 		if (! empty($terms) && ! is_wp_error($terms)) {
@@ -682,10 +967,10 @@ class Assets
 			foreach ($ancestors as $anc_id) {
 				$anc = get_term($anc_id, 'category');
 				if ($anc && ! is_wp_error($anc)) {
-					$crumbs[] = $anc->name;
+					$crumbs[] = wp_specialchars_decode($anc->name, ENT_QUOTES);
 				}
 			}
-			$crumbs[] = $primary->name;
+			$crumbs[] = wp_specialchars_decode($primary->name, ENT_QUOTES);
 		}
 
 		return $crumbs;
