@@ -674,8 +674,6 @@
         },
         success: function(resp) {
           if (resp.success && resp.data) {
-            var msg = self.fmt(L.lastSubmitted, resp.data.date);
-            $('#cwpIndexNowNoticeText').text(msg);
             self.indexNowShowStatus(L.submitSuccess, 'success');
           } else {
             self.indexNowShowStatus(L.submitError, 'error');
@@ -691,10 +689,10 @@
     },
 
     indexNowShowStatus: function(msg, type) {
-      var $notice = $('#cwpIndexNowNotice');
-      var $status = $notice.find('.cwp-indexnow-status');
+      var $btn = $('#cwpSubmitIndexNow');
+      var $status = $btn.siblings('.cwp-indexnow-status');
       if (!$status.length) {
-        $status = $('<div class="cwp-indexnow-status"></div>').insertAfter($notice);
+        $status = $('<div class="cwp-indexnow-status"></div>').insertAfter($btn);
       }
       $status.text(msg)
         .removeClass('is-success is-error is-warn')

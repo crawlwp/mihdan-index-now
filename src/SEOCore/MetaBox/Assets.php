@@ -513,7 +513,6 @@ class Assets
 			/* IndexNow submit */
 			'submitIndexNow'   => __('Submit for Indexing', 'mihdan-index-now'),
 			'submitting'       => __('Submitting…', 'mihdan-index-now'),
-			'notSubmittedYet'  => __('This URL has not been submitted to IndexNow yet.', 'mihdan-index-now'),
 			'submitSuccess'    => __('Successfully submitted for indexing!', 'mihdan-index-now'),
 			'submitError'      => __('Failed to submit. Please try again.', 'mihdan-index-now'),
 			'savePostFirst'    => __('Please save the post first before submitting to IndexNow.', 'mihdan-index-now'),
