@@ -605,7 +605,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
           ?>
         </span>
       </div>
-      <button class="cwp-btn cwp-btn-primary" type="button" id="cwpSubmitIndexNow"><?php esc_html_e('Submit to IndexNow', 'mihdan-index-now'); ?></button>
+      <button class="cwp-btn cwp-btn-primary" type="button" id="cwpSubmitIndexNow"><?php esc_html_e('Submit for Indexing', 'mihdan-index-now'); ?></button>
     </div>
   </div>
 

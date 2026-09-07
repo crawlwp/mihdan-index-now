@@ -504,6 +504,18 @@
           var ed = tinymce.get('content');
           if (ed) {
             ed.on('input change keyup Undo Redo', onContentChange);
+            /* TinyMCE loads the post content into its iframe asynchronously,
+               after this metabox has already run its initial analysis (see
+               getEditorContent(), which falls back to the raw #content
+               textarea until ed.initialized is true). Once TinyMCE actually
+               finishes loading, re-run analysis immediately so an existing
+               post shows real Readability/Analysis results without the user
+               having to type anything first. */
+            if (ed.initialized) {
+              onContentChange();
+            } else {
+              ed.on('init', onContentChange);
+            }
           } else {
             setTimeout(tryBind, 500);
           }
@@ -867,7 +879,14 @@
       /* Try TinyMCE first, then Gutenberg data store, then DOM fallbacks */
       if (typeof tinymce !== 'undefined') {
         var ed = tinymce.get('content');
-        if (ed && !ed.isHidden()) return ed.getContent();
+        /* ed.initialized only becomes true once TinyMCE has finished loading
+           the post content into its iframe. Calling getContent() before that
+           (e.g. during this metabox's very first init() run) can return an
+           empty string even though the post already has real content -- that
+           used to make Analysis/Readability wrongly report "no content" until
+           the user typed something inside the editor. Fall through to the
+           plain textarea below until TinyMCE is actually ready. */
+        if (ed && !ed.isHidden() && ed.initialized) return ed.getContent();
       }
       /* Gutenberg: the block editor canvas is iframed, so DOM scraping fails.
          Use the data store which returns clean serialized post content. */

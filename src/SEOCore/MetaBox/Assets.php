@@ -129,9 +129,7 @@ class Assets
 	{
 		$post = get_post($post_id);
 
-		if (! $post instanceof \WP_Post) {
-			return [];
-		}
+		if (! $post instanceof \WP_Post) return [];
 
 		$categories = wp_get_post_categories($post_id, ['fields' => 'ids']);
 		$tags       = wp_get_post_tags($post_id, ['fields' => 'ids']);
@@ -139,7 +137,7 @@ class Assets
 		$args = [
 			'post_type'      => $post->post_type,
 			'post_status'    => 'publish',
-			'posts_per_page' => 20,
+			'posts_per_page' => 10,
 			'post__not_in'   => [$post_id],
 			'orderby'        => 'relevance',
 		];
@@ -513,12 +511,10 @@ class Assets
 			'aiRewrite'        => __('Rewrite with AI', 'mihdan-index-now'),
 
 			/* IndexNow submit */
-			'submitIndexNow'   => __('Submit to IndexNow', 'mihdan-index-now'),
+			'submitIndexNow'   => __('Submit for Indexing', 'mihdan-index-now'),
 			'submitting'       => __('Submitting…', 'mihdan-index-now'),
-			/* translators: %s: date string */
-			'lastSubmitted'    => __('Last submitted to IndexNow on %s.', 'mihdan-index-now'),
 			'notSubmittedYet'  => __('This URL has not been submitted to IndexNow yet.', 'mihdan-index-now'),
-			'submitSuccess'    => __('Successfully submitted to IndexNow!', 'mihdan-index-now'),
+			'submitSuccess'    => __('Successfully submitted for indexing!', 'mihdan-index-now'),
 			'submitError'      => __('Failed to submit. Please try again.', 'mihdan-index-now'),
 			'savePostFirst'    => __('Please save the post first before submitting to IndexNow.', 'mihdan-index-now'),
 
