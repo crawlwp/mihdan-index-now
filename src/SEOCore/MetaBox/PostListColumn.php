@@ -516,9 +516,15 @@ class PostListColumn
 	}
 
 	/**
-	 * Allow sorting by the SEO score column via a meta_key query.
-	 * Note: because the score is computed, we sort by presence of the SEO title
-	 * as a practical approximation.
+	 * Allow sorting by the SEO score column.
+	 *
+	 * Sorts numerically on the persisted `_crawlwp_seo_score` meta. Posts that
+	 * have no stored score are NOT dropped from the list: the OR'd
+	 * EXISTS / NOT EXISTS clauses make WP_Meta_Query LEFT JOIN, so every post
+	 * is returned. We order on the NOT EXISTS clause because its join is
+	 * restricted to our meta key (the EXISTS join is not, and would pick an
+	 * arbitrary meta row after GROUP BY); unscored posts sort as NULL — top
+	 * when ascending, bottom when descending.
 	 *
 	 * @param array $vars
 	 * @return array
@@ -526,12 +532,45 @@ class PostListColumn
 	public function sort_query(array $vars): array
 	{
 		if (
-			isset($vars['orderby']) &&
-			$vars['orderby'] === 'crawlwp_seo_score'
+			!is_admin() ||
+			! isset($vars['orderby']) ||
+			$vars['orderby'] !== 'crawlwp_seo_score'
 		) {
-			$vars['meta_key'] = MetaFields::SEO_TITLE;
-			$vars['orderby']  = 'meta_value';
+			return $vars;
 		}
+
+		$order = (isset($vars['order']) && strtoupper((string) $vars['order']) === 'ASC') ? 'ASC' : 'DESC';
+
+		$score_query = [
+			'relation'           => 'OR',
+			'cwp_seo_score'      => [
+				'key'     => MetaFields::SEO_SCORE,
+				'compare' => 'EXISTS',
+				'type'    => 'DECIMAL(6,2)',
+			],
+			'cwp_seo_score_none' => [
+				'key'     => MetaFields::SEO_SCORE,
+				'compare' => 'NOT EXISTS',
+				'type'    => 'DECIMAL(6,2)',
+			],
+		];
+
+		if (! empty($vars['meta_query']) && is_array($vars['meta_query'])) {
+			$vars['meta_query'] = [
+				'relation' => 'AND',
+				$vars['meta_query'],
+				$score_query,
+			];
+		} else {
+			$vars['meta_query'] = $score_query;
+		}
+
+		unset($vars['meta_key'], $vars['meta_value']);
+
+		$vars['orderby'] = [
+			'cwp_seo_score_none' => $order,
+			'date'               => 'DESC',
+		];
 
 		return $vars;
 	}
