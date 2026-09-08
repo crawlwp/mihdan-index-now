@@ -23,6 +23,9 @@ class RedirectsManager
 	/** Transient expiry in seconds (5 minutes). */
 	const CACHE_EXPIRY = 300;
 
+	/** Maximum accepted length (in characters) of a regex from_url pattern. */
+	const MAX_REGEX_LENGTH = 500;
+
 	/**
 	 * Full table name (with WP prefix).
 	 *
@@ -101,6 +104,10 @@ class RedirectsManager
 	{
 		global $wpdb;
 
+		if (is_wp_error($this->validate($data))) {
+			return false;
+		}
+
 		$data = apply_filters('crawlwp_redirect_before_insert', $this->sanitize($data));
 		$data['created_at'] = current_time('mysql', true);
 
@@ -124,6 +131,10 @@ class RedirectsManager
 	public function update(int $id, array $data): bool
 	{
 		global $wpdb;
+
+		if (is_wp_error($this->validate($data))) {
+			return false;
+		}
 
 		$data = apply_filters('crawlwp_redirect_before_update', $this->sanitize($data), $id);
 
@@ -209,7 +220,8 @@ class RedirectsManager
 		$order   = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
 
 		$per_page = max(1, (int) $args['per_page']);
-		$offset   = ($args['page'] - 1) * $per_page;
+		$page     = max(1, (int) $args['page']);
+		$offset   = ($page - 1) * $per_page;
 
 		$sql = "SELECT * FROM {$this->table}{$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
 		$values[] = $per_page;
@@ -240,34 +252,19 @@ class RedirectsManager
 	}
 
 	/**
-	 * Increment the hit counter for a redirect row.
+	 * Record a frontend hit: increment the counter and stamp last_accessed
+	 * in a single UPDATE rather than two round-trips.
 	 *
 	 * @param int $id Row ID.
 	 */
-	public function increment_hits(int $id): void
+	public function record_hit(int $id): void
 	{
 		global $wpdb;
 		$wpdb->query($wpdb->prepare(
-			"UPDATE {$this->table} SET hits = hits + 1 WHERE id = %d",
+			"UPDATE {$this->table} SET hits = hits + 1, last_accessed = %s WHERE id = %d",
+			current_time('mysql', true),
 			$id
 		));
-	}
-
-	/**
-	 * Update the last_accessed timestamp for a redirect row.
-	 *
-	 * @param int $id Row ID.
-	 */
-	public function update_last_accessed(int $id): void
-	{
-		global $wpdb;
-		$wpdb->update(
-			$this->table,
-			['last_accessed' => current_time('mysql', true)],
-			['id' => $id],
-			['%s'],
-			['%d']
-		);
 	}
 
 	/**
@@ -327,6 +324,120 @@ class RedirectsManager
 		return (int) $count > 0;
 	}
 
+	/**
+	 * Retrieve a single redirect by its stored from_url.
+	 *
+	 * @param string $from_url From URL (raw path or full URL; normalised before lookup).
+	 * @return object|null
+	 */
+	public function get_by_from_url(string $from_url)
+	{
+		global $wpdb;
+
+		$from_url = $this->strip_home_url($from_url);
+
+		if ($from_url === '') {
+			return null;
+		}
+
+		return $wpdb->get_row($wpdb->prepare(
+			"SELECT * FROM {$this->table} WHERE from_url = %s AND match_type = 'exact' ORDER BY id ASC LIMIT 1",
+			$from_url
+		));
+	}
+
+	// -------------------------------------------------------------------------
+	// Validation
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Validate redirect data before it is written to the database.
+	 *
+	 * Only the keys present in $data are validated, so partial updates
+	 * (e.g. toggling `enabled`) pass through untouched.
+	 *
+	 * @param array $data Raw data (same shape accepted by insert()/update()).
+	 * @return true|\WP_Error
+	 */
+	public function validate(array $data)
+	{
+		$clean = $this->sanitize($data);
+
+		// Regex source patterns: bounded length and must compile with the
+		// fixed "#" delimiter used by the frontend processor.
+		if (isset($clean['from_url'], $clean['match_type']) && $clean['match_type'] === 'regex') {
+			$pattern = $clean['from_url'];
+
+			if ($pattern === '') {
+				return new \WP_Error('crawlwp_redirect_invalid_regex', __('From URL is required.', 'mihdan-index-now'));
+			}
+
+			if (strlen($pattern) > self::MAX_REGEX_LENGTH) {
+				return new \WP_Error(
+					'crawlwp_redirect_regex_too_long',
+					/* translators: %d: maximum number of characters. */
+					sprintf(__('Regex pattern is too long (maximum %d characters).', 'mihdan-index-now'), self::MAX_REGEX_LENGTH)
+				);
+			}
+
+			$regex = '#' . str_replace('#', '\#', $pattern) . '#';
+
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			if (@preg_match($regex, '') === false) {
+				return new \WP_Error('crawlwp_redirect_invalid_regex', __('Regex pattern is invalid and could not be compiled.', 'mihdan-index-now'));
+			}
+		}
+
+		// Destination: site-relative path or absolute http(s) URL only. An empty
+		// value is allowed here because 410/451 rules have no destination — but
+		// a non-empty raw value that sanitisation reduced to "" (e.g. a
+		// javascript: URL stripped by esc_url_raw()) is rejected.
+		if (isset($data['to_url'], $clean['to_url']) && trim((string) $data['to_url']) !== '' && $clean['to_url'] === '') {
+			return new \WP_Error(
+				'crawlwp_redirect_invalid_to_url',
+				__('To URL must be a site-relative path starting with "/" or an absolute http(s) URL.', 'mihdan-index-now')
+			);
+		}
+
+		if (isset($clean['to_url']) && $clean['to_url'] !== '' && !$this->is_valid_destination($clean['to_url'])) {
+			return new \WP_Error(
+				'crawlwp_redirect_invalid_to_url',
+				__('To URL must be a site-relative path starting with "/" or an absolute http(s) URL.', 'mihdan-index-now')
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check whether a destination URL is acceptable for storage.
+	 *
+	 * Accepts a path beginning with a single "/" (not "//" or "/\") or an
+	 * absolute http/https URL with a host. Capture-group placeholders such
+	 * as "$1" are permitted inside otherwise valid values.
+	 *
+	 * @param string $url Sanitised destination.
+	 * @return bool
+	 */
+	private function is_valid_destination(string $url): bool
+	{
+		if ($url === '') {
+			return false;
+		}
+
+		if ($url[0] === '/') {
+			return !(isset($url[1]) && ($url[1] === '/' || $url[1] === '\\'));
+		}
+
+		$parsed = wp_parse_url($url);
+
+		if (!is_array($parsed) || empty($parsed['scheme']) || empty($parsed['host'])) {
+			return false;
+		}
+
+		return in_array(strtolower($parsed['scheme']), ['http', 'https'], true);
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
@@ -342,7 +453,7 @@ class RedirectsManager
 		$clean = [];
 
 		if (isset($data['from_url'])) {
-			$match_type_hint = isset($data['match_type']) ? $data['match_type'] : 'exact';
+			$match_type_hint = $data['match_type'] ?? 'exact';
 
 			// Regex patterns must never be passed through URL sanitisation:
 			// esc_url_raw()/esc_url() silently strips characters that are
