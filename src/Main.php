@@ -271,8 +271,9 @@ class Main
 	{
 		global $wpdb;
 
-		$sql = "DROP TABLE IF EXISTS {$wpdb->prefix}index_now_log";
-		$wpdb->query($sql);
+		$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}crawlwp_log");
+		// Legacy table name.
+		$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}index_now_log");
 	}
 
 	private function create_tables(bool $upgrade = false)

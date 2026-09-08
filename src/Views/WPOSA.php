@@ -79,7 +79,6 @@ class WPOSA
 			'href'    => true,
 			'style'   => true,
 			'title'   => true,
-			'onclick' => true,
 			'target'  => true,
 		],
 		'img'      => [
@@ -587,18 +586,27 @@ class WPOSA
 
 			check_admin_referer($option_page . '-options');
 
+			// Only registered section ids may be saved through this handler.
+			$section_ids = array_flip(array_column($this->sections_array, 'id'));
+
 			foreach ($_POST as $k => $v) {
 
 				if (strstr($k, 'submit_') !== false) {
 					$name = str_replace('submit_', '', $k);
 
+					if ( ! isset($section_ids[$name])) {
+						continue;
+					}
+
 					$db_options = get_option($name, []);
 
 					$db_options = ! is_array($db_options) ? [] : $db_options;
 
-					$submitted_data = apply_filters('wposa_submitted_data', $_POST[$name], $name, $_POST);
+					$posted_data = isset($_POST[$name]) && is_array($_POST[$name]) ? $_POST[$name] : [];
 
-					$value = array_replace($db_options, wp_unslash(Utils::clean_data($submitted_data)));
+					$submitted_data = apply_filters('wposa_submitted_data', $posted_data, $name, $_POST);
+
+					$value = array_replace($db_options, $this->sanitize_section_data($name, wp_unslash($submitted_data)));
 
 					update_option($name, $value);
 
@@ -814,20 +822,124 @@ class WPOSA
 	 */
 	public function sanitize_fields($fields)
 	{
-
 		if (is_array($fields)) {
 			foreach ($fields as $field_slug => $field_value) {
 				$sanitize_callback = $this->get_sanitize_callback($field_slug);
-
 				// If callback is set, call it.
 				if ($sanitize_callback) {
 					$fields[$field_slug] = call_user_func($sanitize_callback, $field_value);
-					continue;
 				}
 			}
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Sanitize the posted data of a section according to each registered field type.
+	 *
+	 * Values for field ids that are not registered in the section keep the
+	 * generic Utils::clean_data() behaviour.
+	 *
+	 * @param string $section_id Section (option) id.
+	 * @param mixed  $data       Submitted (unslashed) data.
+	 *
+	 * @return array
+	 */
+	public function sanitize_section_data(string $section_id, $data): array
+	{
+		if ( ! is_array($data)) {
+			return [];
+		}
+
+		$fields = [];
+		foreach ($this->fields_array[$section_id] ?? [] as $field) {
+			if ( ! empty($field['id'])) {
+				$fields[$field['id']] = $field;
+			}
+		}
+
+		$sanitized = [];
+
+		foreach ($data as $field_id => $value) {
+			if ( ! isset($fields[$field_id])) {
+				$sanitized[$field_id] = Utils::clean_data($value);
+				continue;
+			}
+
+			$sanitized[$field_id] = $this->sanitize_field_value($fields[$field_id], $value);
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Sanitize a single field value based on its type.
+	 *
+	 * @param array $field Field definition.
+	 * @param mixed $value Submitted value.
+	 *
+	 * @return mixed
+	 */
+	private function sanitize_field_value(array $field, $value)
+	{
+		$type    = $field['type'] ?? 'text';
+		$options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
+		$default = $field['default'] ?? '';
+
+		if ( ! empty($field['sanitize_callback']) && is_callable($field['sanitize_callback'])) {
+			return call_user_func($field['sanitize_callback'], $value);
+		}
+
+		switch ($type) {
+			case 'checkbox':
+			case 'switch':
+				return $value === 'on' ? 'on' : 'off';
+
+			case 'select':
+			case 'radio':
+				if (is_scalar($value) && array_key_exists((string)$value, $options)) {
+					return sanitize_text_field((string)$value);
+				}
+
+				return $default;
+
+			case 'multicheck':
+				if ( ! is_array($value)) {
+					return [];
+				}
+
+				$value = array_filter(array_intersect_key($value, $options), 'is_scalar');
+
+				return array_intersect($value, array_keys($options));
+
+			case 'url':
+			case 'image':
+			case 'file':
+				return is_scalar($value) ? esc_url_raw((string)$value) : '';
+
+			case 'number':
+				if (is_array($value)) {
+					return Utils::clean_data($value);
+				}
+
+				return is_numeric($value) && (string)(int)$value !== (string)$value ? (float)$value : (int)$value;
+
+			case 'textarea':
+				if (is_array($value)) {
+					return Utils::clean_data($value);
+				}
+
+				return ! empty($field['allow_html'])
+					? wp_kses_post((string)$value)
+					: sanitize_textarea_field((string)$value);
+
+			case 'html':
+				return is_array($value) ? Utils::clean_data($value) : wp_kses_post((string)$value);
+
+			default:
+				return is_array($value) ? Utils::clean_data($value) : sanitize_text_field((string)$value);
+		}
 	}
 
 
@@ -854,7 +966,7 @@ class WPOSA
 					$cb = isset($field['sanitize_callback']) && is_callable($field['sanitize_callback'])
 						? $field['sanitize_callback']
 						: false;
-					$this->sanitize_index[$field['name']] = $cb;
+					$this->sanitize_index[$field['id']] = $cb;
 				}
 			}
 		}
@@ -1268,8 +1380,8 @@ class WPOSA
 			? $this->option_cache[$name]
 			: get_option($name);
 
-		if ( ! $options) {
-			return false;
+		if (empty($options) || ! is_array($options)) {
+			$options = [];
 		}
 
 		// Update option and invalidate the cache entry.
@@ -1604,13 +1716,13 @@ class WPOSA
 	{
 		$is_url = strstr($tab_id, 'http');
 		$href   = $is_url ? $tab_id : '#';
-		$title  = $is_url ? esc_attr__('Click to view help guide', 'mihdan-index-now') : esc_attr__('Click to show Help tab', 'mihdan-index-now');
+		$title  = $is_url ? __('Click to view help guide', 'mihdan-index-now') : __('Click to show Help tab', 'mihdan-index-now');
 
 		$class  = 'wpsa-help-tab-toggle' . ($is_url ? ' is-url' : '');
 		$target = $is_url ? '_blank' : '_self';
 		ob_start();
 		?>
-		<a href="<?php echo $href ?>" target="<?php echo $target ?>" title="<?php echo $title ?>" class="<?php echo $class ?>" data-tab="<?php echo esc_attr($tab_id); ?>"><?php echo esc_html($tab_icon); ?></a>
+		<a href="<?php echo esc_url($href); ?>" target="<?php echo esc_attr($target); ?>" title="<?php echo esc_attr($title); ?>" class="<?php echo esc_attr($class); ?>" data-tab="<?php echo esc_attr($tab_id); ?>"><?php echo esc_html($tab_icon); ?></a>
 		<?php
 		return ob_get_clean();
 	}
