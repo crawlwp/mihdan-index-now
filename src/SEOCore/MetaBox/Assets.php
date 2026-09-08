@@ -212,9 +212,7 @@ class Assets
 	{
 		$permalink = get_permalink($post_id);
 
-		if (! $permalink) {
-			return [];
-		}
+		if (! $permalink) return [];
 
 		global $wpdb;
 

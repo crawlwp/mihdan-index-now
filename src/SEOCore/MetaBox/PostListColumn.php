@@ -3,8 +3,13 @@
 namespace Mihdan\IndexNow\SEOCore\MetaBox;
 
 /**
- * Adds an "SEO Score" column to WordPress post list tables for all public post types.
- * Also injects SEO title + meta description fields into the native Quick Edit panel.
+ * Adds an "SEO" column to WordPress post list tables for all public post types.
+ *
+ * The cell renders a compact "signal strip" — one lettered, colour-coded
+ * segment per SEO signal (T D K I F S N, see SeoSignals) with an accessible
+ * hover/focus popover explaining each one — plus a thin gauge for the overall
+ * score. Also injects SEO title + meta description fields into the native
+ * Quick Edit panel.
  *
  * Score is calculated from:
  *  - SEO title length (0–60 chars ideal)
@@ -15,12 +20,12 @@ namespace Mihdan\IndexNow\SEOCore\MetaBox;
 class PostListColumn
 {
 	/** Title length thresholds (characters). */
-	private const TITLE_MIN = 30;
-	private const TITLE_MAX = 60;
+	private const TITLE_MIN = SeoSignals::TITLE_MIN;
+	private const TITLE_MAX = SeoSignals::TITLE_MAX;
 
 	/** Description length thresholds (characters). */
-	private const DESC_MIN  = 50;
-	private const DESC_MAX  = 160;
+	private const DESC_MIN  = SeoSignals::DESC_MIN;
+	private const DESC_MAX  = SeoSignals::DESC_MAX;
 
 	/** Nonce action for Quick Edit saves. */
 	const QUICK_EDIT_NONCE = 'crawlwp_quick_edit_seo';
@@ -123,29 +128,98 @@ class PostListColumn
 			return;
 		}
 
+		$post = get_post($post_id);
+
+		if (! $post instanceof \WP_Post) {
+			return;
+		}
+
 		$cached = get_post_meta($post_id, MetaFields::SEO_SCORE, true);
 		$score  = ($cached !== '' && $cached !== false) ? (float) $cached : $this->calculate_score($post_id);
 		$state  = $this->score_state($score);
 		$label  = $this->state_label($state, $score);
-		$tip    = $this->tooltip($post_id);
 
 		/* Store current SEO values in data attributes so Quick Edit JS can pre-fill the fields. */
 		$seo_title = (string) MetaFields::get($post_id, MetaFields::SEO_TITLE, '');
 		$seo_desc  = (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION, '');
 
+		$signals = SeoSignals::for_post($post);
+
+		echo '<div class="cwp-seobar" data-cwp-seo-title="' . esc_attr($seo_title) . '" data-cwp-seo-desc="' . esc_attr($seo_desc) . '">';
+
+		/* Signal strip. */
+		echo '<div class="cwp-seobar__strip" role="list">';
+
+		foreach ($signals as $signal) {
+			$this->render_signal($signal);
+		}
+
+		echo '</div>';
+
+		/* Overall score gauge. */
+		$rounded = (int) round($score);
+		/* translators: 1: score, 2: score label */
+		$score_aria = sprintf(__('CrawlWP SEO score: %1$d/100 — %2$s', 'mihdan-index-now'), $rounded, $label);
+
+		if ($state === 'noindex') {
+			$score_detail = __('This post is set to noindex, so the score is capped. Search engines are asked not to list it.', 'mihdan-index-now');
+		} else {
+			$score_detail = __('Calculated by the CrawlWP SEO analysis (title, description, focus keyword, readability and more). Open the post to see the full checklist and improve it.', 'mihdan-index-now');
+		}
+
 		printf(
-			'<span class="cwp-seo-score cwp-seo-score--%s" title="%s" aria-label="%s"' .
-			' data-cwp-seo-title="%s" data-cwp-seo-desc="%s">' .
-			'<span class="cwp-seo-score__bar" style="width:%d%%"></span>' .
-			'<span class="cwp-seo-score__label">%s</span>' .
+			'<div class="cwp-seobar__score is-%1$s" tabindex="0" aria-label="%2$s">' .
+			'<span class="cwp-seobar__track"><span class="cwp-seobar__fill" style="width:%3$d%%"></span></span>' .
+			'<span class="cwp-seobar__num">%4$s</span>' .
+			'<span class="cwp-seobar__tip cwp-seobar__tip--score" role="tooltip">' .
+			'<strong>%5$s <em class="is-%1$s">%6$s</em></strong>' .
+			'<span class="cwp-seobar__summary">%7$s</span>' .
+			'<span class="cwp-seobar__detail">%8$s</span>' .
+			'</span>' .
+			'</div>',
+			esc_attr($state),
+			esc_attr($score_aria),
+			$rounded,
+			$state === 'noindex' ? esc_html__('noindex', 'mihdan-index-now') : esc_html((string) $rounded),
+			esc_html__('CrawlWP SEO score', 'mihdan-index-now'),
+			/* translators: %d: score out of 100 */
+			esc_html(sprintf(__('%d/100', 'mihdan-index-now'), $rounded)),
+			esc_html($label),
+			esc_html($score_detail)
+		);
+
+		echo '</div>';
+	}
+
+	/**
+	 * One lettered segment of the signal strip with its popover.
+	 */
+	private function render_signal(array $signal): void
+	{
+		$state   = in_array($signal['state'], [SeoSignals::GOOD, SeoSignals::WARN, SeoSignals::BAD], true) ? $signal['state'] : SeoSignals::NEUTRAL;
+		$label   = (string) ($signal['label'] ?? $signal['letter']);
+		$summary = (string) ($signal['summary'] ?? '');
+		$detail  = (string) ($signal['detail'] ?? '');
+
+		/* translators: 1: signal label, 2: state label, 3: summary */
+		$aria = sprintf(__('%1$s: %2$s. %3$s', 'mihdan-index-now'), $label, SeoSignals::state_label($state), $summary);
+
+		printf(
+			'<span class="cwp-seobar__sig is-%1$s" role="listitem" tabindex="0" aria-label="%2$s" data-signal="%3$s">' .
+			'<span class="cwp-seobar__letter">%4$s</span>' .
+			'<span class="cwp-seobar__tip" role="tooltip">' .
+			'<strong>%5$s <em class="is-%1$s">%6$s</em></strong>' .
+			'<span class="cwp-seobar__summary">%7$s</span>%8$s' .
+			'</span>' .
 			'</span>',
 			esc_attr($state),
-			esc_attr($tip),
-			esc_attr($label),
-			esc_attr($seo_title),
-			esc_attr($seo_desc),
-			(int) $score,
-			esc_html($label)
+			esc_attr($aria),
+			esc_attr((string) ($signal['id'] ?? '')),
+			esc_html((string) $signal['letter']),
+			esc_html($label),
+			esc_html(SeoSignals::state_label($state)),
+			esc_html($summary),
+			$detail !== '' ? '<span class="cwp-seobar__detail">' . esc_html($detail) . '</span>' : ''
 		);
 	}
 
@@ -424,69 +498,6 @@ class PostListColumn
 		}
 	}
 
-	/**
-	 * Build a descriptive tooltip showing what is missing.
-	 *
-	 * @param int $post_id
-	 * @return string
-	 */
-	private function tooltip(int $post_id): string
-	{
-		$robots_index = MetaFields::get($post_id, MetaFields::ROBOTS_INDEX, 'index');
-
-		if ($robots_index === 'noindex') {
-			return __('This post is set to noindex and will not appear in search results.', 'mihdan-index-now');
-		}
-
-		$parts = [];
-
-		$title  = (string) MetaFields::get($post_id, MetaFields::SEO_TITLE, '');
-		$desc   = (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION, '');
-		$kw     = (string) MetaFields::get($post_id, MetaFields::FOCUS_KEYWORD, '');
-
-		if ($title === '') {
-			$parts[] = __('SEO title: using global template.', 'mihdan-index-now');
-		} else {
-			$len = mb_strlen($title);
-
-			if ($len < self::TITLE_MIN) {
-				/* translators: %d = character count */
-				$parts[] = sprintf(__('SEO title: too short (%d chars).', 'mihdan-index-now'), $len);
-			} elseif ($len > self::TITLE_MAX) {
-				/* translators: %d = character count */
-				$parts[] = sprintf(__('SEO title: too long (%d chars).', 'mihdan-index-now'), $len);
-			} else {
-				/* translators: %d = character count */
-				$parts[] = sprintf(__('SEO title: good (%d chars).', 'mihdan-index-now'), $len);
-			}
-		}
-
-		if ($desc === '') {
-			$parts[] = __('Meta description: using global template.', 'mihdan-index-now');
-		} else {
-			$len = mb_strlen($desc);
-
-			if ($len < self::DESC_MIN) {
-				/* translators: %d = character count */
-				$parts[] = sprintf(__('Meta description: too short (%d chars).', 'mihdan-index-now'), $len);
-			} elseif ($len > self::DESC_MAX) {
-				/* translators: %d = character count */
-				$parts[] = sprintf(__('Meta description: too long (%d chars).', 'mihdan-index-now'), $len);
-			} else {
-				/* translators: %d = character count */
-				$parts[] = sprintf(__('Meta description: good (%d chars).', 'mihdan-index-now'), $len);
-			}
-		}
-
-		if ($kw === '') {
-			$parts[] = __('Focus keyword: not set.', 'mihdan-index-now');
-		} else {
-			$parts[] = __('Focus keyword: set.', 'mihdan-index-now');
-		}
-
-		return implode(' ', $parts);
-	}
-
 	// -------------------------------------------------------------------------
 	// Sort support
 	// -------------------------------------------------------------------------
@@ -543,44 +554,195 @@ class PostListColumn
 
 		?>
 		<style id="cwp-seo-score-styles">
-			/* SEO Score column — CrawlWP */
-			.column-crawlwp_seo_score { width: 80px; }
+			/* SEO signal strip column — CrawlWP */
+			.wp-list-table .column-crawlwp_seo_score { width: 190px; }
 
-			.cwp-seo-score {
-				display: inline-flex;
+			.cwp-seobar {
+				display: flex;
 				flex-direction: column;
-				align-items: flex-start;
-				gap: 3px;
+				gap: 5px;
+				width: 100%;
+				max-width: 190px;
 				cursor: default;
 			}
 
-			/* Progress bar track */
-			.cwp-seo-score__bar {
-				display: block;
-				height: 6px;
+			/* --- state palette (shared by segments and gauge) --- */
+			.cwp-seobar .is-good    { --cwp-sig: #00a32a; --cwp-sig-dark: #007a20; }
+			.cwp-seobar .is-warn    { --cwp-sig: #dba617; --cwp-sig-dark: #9a7400; }
+			.cwp-seobar .is-bad     { --cwp-sig: #d63638; --cwp-sig-dark: #a72628; }
+			.cwp-seobar .is-neutral { --cwp-sig: #5b7fa6; --cwp-sig-dark: #3f5d7d; }
+			.cwp-seobar .is-ok      { --cwp-sig: #dba617; --cwp-sig-dark: #9a7400; }
+			.cwp-seobar .is-poor    { --cwp-sig: #d63638; --cwp-sig-dark: #a72628; }
+			.cwp-seobar .is-noindex { --cwp-sig: #8c8f94; --cwp-sig-dark: #646970; }
+
+			/* --- the strip --- */
+			.cwp-seobar__strip {
+				display: flex;
+				width: 100%;
+				border-radius: 4px;
+				overflow: visible;
+				box-shadow: 0 0 0 1px rgba(0, 0, 0, .06);
+			}
+
+			.cwp-seobar__sig {
+				position: relative;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				flex: 1 1 0;
+				min-width: 0;
+				height: 22px;
+				padding: 0 1px;
+				background: var(--cwp-sig);
+				color: #fff;
+				font-size: 11px;
+				font-weight: 600;
+				line-height: 1;
+				letter-spacing: .02em;
+				box-shadow: inset -1px 0 0 rgba(255, 255, 255, .28);
+				outline: none;
+				transition: filter .12s ease;
+			}
+
+			.cwp-seobar__sig:first-child { border-radius: 4px 0 0 4px; }
+			.cwp-seobar__sig:last-child  { border-radius: 0 4px 4px 0; box-shadow: none; }
+
+			.cwp-seobar__sig:hover,
+			.cwp-seobar__sig:focus-visible {
+				filter: brightness(.92);
+				z-index: 2;
+			}
+
+			.cwp-seobar__sig:focus-visible {
+				box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--cwp-sig-dark);
 				border-radius: 3px;
-				min-width: 4px;
-				max-width: 72px;
-				background: #c3c4c7; /* default / empty */
+			}
+
+			/* --- popover --- */
+			.cwp-seobar__tip {
+				position: absolute;
+				top: calc(100% + 7px);
+				left: 50%;
+				transform: translateX(-50%);
+				width: 260px;
+				padding: 9px 11px 10px;
+				background: #1d2327;
+				color: #f0f0f1;
+				font-size: 12px;
+				font-weight: 400;
+				line-height: 1.45;
+				text-align: left;
+				letter-spacing: 0;
+				border-radius: 4px;
+				box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+				opacity: 0;
+				visibility: hidden;
+				pointer-events: none;
+				z-index: 9999;
+				transition: opacity .12s ease;
+			}
+
+			.cwp-seobar__tip::before {
+				content: "";
+				position: absolute;
+				bottom: 100%;
+				left: 50%;
+				margin-left: -6px;
+				border: 6px solid transparent;
+				border-bottom-color: #1d2327;
+			}
+
+			.cwp-seobar__sig:hover .cwp-seobar__tip,
+			.cwp-seobar__sig:focus-visible .cwp-seobar__tip,
+			.cwp-seobar__score:hover .cwp-seobar__tip,
+			.cwp-seobar__score:focus-visible .cwp-seobar__tip {
+				opacity: 1;
+				visibility: visible;
+			}
+
+			/* keep the popover on-screen for the first / last segments */
+			.cwp-seobar__sig:first-child .cwp-seobar__tip { left: 0; transform: none; }
+			.cwp-seobar__sig:first-child .cwp-seobar__tip::before { left: 11px; margin-left: 0; }
+			.cwp-seobar__sig:last-child .cwp-seobar__tip { left: auto; right: 0; transform: none; }
+			.cwp-seobar__sig:last-child .cwp-seobar__tip::before { left: auto; right: 11px; margin-left: 0; }
+
+			.cwp-seobar__tip strong {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 8px;
+				margin-bottom: 3px;
+				font-size: 12px;
+				color: #fff;
+			}
+
+			.cwp-seobar__tip em {
+				font-style: normal;
+				font-size: 10px;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: .04em;
+				padding: 1px 6px;
+				border-radius: 9px;
+				background: var(--cwp-sig);
+				color: #fff;
+			}
+
+			.cwp-seobar__summary { display: block; }
+
+			.cwp-seobar__detail {
+				display: block;
+				margin-top: 4px;
+				padding-top: 4px;
+				border-top: 1px solid rgba(255, 255, 255, .12);
+				color: #c3c4c7;
+				font-size: 11.5px;
+			}
+
+			/* --- score gauge --- */
+			.cwp-seobar__score {
+				position: relative;
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				padding: 2px 0;
+				border-radius: 3px;
+				outline: none;
+			}
+
+			.cwp-seobar__score:hover,
+			.cwp-seobar__score:focus-visible { z-index: 2; }
+
+			.cwp-seobar__score:focus-visible { box-shadow: 0 0 0 2px var(--cwp-sig-dark); }
+
+			.cwp-seobar__tip--score { left: 0; transform: none; }
+			.cwp-seobar__tip--score::before { left: 11px; margin-left: 0; }
+
+			.cwp-seobar__track {
+				flex: 1 1 auto;
+				height: 4px;
+				border-radius: 2px;
+				background: #e0e0e0;
+				overflow: hidden;
+			}
+
+			.cwp-seobar__fill {
+				display: block;
+				height: 100%;
+				border-radius: 2px;
+				background: var(--cwp-sig);
 				transition: width .2s ease;
 			}
 
-			.cwp-seo-score--good  .cwp-seo-score__bar { background: #00a32a; }
-			.cwp-seo-score--ok    .cwp-seo-score__bar { background: #dba617; }
-			.cwp-seo-score--poor  .cwp-seo-score__bar { background: #d63638; }
-			.cwp-seo-score--noindex .cwp-seo-score__bar { background: #8c8f94; width: 8px !important; }
-
-			/* Text label */
-			.cwp-seo-score__label {
+			.cwp-seobar__num {
+				flex: 0 0 auto;
+				min-width: 18px;
 				font-size: 11px;
-				line-height: 1.3;
-				color: #646970;
+				font-weight: 600;
+				font-variant-numeric: tabular-nums;
+				text-align: right;
+				color: var(--cwp-sig-dark);
 			}
-
-			.cwp-seo-score--good  .cwp-seo-score__label { color: #00a32a; }
-			.cwp-seo-score--ok    .cwp-seo-score__label { color: #a07000; }
-			.cwp-seo-score--poor  .cwp-seo-score__label { color: #d63638; }
-			.cwp-seo-score--noindex .cwp-seo-score__label { color: #8c8f94; }
 
 			/* Quick Edit SEO fields */
 			.cwp-quick-edit-seo__heading {
@@ -645,8 +807,8 @@ class PostListColumn
 					var postId = (typeof id === 'string') ? id.replace(/[^0-9]/g, '') : String(id);
 					if (!postId) { return; }
 
-					/* Read stored values from the data attributes on the score span. */
-					var $score = $('#post-' + postId + ' .cwp-seo-score');
+					/* Read stored values from the data attributes on the signal bar. */
+					var $score = $('#post-' + postId + ' .cwp-seobar');
 					if (!$score.length) { return; }
 
 					var seoTitle = $score.data('cwp-seo-title') || '';
