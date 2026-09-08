@@ -348,9 +348,8 @@ class Settings
 					'type'        => 'text',
 					'name'        => __('API Key', 'mihdan-index-now'),
 					'placeholder' => __('Set the API key', 'mihdan-index-now'),
-					'default'     => Utils::generate_key(),
+					'default'     => $this->get_index_now_api_key(),
 					'help_tab'    => 'https://crawlwp.com/article/setting-up-search-engine-indexing-for-wordpress/?utm_source=wp_dashboard&utm_medium=indexing_settings_page&utm_campaign=indexnow#wordpress-indexing-via-indexnow',
-					'desc'        => sprintf('<a style="border-bottom: 1px dotted #2271b1; text-decoration: none; margin-left: 10px;" href="#" onclick="document.getElementById(\'crawlwp_index_now[api_key]\').value=\'%s\'">%s</a>', esc_attr(Utils::generate_key()), __('Show example', 'mihdan-index-now')),
 				)
 			);
 
@@ -536,8 +535,7 @@ class Settings
 					'desc' => function () {
 
 						$transient = Utils::get_plugin_slug() . '-plugins';
-						delete_transient($transient);
-						$cached = get_transient($transient);
+						$cached    = get_transient($transient);
 
 						if (false !== $cached) {
 							return $cached;
@@ -720,7 +718,7 @@ class Settings
 				'yandex_webmaster',
 				array(
 					'id'       => 'client_secret',
-					'type'     => 'text',
+					'type'     => 'password',
 					'help_tab' => 'https://crawlwp.com/article/integrating-wordpress-with-yandex/?utm_source=wp_dashboard&utm_medium=api_settings_page&utm_campaign=yandex_api',
 					'name'     => __('Client secret', 'mihdan-index-now')
 				)
@@ -771,50 +769,10 @@ class Settings
 				);
 			}
 
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'   => 'access_token',
-					'type' => 'hidden',
-					'name' => '',
-				)
-			);
-
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'   => 'expires_in',
-					'type' => 'hidden',
-					'name' => '',
-				)
-			);
-
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'   => 'refresh_token',
-					'type' => 'hidden',
-					'name' => '',
-				)
-			);
-
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'   => 'user_id',
-					'type' => 'hidden',
-					'name' => '',
-				)
-			);
-
-			$this->wposa->add_field(
-				'yandex_webmaster',
-				array(
-					'id'   => 'host_ids',
-					'type' => 'hidden',
-					'name' => ''
-				)
-			);
+			// Note: access_token, refresh_token, expires_in, user_id and host_ids are
+			// intentionally NOT rendered as form fields. They are stored by the
+			// Yandex OAuth flow and preserved on save because the save handler merges
+			// posted values over the stored option (keys not posted are kept).
 		}
 
 
@@ -859,10 +817,29 @@ class Settings
 		}
 	}
 
+	/**
+	 * Return the persisted IndexNow API key, generating and saving it once when missing.
+	 *
+	 * @return string
+	 */
+	private function get_index_now_api_key(): string
+	{
+		$api_key = (string)$this->wposa->get_option('api_key', 'index_now', '');
+
+		if ($api_key === '') {
+			$api_key = Utils::generate_key();
+			$this->wposa->set_option('api_key', $api_key, 'index_now');
+		}
+
+		return $api_key;
+	}
+
 	public function get_yandex_webmaster_host_ids()
 	{
 		$result = [];
 
+		// Stored as a plain array; maybe_unserialize keeps backward compatibility
+		// with previously serialized values.
 		$ids = maybe_unserialize($this->wposa->get_option('host_ids', 'yandex_webmaster'));
 
 		if (is_array($ids)) {

@@ -136,7 +136,7 @@ class PostListColumn
 
 		$cached = get_post_meta($post_id, MetaFields::SEO_SCORE, true);
 		$score  = ($cached !== '' && $cached !== false) ? (float) $cached : $this->calculate_score($post_id);
-		$state  = $this->score_state($score);
+		$state  = $this->score_state($score, $post_id);
 		$label  = $this->state_label($state, $score);
 
 		/* Store current SEO values in data attributes so Quick Edit JS can pre-fill the fields. */
@@ -457,12 +457,16 @@ class PostListColumn
 	/**
 	 * Map a numeric score to a named state.
 	 *
-	 * @param float $score 0–100
+	 * 'noindex' is driven by the robots meta the editor actually saved, not by
+	 * the score — a low score is 'poor', not 'noindex'.
+	 *
+	 * @param float $score   0–100
+	 * @param int   $post_id Post to read the robots meta from.
 	 * @return string  'good' | 'ok' | 'poor' | 'noindex'
 	 */
-	private function score_state(float $score): string
+	private function score_state(float $score, int $post_id): string
 	{
-		if ($score <= 10) {
+		if (MetaFields::get($post_id, MetaFields::ROBOTS_INDEX, 'index') === 'noindex') {
 			return 'noindex';
 		}
 

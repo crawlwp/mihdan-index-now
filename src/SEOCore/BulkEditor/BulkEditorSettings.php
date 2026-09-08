@@ -170,6 +170,7 @@ class BulkEditorSettings
 			'orderby'             => 'title',
 			'order'               => 'ASC',
 			'ignore_sticky_posts' => true,
+			'perm'                => 'editable',
 		];
 
 		if ($search !== '') {

@@ -37,7 +37,7 @@ class Assets
 		wp_enqueue_script(
 			'crawlwp-title-meta',
 			$assets_url . 'crawlwp-title-meta.js',
-			[],
+			['jquery'],
 			$version,
 			true
 		);

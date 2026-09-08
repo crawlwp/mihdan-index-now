@@ -60,10 +60,12 @@ class PermalinkTracker
 			return;
 		}
 
-		// Avoid creating duplicate redirects for the same source URL.
 		// Compare against the path-only form used for storage (strip scheme + host).
-		$old_path = wp_parse_url($old_url, PHP_URL_PATH);
-		if ($old_path && $this->manager->exists_from_url($old_path)) {
+		$old_path = (string) wp_parse_url($old_url, PHP_URL_PATH);
+		$new_path = (string) wp_parse_url($new_url, PHP_URL_PATH);
+
+		// Never create a self-referencing redirect (from == to).
+		if ($old_path === '' || $new_path === '' || untrailingslashit($old_path) === untrailingslashit($new_path)) {
 			return;
 		}
 
@@ -78,6 +80,21 @@ class PermalinkTracker
 		$should_create = apply_filters('crawlwp_auto_redirect_permalink_change', true, $old_url, $new_url, $post_id);
 
 		if (!$should_create) {
+			return;
+		}
+
+		// If the new slug was itself a former old slug (A→B, then B→A), drop the
+		// stale rule pointing away from the new URL to prevent a redirect loop.
+		$reverse = $this->manager->get_by_from_url($new_path);
+		if ($reverse) {
+			$this->manager->delete((int) $reverse->id);
+		}
+
+		// A redirect from the old URL already exists — point it at the new
+		// destination rather than leaving it aimed at an outdated URL.
+		$existing = $this->manager->get_by_from_url($old_path);
+		if ($existing) {
+			$this->manager->update((int) $existing->id, ['to_url' => $new_url]);
 			return;
 		}
 

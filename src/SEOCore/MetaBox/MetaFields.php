@@ -46,31 +46,78 @@ class MetaFields
 
 	private static array $text_fields = [
 		self::SEO_TITLE,
-		self::SEO_DESCRIPTION,
 		self::FOCUS_KEYWORD,
-		self::CANONICAL_URL,
 		self::OG_TITLE,
-		self::OG_DESCRIPTION,
 		self::OG_IMAGE_ALT,
 		self::X_TITLE,
-		self::X_DESCRIPTION,
 		self::X_CREATOR,
 		self::SCHEMA_HEADLINE,
 		self::SCHEMA_BREADCRUMB,
 		self::SCHEMA_SECTION,
+	];
+
+	private static array $textarea_fields = [
+		self::SEO_DESCRIPTION,
+		self::OG_DESCRIPTION,
+		self::X_DESCRIPTION,
+	];
+
+	private static array $url_fields = [
+		self::CANONICAL_URL,
 		self::REDIRECT_URL,
 	];
 
-	private static array $select_fields = [
-		self::ROBOTS_INDEX,
-		self::ROBOTS_FOLLOW,
-		self::MAX_SNIPPET,
-		self::MAX_IMAGE,
-		self::X_CARD_TYPE,
-		self::SCHEMA_TYPE,
-		self::SCHEMA_PAGE_TYPE,
-		self::SCHEMA_ARTICLE_TYPE,
-		self::REDIRECT_TYPE,
+	private static array $page_types = [
+		'WebPage',
+		'ItemPage',
+		'AboutPage',
+		'FAQPage',
+		'QAPage',
+		'ProfilePage',
+		'ContactPage',
+		'MedicalWebPage',
+		'CollectionPage',
+		'RealEstateListing',
+		'none',
+	];
+
+	private static array $article_types = [
+		'Article',
+		'BlogPosting',
+		'SocialMediaPosting',
+		'NewsArticle',
+		'AdvertiserContentArticle',
+		'SatiricalArticle',
+		'ScholarlyArticle',
+		'TechArticle',
+		'Report',
+		'none',
+	];
+
+	/**
+	 * Select fields => [allowed values, fallback stored when the submitted value is not allowed].
+	 * Must mirror the <option> values in views/metabox-template.php.
+	 */
+	private static function select_fields(): array
+	{
+		return [
+			self::ROBOTS_INDEX        => [['index', 'noindex'], 'index'],
+			self::ROBOTS_FOLLOW       => [['follow', 'nofollow'], 'follow'],
+			self::MAX_SNIPPET         => [['', 'none', '160'], ''],
+			self::MAX_IMAGE           => [['large', 'standard', 'none'], 'large'],
+			self::X_CARD_TYPE         => [['summary_large_image', 'summary'], 'summary_large_image'],
+			self::SCHEMA_TYPE         => [array_merge(self::$page_types, self::$article_types), ''],
+			self::SCHEMA_PAGE_TYPE    => [self::$page_types, 'WebPage'],
+			self::SCHEMA_ARTICLE_TYPE => [self::$article_types, 'Article'],
+			self::REDIRECT_TYPE       => [['301', '302', '307', '410'], '301'],
+		];
+	}
+
+	private static array $robots_advanced_values = [
+		'noimageindex',
+		'noarchive',
+		'nosnippet',
+		'notranslate',
 	];
 
 	private static array $checkbox_fields = [
@@ -100,6 +147,10 @@ class MetaFields
 			return;
 		}
 
+		if (wp_is_post_revision($post_id)) {
+			return;
+		}
+
 		if (! current_user_can('edit_post', $post_id)) {
 			return;
 		}
@@ -110,9 +161,28 @@ class MetaFields
 			}
 		}
 
-		foreach (self::$select_fields as $key) {
+		foreach (self::$textarea_fields as $key) {
 			if (isset($_POST[$key])) {
-				update_post_meta($post_id, $key, sanitize_text_field(wp_unslash($_POST[$key])));
+				update_post_meta($post_id, $key, sanitize_textarea_field(wp_unslash($_POST[$key])));
+			}
+		}
+
+		foreach (self::$url_fields as $key) {
+			if (isset($_POST[$key])) {
+				$url = self::sanitize_url(wp_unslash($_POST[$key]));
+
+				if ($key === self::REDIRECT_URL && $url !== '' && self::is_external_url($url) && ! self::can_redirect_externally($post_id)) {
+					$url = '';
+				}
+
+				update_post_meta($post_id, $key, $url);
+			}
+		}
+
+		foreach (self::select_fields() as $key => [$allowed, $fallback]) {
+			if (isset($_POST[$key])) {
+				$value = sanitize_text_field(wp_unslash($_POST[$key]));
+				update_post_meta($post_id, $key, in_array($value, $allowed, true) ? $value : $fallback);
 			}
 		}
 
@@ -129,11 +199,75 @@ class MetaFields
 		foreach (self::$array_fields as $key) {
 			if (isset($_POST[$key]) && is_array($_POST[$key])) {
 				$sanitized = array_map('sanitize_text_field', wp_unslash($_POST[$key]));
+				$sanitized = array_values(array_intersect($sanitized, self::$robots_advanced_values));
 				update_post_meta($post_id, $key, $sanitized);
 			} else {
 				update_post_meta($post_id, $key, []);
 			}
 		}
+	}
+
+	/**
+	 * Returns an absolute http(s) URL or a site-relative path (single leading '/'), else ''.
+	 */
+	public static function sanitize_url($raw): string
+	{
+		if (! is_string($raw)) {
+			return '';
+		}
+
+		$url = esc_url_raw(trim($raw));
+
+		if ($url === '') {
+			return '';
+		}
+
+		if ($url[0] === '/') {
+			return (isset($url[1]) && $url[1] === '/') ? '' : $url;
+		}
+
+		$parts = wp_parse_url($url);
+
+		if (
+			! is_array($parts) ||
+			empty($parts['scheme']) ||
+			empty($parts['host']) ||
+			! in_array(strtolower($parts['scheme']), ['http', 'https'], true)
+		) {
+			return '';
+		}
+
+		return $url;
+	}
+
+	/**
+	 * True when the (already sanitized) URL points to a host other than the site's own.
+	 */
+	public static function is_external_url(string $url): bool
+	{
+		if ($url === '' || $url[0] === '/') {
+			return false;
+		}
+
+		$host = wp_parse_url($url, PHP_URL_HOST);
+		$home = wp_parse_url(home_url(), PHP_URL_HOST);
+
+		if (! is_string($host) || ! is_string($home)) {
+			return true;
+		}
+
+		return strtolower($host) !== strtolower($home);
+	}
+
+	private static function can_redirect_externally(int $post_id): bool
+	{
+		/**
+		 * Filters whether the current user may store a redirect to an external host.
+		 *
+		 * @param bool $allowed Defaults to current_user_can('manage_options').
+		 * @param int  $post_id The post being saved.
+		 */
+		return (bool) apply_filters('crawlwp_allow_external_redirects', current_user_can('manage_options'), $post_id);
 	}
 
 	public static function get(int $post_id, string $key, $default = '')

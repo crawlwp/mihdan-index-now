@@ -32,27 +32,44 @@ class FrontendHead
 			return;
 		}
 
-		$redirect_url  = MetaFields::get($post_id, MetaFields::REDIRECT_URL);
+		$redirect_url  = (string) MetaFields::get($post_id, MetaFields::REDIRECT_URL);
 		$redirect_type = MetaFields::get($post_id, MetaFields::REDIRECT_TYPE, '301');
-
-		if (empty($redirect_url)) {
-			return;
-		}
 
 		$code = (int) $redirect_type;
 
+		// 410 does not need a destination — the URL field may legitimately be empty.
 		if ($code === 410) {
-			status_header(410);
 			nocache_headers();
+			status_header(410);
 			echo '<!DOCTYPE html><html><head><title>410 Gone</title></head><body><h1>410 Gone</h1><p>This content has been permanently removed.</p></body></html>';
 			exit;
+		}
+
+		if ($redirect_url === '') {
+			return;
+		}
+
+		// Re-validate on output: absolute http(s) URL with a host, or a single-slash relative path.
+		$redirect_url = MetaFields::sanitize_url($redirect_url);
+
+		if ($redirect_url === '') {
+			return;
 		}
 
 		if (! in_array($code, [301, 302, 307], true)) {
 			$code = 301;
 		}
 
-		wp_redirect(esc_url_raw($redirect_url), $code);
+		// Loop guard: never redirect a URL to itself.
+		$target_url  = untrailingslashit($redirect_url[0] === '/' ? home_url($redirect_url) : $redirect_url);
+		$request_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+		$request_url = untrailingslashit((is_ssl() ? 'https://' : 'http://') . wp_parse_url(home_url(), PHP_URL_HOST) . $request_uri);
+
+		if ($target_url === $request_url || $target_url === untrailingslashit((string) get_permalink($post_id))) {
+			return;
+		}
+
+		wp_redirect($redirect_url, $code, 'CrawlWP');
 		exit;
 	}
 }

@@ -185,7 +185,9 @@
 			order:     state.order
 		}, function (resp) {
 			if (!resp.success) {
-				$tbody.html('<tr><td colspan="8">' + (resp.data && resp.data.message ? resp.data.message : 'Error') + '</td></tr>');
+				// Server error text is untrusted — insert it as text, never as HTML.
+				var $errCell = $('<td colspan="8"></td>').text(resp.data && resp.data.message ? resp.data.message : 'Error');
+				$tbody.empty().append($('<tr></tr>').append($errCell));
 				return;
 			}
 

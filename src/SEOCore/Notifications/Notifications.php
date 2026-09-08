@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore\Notifications;
 
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
 
 /**
@@ -644,8 +645,10 @@ class Notifications
 			];
 		}
 
-		/* 4. Missing homepage SEO title. */
-		if (Options::get('home', 'title', '') === '') {
+		/* 4. Missing homepage SEO title.
+		 * The frontend falls back to the registered default template, so only
+		 * warn when the stored value AND the default are both empty. */
+		if ($this->home_template_is_empty('title')) {
 			$notices[] = [
 				'id' => 'missing_homepage_title',
 				'severity' => 'warning',
@@ -659,7 +662,7 @@ class Notifications
 		}
 
 		/* 5. Missing homepage meta description. */
-		if (Options::get('home', 'description', '') === '') {
+		if ($this->home_template_is_empty('description')) {
 			$notices[] = [
 				'id' => 'missing_homepage_description',
 				'severity' => 'warning',
@@ -799,6 +802,27 @@ class Notifications
 		}
 
 		return null;
+	}
+
+	/**
+	 * Whether a homepage title/description template resolves to nothing.
+	 *
+	 * Mirrors FrontendOutput: a stored value wins, otherwise the default
+	 * registered in Entities is used. Only when both are empty is the tag
+	 * really missing on the frontend.
+	 *
+	 * @param string $field 'title' or 'description'.
+	 * @return bool
+	 */
+	private function home_template_is_empty(string $field): bool
+	{
+		$stored = trim((string) Options::get('home', $field, ''));
+
+		if ($stored !== '') {
+			return false;
+		}
+
+		return trim(Entities::default_value('home', $field, '')) === '';
 	}
 
 	/**

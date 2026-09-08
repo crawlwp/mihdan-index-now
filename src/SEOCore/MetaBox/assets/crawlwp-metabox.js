@@ -849,6 +849,24 @@
       return $('<div>').text(str).html();
     },
 
+    /* Escape a string for use inside a double- or single-quoted HTML attribute. */
+    escAttr: function(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    },
+
+    /* Only allow http(s) URLs or a single-slash relative path in href — blocks javascript:, data:, //host etc. */
+    safeUrl: function(url) {
+      var u = $.trim(String(url == null ? '' : url));
+      if (/^https?:\/\//i.test(u)) return u;
+      if (u.charAt(0) === '/' && u.charAt(1) !== '/') return u;
+      return '';
+    },
+
     stripTags: function(html) {
       return $('<div>').html(html).text();
     },
@@ -970,7 +988,7 @@
           var $div = $('<div>', { 'class': 'cwp-link-item' });
           if (idx >= 6) $div.addClass('cwp-link-hidden');
           $div.html('<div class="cwp-link-main">' +
-            '<a class="cwp-link-title" href="' + link.href + '" target="_blank">' + self.escHtml(link.text) + '</a>' +
+            '<a class="cwp-link-title" href="' + self.escAttr(self.safeUrl(link.href)) + '" target="_blank" rel="noopener noreferrer">' + self.escHtml(link.text) + '</a>' +
             '<div class="cwp-link-meta">' + self.escHtml(link.href) + '</div>' +
             '</div>' +
             '<div class="cwp-link-side"><span class="cwp-chip ' + chipClass + '">' + chipLabel + '</span></div>');
@@ -993,7 +1011,7 @@
           if (idx >= 6) $div.addClass('cwp-link-hidden');
           var anchorInfo = link.anchor ? self.fmt(crawlwpSEO.i18n.anchorLabel, self.escHtml(link.anchor)) + ' \u00b7 ' : '';
           $div.html('<div class="cwp-link-main">' +
-            '<a class="cwp-link-title" href="' + self.escHtml(link.url) + '" target="_blank">' + self.escHtml(link.title) + '</a>' +
+            '<a class="cwp-link-title" href="' + self.escAttr(self.safeUrl(link.url)) + '" target="_blank" rel="noopener noreferrer">' + self.escHtml(link.title) + '</a>' +
             '<div class="cwp-link-meta">' + anchorInfo + self.fmt(crawlwpSEO.i18n.publishedDate, self.escHtml(link.date)) + '</div>' +
             '</div>');
           $inList.append($div);
@@ -1015,11 +1033,11 @@
           var $div = $('<div>', { 'class': 'cwp-link-item is-suggested' });
           if (idx >= 6) $div.addClass('cwp-link-hidden');
           $div.html('<div class="cwp-link-main">' +
-            '<a class="cwp-link-title" href="' + self.escHtml(link.url) + '" target="_blank">' + self.escHtml(link.title) + '</a>' +
+            '<a class="cwp-link-title" href="' + self.escAttr(self.safeUrl(link.url)) + '" target="_blank" rel="noopener noreferrer">' + self.escHtml(link.title) + '</a>' +
             '<div class="cwp-link-meta">' + self.escHtml(link.url) + ' \u00b7 ' + self.escHtml(link.date) + '</div>' +
             '</div>' +
             '<div class="cwp-link-side">' +
-              '<button class="cwp-copy-url-btn" type="button" data-url="' + self.escHtml(link.url) + '" title="' + crawlwpSEO.i18n.copyUrl + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+              '<button class="cwp-copy-url-btn" type="button" data-url="' + self.escAttr(self.safeUrl(link.url)) + '" title="' + self.escAttr(crawlwpSEO.i18n.copyUrl) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
               '<span class="cwp-chip is-info">' + crawlwpSEO.i18n.suggested + '</span>' +
             '</div>');
           $sugList.append($div);
@@ -1167,7 +1185,7 @@
         success: function(resp) {
           if (resp.success && resp.data && resp.data.duplicate) {
             $text.html(self.fmt(L.kwDuplicateWarn, '<b>' + self.escHtml(resp.data.postTitle) + '</b>') +
-              (resp.data.editUrl ? ' <a href="' + resp.data.editUrl + '" target="_blank">\u2192 ' + self.escHtml(resp.data.postTitle) + '</a>' : ''));
+              (self.safeUrl(resp.data.editUrl) ? ' <a href="' + self.escAttr(self.safeUrl(resp.data.editUrl)) + '" target="_blank" rel="noopener noreferrer">\u2192 ' + self.escHtml(resp.data.postTitle) + '</a>' : ''));
             $warning.css('display', 'flex');
           } else {
             $warning.hide();

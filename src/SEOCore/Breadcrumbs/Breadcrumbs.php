@@ -92,7 +92,7 @@ class Breadcrumbs
 			return '';
 		}
 
-		$sep = '<span class="cwp-bc__sep" aria-hidden="true">' . $this->args['separator'] . '</span>';
+		$sep = '<span class="cwp-bc__sep" aria-hidden="true">' . esc_html((string) $this->args['separator']) . '</span>';
 
 		$output = '<nav class="cwp-bc" aria-label="' . esc_attr__('Breadcrumbs', 'mihdan-index-now') . '">';
 

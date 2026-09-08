@@ -101,12 +101,17 @@ class Assets
 		 * the metabox's localized `crawlwpSEO` object — nonces, feature flags,
 		 * etc. — without this plugin needing to know about them.
 		 *
-		 * @param array         $localize_data Data passed to wp_localize_script().
+		 * @param array         $localize_data Data exposed to JS as the `crawlwpSEO` global.
 		 * @param \WP_Post|null $post          The post being edited, if any.
 		 */
 		$localize_data = apply_filters('crawlwp_metabox_localize_data', $localize_data, $post);
 
-		wp_localize_script('crawlwp-seo-metabox', 'crawlwpSEO', $localize_data);
+		// JSON_HEX_* flags make the payload safe to embed inline (post content may contain "</script>").
+		wp_add_inline_script(
+			'crawlwp-seo-metabox',
+			'var crawlwpSEO = ' . wp_json_encode($localize_data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';',
+			'before'
+		);
 
 		/**
 		 * Fires after the SEO metabox assets are enqueued, so add-on plugins can
@@ -249,10 +254,10 @@ class Assets
 
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
 		$field   = isset($_POST['field']) ? sanitize_key($_POST['field']) : '';
-		$title   = isset($_POST['post_title']) ? sanitize_text_field($_POST['post_title']) : '';
-		$content = isset($_POST['post_content']) ? wp_kses_post($_POST['post_content']) : '';
-		$keyword = isset($_POST['focus_keyword']) ? sanitize_text_field($_POST['focus_keyword']) : '';
-		$previous = isset($_POST['previous_value']) ? sanitize_textarea_field($_POST['previous_value']) : '';
+		$title   = isset($_POST['post_title']) ? sanitize_text_field(wp_unslash($_POST['post_title'])) : '';
+		$content = isset($_POST['post_content']) ? wp_kses_post(wp_unslash($_POST['post_content'])) : '';
+		$keyword = isset($_POST['focus_keyword']) ? sanitize_text_field(wp_unslash($_POST['focus_keyword'])) : '';
+		$previous = isset($_POST['previous_value']) ? sanitize_textarea_field(wp_unslash($_POST['previous_value'])) : '';
 
 		// Check the capability against the actual post being edited, not just
 		// the generic edit_posts capability.
@@ -260,6 +265,10 @@ class Assets
 
 		if (! $allowed) {
 			wp_send_json_error(['message' => __('You are not allowed to generate SEO text for this post.', 'mihdan-index-now')], 403);
+		}
+
+		if ($this->ai_rate_limited()) {
+			wp_send_json_error(['message' => __('Too many AI requests. Please wait a few minutes and try again.', 'mihdan-index-now')], 429);
 		}
 
 		if (! in_array($field, Generator::fields(), true)) {
@@ -298,6 +307,41 @@ class Assets
 		}
 
 		wp_send_json_success(['text' => $generated, 'source' => 'ai']);
+	}
+
+	/**
+	 * Per-user rate limit for AI generation: at most 20 requests per 5 minutes.
+	 *
+	 * Increments the counter on every call, so call it once per request.
+	 */
+	private function ai_rate_limited(): bool
+	{
+		$limit  = (int) apply_filters('crawlwp_ai_rate_limit', 20);
+		$window = (int) apply_filters('crawlwp_ai_rate_limit_window', 5 * MINUTE_IN_SECONDS);
+
+		if ($limit <= 0) {
+			return false;
+		}
+
+		$key   = 'crawlwp_ai_rl_' . get_current_user_id();
+		$state = get_transient($key);
+		$now   = time();
+
+		// Fixed window: [count, window start]. A missing/expired transient starts a fresh window.
+		if (! is_array($state) || ! isset($state['count'], $state['start']) || ($now - (int) $state['start']) >= $window) {
+			$state = ['count' => 0, 'start' => $now];
+		}
+
+		if ((int) $state['count'] >= $limit) {
+			return true;
+		}
+
+		$state['count'] = (int) $state['count'] + 1;
+		$remaining      = $window - ($now - (int) $state['start']);
+
+		set_transient($key, $state, max(1, $remaining));
+
+		return false;
 	}
 
 	/**
@@ -545,20 +589,24 @@ class Assets
 	{
 		check_ajax_referer('crawlwp_submit_indexnow', 'nonce');
 
-		if (! current_user_can('edit_posts')) {
-			wp_send_json_error(['message' => 'Unauthorized'], 403);
-		}
-
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
 
 		if (! $post_id) {
 			wp_send_json_error(['message' => 'Invalid post ID.']);
 		}
 
+		if (! current_user_can('edit_post', $post_id)) {
+			wp_send_json_error(['message' => 'Unauthorized'], 403);
+		}
+
 		$post = get_post($post_id);
 
 		if (! $post instanceof \WP_Post) {
 			wp_send_json_error(['message' => 'Post not found.']);
+		}
+
+		if (get_post_status($post_id) !== 'publish') {
+			wp_send_json_error(['message' => __('Only published posts can be submitted for indexing.', 'mihdan-index-now')]);
 		}
 
 		/**
@@ -632,6 +680,10 @@ class Assets
 
 		$keyword = isset($_POST['keyword']) ? sanitize_text_field(wp_unslash($_POST['keyword'])) : '';
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+		if ($post_id && ! current_user_can('edit_post', $post_id)) {
+			wp_send_json_error(['message' => 'Unauthorized'], 403);
+		}
 
 		if (empty($keyword)) {
 			wp_send_json_success(['duplicate' => false]);
