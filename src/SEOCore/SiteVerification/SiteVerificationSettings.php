@@ -9,6 +9,9 @@ class SiteVerificationSettings
 {
 	private const META_TAG_REGEX = '/<meta.+content=(?:"|\')(.+)(?:"|\').+/';
 
+	/** Characters allowed in a stored verification code — everything else is stripped. */
+	private const CODE_DISALLOWED_REGEX = '/[^A-Za-z0-9_\-=.:]+/';
+
 	public function __construct()
 	{
 		add_action('crawlwp_setup_fields', [$this, 'advanced_settings_fields'], 10, 2);
@@ -82,7 +85,13 @@ class SiteVerificationSettings
 
 			foreach ($providers as $provider) {
 				if (isset($submitted_data[$provider])) {
-					$submitted_data[$provider] = preg_replace(self::META_TAG_REGEX, '$1', wp_unslash($submitted_data[$provider]));
+					$code = trim((string) wp_unslash($submitted_data[$provider]));
+
+					/* Accept a pasted <meta> tag and pull out the content attribute. */
+					$code = (string) preg_replace(self::META_TAG_REGEX, '$1', $code);
+
+					/* Whether pasted as a tag or a bare code, only safe characters may be stored. */
+					$submitted_data[$provider] = (string) preg_replace(self::CODE_DISALLOWED_REGEX, '', $code);
 				}
 			}
 		}

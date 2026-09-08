@@ -211,7 +211,7 @@ class SiteInfoSettings
 
 		/* Primary: Facebook and X. */
 		foreach (['profile_facebook', 'profile_x'] as $field) {
-			$url = (string) self::get($field, '');
+			$url = esc_url_raw(trim((string) self::get($field, '')));
 
 			if ($url !== '') {
 				$urls[] = $url;

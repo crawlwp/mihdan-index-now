@@ -134,8 +134,8 @@ class RedirectsSettings
 			'search'   => sanitize_text_field($_POST['search'] ?? ''),
 			'status'   => sanitize_text_field($_POST['status'] ?? 'all'),
 			'type'     => (int) ($_POST['type'] ?? 0),
-			'per_page' => (int) ($_POST['per_page'] ?? 20),
-			'page'     => (int) ($_POST['page'] ?? 1),
+			'per_page' => max(1, (int) ($_POST['per_page'] ?? 20)),
+			'page'     => max(1, (int) ($_POST['page'] ?? 1)),
 			'orderby'  => sanitize_key($_POST['orderby'] ?? 'id'),
 			'order'    => sanitize_text_field($_POST['order'] ?? 'DESC'),
 		];
@@ -181,6 +181,12 @@ class RedirectsSettings
 		$type = (int) $data['redirect_type'];
 		if ($type !== 410 && $type !== 451 && empty($data['to_url'])) {
 			wp_send_json_error(['message' => __('To URL is required for this redirect type.', 'mihdan-index-now')]);
+		}
+
+		// Surface field-level validation errors (invalid regex, unsafe To URL, …).
+		$validation = $this->manager->validate($data);
+		if (is_wp_error($validation)) {
+			wp_send_json_error(['message' => $validation->get_error_message()]);
 		}
 
 		if ($id > 0) {

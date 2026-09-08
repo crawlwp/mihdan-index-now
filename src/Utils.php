@@ -361,11 +361,11 @@ class Utils
 	{
 		?>
 		<script type="text/javascript">
-			window.location.href = "<?php echo $myURL;?>"
+			window.location.href = "<?php echo esc_js(esc_url_raw($myURL)); ?>"
 		</script>
-		<meta http-equiv="refresh" content="0; url=<?php echo $myURL; ?>">
+		<meta http-equiv="refresh" content="0; url=<?php echo esc_url($myURL); ?>">
 		Please wait while you are redirected...or
-		<a href="<?php echo $myURL; ?>">Click Here</a> if you do not want to wait.
+		<a href="<?php echo esc_url($myURL); ?>">Click Here</a> if you do not want to wait.
 		<?php
 	}
 

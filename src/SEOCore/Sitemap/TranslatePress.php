@@ -3,11 +3,12 @@
 namespace Mihdan\IndexNow\SEOCore\Sitemap;
 
 /**
- * TranslatePress integration for the WordPress core sitemap.
+ * TranslatePress integration.
  *
  * Outputs hreflang <link rel="alternate"> tags in <head> for the current page
- * using TranslatePress URL conversion, and ensures all language URLs are
- * reflected in the WordPress core sitemap.
+ * using TranslatePress URL conversion. It does not add alternate-language
+ * entries to the WordPress core sitemap itself; TranslatePress serves
+ * translated URLs from the same post/term entries via its URL converter.
  *
  * Fires two actions that third-party code may hook:
  *   crawlwp_sitemap_post  ($post)  — when a post entry is rendered.
@@ -159,10 +160,23 @@ class TranslatePress
 	 */
 	private function get_current_url()
 	{
-		$scheme = is_ssl() ? 'https' : 'http';
-		$host   = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
-		$uri    = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+		/* home_url() supplies the trusted scheme and host — never rely on HTTP_HOST. */
+		$uri = isset($_SERVER['REQUEST_URI']) ? (string) wp_unslash($_SERVER['REQUEST_URI']) : '/';
 
-		return $scheme . '://' . $host . $uri;
+		if ($uri === '' || $uri[0] !== '/') {
+			$uri = '/' . ltrim($uri, '/');
+		}
+
+		// REQUEST_URI already contains any sub-directory path of the site,
+		// so only the scheme/host/port of home_url() are used.
+		$home = wp_parse_url(home_url());
+
+		$origin = ($home['scheme'] ?? 'https') . '://' . ($home['host'] ?? '');
+
+		if (! empty($home['port'])) {
+			$origin .= ':' . $home['port'];
+		}
+
+		return $origin . $uri;
 	}
 }

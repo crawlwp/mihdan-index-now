@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore;
 
+use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
 
@@ -16,6 +17,7 @@ class Sitemap
 		add_filter('wp_sitemaps_post_types', [$this, 'filter_post_types']);
 		add_filter('wp_sitemaps_taxonomies', [$this, 'filter_taxonomies']);
 		add_filter('wp_sitemaps_add_provider', [$this, 'filter_providers'], 10, 2);
+		add_filter('wp_sitemaps_posts_query_args', [$this, 'filter_posts_query_args']);
 
 		/* Brand the sitemap stylesheet description (works for any site language). */
 		add_filter('wp_sitemaps_stylesheet_content', [$this, 'brand_stylesheet']);
@@ -91,6 +93,49 @@ class Sitemap
 		}
 
 		return $provider;
+	}
+
+	/**
+	 * Drop password-protected posts and posts marked noindex in the SEO
+	 * metabox from the core posts sitemaps.
+	 *
+	 * @param array $args WP_Query arguments.
+	 *
+	 * @return array
+	 */
+	public function filter_posts_query_args($args)
+	{
+		if (! is_array($args)) {
+			return $args;
+		}
+
+		$args['has_password'] = false;
+
+		$noindex_clause = [
+			'relation' => 'OR',
+			[
+				'key'     => MetaFields::ROBOTS_INDEX,
+				'compare' => 'NOT EXISTS',
+			],
+			[
+				'key'     => MetaFields::ROBOTS_INDEX,
+				'value'   => 'noindex',
+				'compare' => '!=',
+			],
+		];
+
+		if (! empty($args['meta_query']) && is_array($args['meta_query'])) {
+			/* Preserve any existing clauses and AND ours onto them. */
+			$args['meta_query'] = [
+				'relation' => 'AND',
+				$args['meta_query'],
+				$noindex_clause,
+			];
+		} else {
+			$args['meta_query'] = $noindex_clause;
+		}
+
+		return $args;
 	}
 
 	// -------------------------------------------------------------------------

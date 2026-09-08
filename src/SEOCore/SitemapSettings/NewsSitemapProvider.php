@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\SitemapSettings;
 
+use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use WP_Site;
 
 /**
@@ -206,15 +207,30 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 			return [];
 		}
 
-		/* Google News only accepts content published within the last 2 days. */
+		/* Google News only accepts content published within the last 2 days (strict UTC cutoff). */
 		$args = [
 			'post_type' => $post_types,
 			'post_status' => 'publish',
+			'has_password' => false,
 			'posts_per_page' => 1000,
 			'date_query' => [
 				[
-					'after' => '2 days ago',
+					'column' => 'post_date_gmt',
+					'after' => gmdate('Y-m-d H:i:s', time() - 2 * DAY_IN_SECONDS),
 					'inclusive' => true,
+				],
+			],
+			/* Skip posts an editor marked noindex in the SEO metabox. */
+			'meta_query' => [
+				'relation' => 'OR',
+				[
+					'key' => MetaFields::ROBOTS_INDEX,
+					'compare' => 'NOT EXISTS',
+				],
+				[
+					'key' => MetaFields::ROBOTS_INDEX,
+					'value' => 'noindex',
+					'compare' => '!=',
 				],
 			],
 			'orderby' => 'date',

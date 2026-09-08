@@ -20,6 +20,13 @@ use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
 class FrontendOutput
 {
 	/**
+	 * JSON flags for every JSON-LD payload printed inside a <script> tag.
+	 *
+	 * The JSON_HEX_* flags make `</script>` and similar sequences harmless.
+	 */
+	public const JSON_LD_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
+	/**
 	 * Memoised resolution for the current request.
 	 *
 	 * @var array|null|false Null until resolved, false when nothing applies.
@@ -58,6 +65,9 @@ class FrontendOutput
 	/**
 	 * Feed our directives into the single robots tag rendered by core.
 	 *
+	 * Core directives (e.g. `max-image-preview:large`) are kept unless the
+	 * plugin sets the same directive or a conflicting one.
+	 *
 	 * @param array $robots Directives keyed by name.
 	 */
 	public function filter_robots($robots)
@@ -68,17 +78,31 @@ class FrontendOutput
 			return $robots;
 		}
 
-		$directives = [];
+		$directives = is_array($robots) ? $robots : [];
+
+		/* Mutually exclusive pairs — drop whatever core decided, we own these. */
+		$conflicts = [
+			'index'    => 'noindex',
+			'noindex'  => 'index',
+			'follow'   => 'nofollow',
+			'nofollow' => 'follow',
+		];
 
 		foreach ($data['robots'] as $directive) {
-			if (strpos($directive, ':') !== false) {
-				[$name, $value] = explode(':', $directive, 2);
-				$directives[$name] = $value;
+			$directive = (string) $directive;
+			$value     = true;
 
-				continue;
+			if (strpos($directive, ':') !== false) {
+				[$directive, $value] = explode(':', $directive, 2);
 			}
 
-			$directives[$directive] = true;
+			unset($directives[$directive]);
+
+			if (isset($conflicts[$directive])) {
+				unset($directives[$conflicts[$directive]]);
+			}
+
+			$directives[$directive] = $value;
 		}
 
 		return $directives;
@@ -672,17 +696,51 @@ class FrontendOutput
 		return ($cleaned !== null && $cleaned !== '') ? trim($cleaned) : $title;
 	}
 
+	/**
+	 * Resolve a stored image setting into an attachment ID and a URL.
+	 *
+	 * The media picker stores the image URL, while older installs may hold an
+	 * attachment ID — accept both.
+	 *
+	 * @param mixed $value Stored option value.
+	 *
+	 * @return array{0: int, 1: string} Attachment ID (0 when unknown) and URL ('' when unresolved).
+	 */
+	private function resolve_image_setting($value): array
+	{
+		if (is_array($value)) {
+			$value = $value['url'] ?? $value['id'] ?? '';
+		}
+
+		$value = trim((string) $value);
+
+		if ($value === '') {
+			return [0, ''];
+		}
+
+		if (is_numeric($value)) {
+			$id  = (int) $value;
+			$url = $id > 0 ? (string) (wp_get_attachment_image_url($id, 'full') ?: '') : '';
+
+			return [$url !== '' ? $id : 0, $url];
+		}
+
+		$url = esc_url_raw($value);
+
+		if ($url === '') {
+			return [0, ''];
+		}
+
+		return [(int) attachment_url_to_postid($url), $url];
+	}
+
 	private function output_open_graph(array $data): void
 	{
 		/* Use entity image first; fall back to global social image fallback. */
 		$og_image = $data['og_image'];
 
 		if ($og_image === '') {
-			$fallback_id = (int) SocialSettings::get('social_image_fallback', 0);
-
-			if ($fallback_id > 0) {
-				$og_image = (string) (wp_get_attachment_image_url($fallback_id, 'full') ?: '');
-			}
+			[, $og_image] = $this->resolve_image_setting(SocialSettings::get('social_image_fallback', ''));
 		}
 
 		/* Build OG tags array — keyed by property name. */
@@ -858,11 +916,7 @@ class FrontendOutput
 		$x_image = $data['x_image'] !== '' ? $data['x_image'] : $data['og_image'];
 
 		if ($x_image === '') {
-			$fallback_id = (int) SocialSettings::get('social_image_fallback', 0);
-
-			if ($fallback_id > 0) {
-				$x_image = (string) (wp_get_attachment_image_url($fallback_id, 'full') ?: '');
-			}
+			[, $x_image] = $this->resolve_image_setting(SocialSettings::get('social_image_fallback', ''));
 		}
 
 		/* twitter:creator — per-post → author profile → global setting. */
@@ -987,7 +1041,7 @@ class FrontendOutput
 			$schema = apply_filters('crawlwp_schema_data', $schema, null);
 
 			echo '<script type="application/ld+json">' . "\n";
-			echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			echo wp_json_encode($schema, self::JSON_LD_FLAGS);
 			echo "\n" . '</script>' . "\n";
 
 			return;
@@ -1016,8 +1070,17 @@ class FrontendOutput
 			if ($legacy !== '' && $legacy !== 'none') {
 				$article_type = $legacy;
 			} else {
-				$global_article = (string) Options::get($data['entity'], 'schema_article_type', '');
-				$article_type   = $global_article !== '' ? $global_article : 'Article';
+				$article_type = (string) Options::get($data['entity'], 'schema_article_type', '');
+
+				if ($article_type === '') {
+					/* Only blog posts are articles by default; pages and other
+					 * post types fall back to their page type alone. */
+					$article_type = Entities::default_value(
+						$data['entity'],
+						'schema_article_type',
+						$post->post_type === 'post' ? 'Article' : 'none'
+					);
+				}
 			}
 		}
 
@@ -1079,7 +1142,7 @@ class FrontendOutput
 		$schema = apply_filters('crawlwp_schema_data', $schema, $post);
 
 		echo '<script type="application/ld+json">' . "\n";
-		echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		echo wp_json_encode($schema, self::JSON_LD_FLAGS);
 		echo "\n" . '</script>' . "\n";
 	}
 
@@ -1121,8 +1184,7 @@ class FrontendOutput
 		}
 
 		/* --- logo --- */
-		$logo_id  = (int) SiteInfoSettings::get('logo', 0);
-		$logo_url = $logo_id > 0 ? (string) wp_get_attachment_image_url($logo_id, 'full') : '';
+		[$logo_id, $logo_url] = $this->resolve_image_setting(SiteInfoSettings::get('logo', ''));
 
 		/* --- sameAs --- */
 		$same_as = SiteInfoSettings::get_same_as();
@@ -1136,7 +1198,7 @@ class FrontendOutput
 		];
 
 		if ($logo_url !== '') {
-			$logo_meta = wp_get_attachment_metadata($logo_id);
+			$logo_meta = $logo_id > 0 ? wp_get_attachment_metadata($logo_id) : false;
 			$logo_node = [
 				'@type'      => 'ImageObject',
 				'inLanguage' => $lang,
@@ -1220,7 +1282,7 @@ class FrontendOutput
 		$graph = apply_filters('crawlwp_site_graph', $graph);
 
 		echo '<script type="application/ld+json">' . "\n";
-		echo wp_json_encode($graph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+		echo wp_json_encode($graph, self::JSON_LD_FLAGS | JSON_PRETTY_PRINT);
 		echo "\n" . '</script>' . "\n";
 	}
 
