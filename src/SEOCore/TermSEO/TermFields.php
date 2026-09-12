@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\TermSEO;
 
+use Mihdan\IndexNow\SEOCore\MetaBox\FieldProcessor;
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 
 /**
@@ -36,6 +37,44 @@ class TermFields
 		];
 	}
 
+	/**
+	 * The term subset of the SEO fields, described for {@see FieldProcessor}.
+	 *
+	 * Sharing the definitions with MetaFields keeps the term and post savers
+	 * from drifting apart: the sanitisation rule for a key lives in exactly one
+	 * place.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function field_definitions(): array
+	{
+		return [
+			MetaFields::SEO_TITLE       => ['type' => FieldProcessor::TYPE_TEXT],
+			MetaFields::OG_TITLE        => ['type' => FieldProcessor::TYPE_TEXT],
+			MetaFields::X_TITLE         => ['type' => FieldProcessor::TYPE_TEXT],
+			MetaFields::SEO_DESCRIPTION => ['type' => FieldProcessor::TYPE_TEXTAREA],
+			MetaFields::OG_DESCRIPTION  => ['type' => FieldProcessor::TYPE_TEXTAREA],
+			MetaFields::X_DESCRIPTION   => ['type' => FieldProcessor::TYPE_TEXTAREA],
+			MetaFields::CANONICAL_URL   => ['type' => FieldProcessor::TYPE_URL],
+			MetaFields::OG_IMAGE        => ['type' => FieldProcessor::TYPE_INT],
+			MetaFields::X_IMAGE         => ['type' => FieldProcessor::TYPE_INT],
+			/* The term form always renders both robots selects, so an absent
+			   value legitimately means "back to the default". */
+			MetaFields::ROBOTS_INDEX    => [
+				'type'     => FieldProcessor::TYPE_SELECT,
+				'allowed'  => ['index', 'noindex'],
+				'fallback' => 'index',
+				'always'   => true,
+			],
+			MetaFields::ROBOTS_FOLLOW   => [
+				'type'     => FieldProcessor::TYPE_SELECT,
+				'allowed'  => ['follow', 'nofollow'],
+				'fallback' => 'follow',
+				'always'   => true,
+			],
+		];
+	}
+
 	public static function save(int $term_id): void
 	{
 		if (
@@ -49,40 +88,8 @@ class TermFields
 			return;
 		}
 
-		$text = [
-			MetaFields::SEO_TITLE,
-			MetaFields::OG_TITLE,
-			MetaFields::X_TITLE,
-		];
-
-		foreach ($text as $key) {
-			if (isset($_POST[$key])) {
-				update_term_meta($term_id, $key, sanitize_text_field(wp_unslash($_POST[$key])));
-			}
-		}
-
-		foreach ([MetaFields::SEO_DESCRIPTION, MetaFields::OG_DESCRIPTION, MetaFields::X_DESCRIPTION] as $key) {
-			if (isset($_POST[$key])) {
-				update_term_meta($term_id, $key, sanitize_textarea_field(wp_unslash($_POST[$key])));
-			}
-		}
-
-		if (isset($_POST[MetaFields::CANONICAL_URL])) {
-			update_term_meta($term_id, MetaFields::CANONICAL_URL, MetaFields::sanitize_url(wp_unslash($_POST[MetaFields::CANONICAL_URL])));
-		}
-
-		$index = isset($_POST[MetaFields::ROBOTS_INDEX]) ? sanitize_text_field(wp_unslash($_POST[MetaFields::ROBOTS_INDEX])) : 'index';
-		update_term_meta($term_id, MetaFields::ROBOTS_INDEX, $index === 'noindex' ? 'noindex' : 'index');
-
-		$follow = isset($_POST[MetaFields::ROBOTS_FOLLOW]) ? sanitize_text_field(wp_unslash($_POST[MetaFields::ROBOTS_FOLLOW])) : 'follow';
-		update_term_meta($term_id, MetaFields::ROBOTS_FOLLOW, $follow === 'nofollow' ? 'nofollow' : 'follow');
-
-		if (isset($_POST[MetaFields::OG_IMAGE])) {
-			update_term_meta($term_id, MetaFields::OG_IMAGE, absint($_POST[MetaFields::OG_IMAGE]));
-		}
-
-		if (isset($_POST[MetaFields::X_IMAGE])) {
-			update_term_meta($term_id, MetaFields::X_IMAGE, absint($_POST[MetaFields::X_IMAGE]));
+		foreach (FieldProcessor::process(self::field_definitions(), $_POST) as $key => $value) {
+			update_term_meta($term_id, $key, $value);
 		}
 	}
 }

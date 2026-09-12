@@ -26,6 +26,15 @@ $cwp_ai_button = static function (string $target, string $field): void {
 ?>
 <div class="cwp-metabox" id="crawlwp-seo-metabox-inner">
 
+  <?php
+  /*
+   * Marks the request as coming from the full SEO form. Checkbox and
+   * robots-advanced fields are only written when it is present, so a
+   * programmatic save_post from another plugin cannot reset them.
+   */
+  ?>
+  <input type="hidden" name="<?php echo esc_attr(MetaFields::CHECKBOX_TRACKER); ?>" value="1">
+
   <div class="cwp-tabs" role="tablist">
     <button class="cwp-tab is-active" role="tab" aria-selected="true" data-panel="general" type="button"><?php esc_html_e('General', 'mihdan-index-now'); ?></button>
     <button class="cwp-tab" role="tab" aria-selected="false" data-panel="analysis" type="button">
@@ -624,6 +633,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
             <option value="302" <?php selected($data['redirect_type'], '302'); ?>><?php esc_html_e('302 — Temporary', 'mihdan-index-now'); ?></option>
             <option value="307" <?php selected($data['redirect_type'], '307'); ?>><?php esc_html_e('307 — Temporary (strict)', 'mihdan-index-now'); ?></option>
             <option value="410" <?php selected($data['redirect_type'], '410'); ?>><?php esc_html_e('410 — Content deleted', 'mihdan-index-now'); ?></option>
+            <option value="451" <?php selected($data['redirect_type'], '451'); ?>><?php esc_html_e('451 — Unavailable for legal reasons', 'mihdan-index-now'); ?></option>
           </select>
         </div>
       </div>

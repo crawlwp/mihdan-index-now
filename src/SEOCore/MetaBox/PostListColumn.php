@@ -41,6 +41,13 @@ class PostListColumn
 		 */
 		add_action('save_post', [$this, 'persist_score'], 20);
 
+		/*
+		 * Persist the SEO signals too, so the post list does not have to scan
+		 * the content of every row. Priority 25 runs after the meta and the
+		 * score have been written.
+		 */
+		add_action('save_post', [$this, 'persist_signals'], 25);
+
 		/* Save SEO fields submitted via Quick Edit. */
 		add_action('save_post', [$this, 'save_quick_edit'], 15);
 	}
@@ -143,7 +150,7 @@ class PostListColumn
 		$seo_title = (string) MetaFields::get($post_id, MetaFields::SEO_TITLE, '');
 		$seo_desc  = (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION, '');
 
-		$signals = SeoSignals::for_post($post);
+		$signals = SeoSignals::cached($post);
 
 		echo '<div class="cwp-seobar" data-cwp-seo-title="' . esc_attr($seo_title) . '" data-cwp-seo-desc="' . esc_attr($seo_desc) . '">';
 
@@ -308,17 +315,13 @@ class PostListColumn
 			? sanitize_textarea_field(wp_unslash($_POST['cwp_quick_edit_seo_desc']))
 			: '';
 
-		if ($seo_title !== '') {
-			update_post_meta($post_id, MetaFields::SEO_TITLE, $seo_title);
-		} else {
-			delete_post_meta($post_id, MetaFields::SEO_TITLE);
-		}
-
-		if ($seo_desc !== '') {
-			update_post_meta($post_id, MetaFields::SEO_DESCRIPTION, $seo_desc);
-		} else {
-			delete_post_meta($post_id, MetaFields::SEO_DESCRIPTION);
-		}
+		/*
+		 * An empty value keeps an empty meta row instead of deleting it, so the
+		 * Bulk Editor's "missing title/description" filters can use an indexed
+		 * comparison. See MetaFields::ALWAYS_STORED.
+		 */
+		MetaFields::save_optional($post_id, MetaFields::SEO_TITLE, $seo_title);
+		MetaFields::save_optional($post_id, MetaFields::SEO_DESCRIPTION, $seo_desc);
 	}
 
 	// -------------------------------------------------------------------------
@@ -372,6 +375,31 @@ class PostListColumn
 			   always falls back to the live PHP approximation. */
 			delete_post_meta($post_id, MetaFields::SEO_SCORE);
 		}
+	}
+
+	/**
+	 * Recompute the cached SEO signals whenever a post is saved.
+	 *
+	 * Without this the post list would have to run strip_shortcodes() and
+	 * wp_strip_all_tags() over the full content of every row it renders.
+	 *
+	 * @param int $post_id
+	 */
+	public function persist_signals(int $post_id): void
+	{
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return;
+		}
+
+		if (wp_is_post_revision($post_id)) {
+			return;
+		}
+
+		if (wp_is_post_autosave($post_id)) {
+			return;
+		}
+
+		SeoSignals::persist($post_id);
 	}
 
 	// -------------------------------------------------------------------------

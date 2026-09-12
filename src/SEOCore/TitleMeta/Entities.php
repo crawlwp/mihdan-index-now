@@ -86,7 +86,11 @@ class Entities
 				'defaults' => [
 					'title'               => '{{ post.title }} {{ sep }} {{ page }} {{ sep }} {{ site.title }}',
 					'description'         => '{{ post.auto_description }}',
-					'schema_type'         => 'post' === $post_type->name ? 'Article' : 'WebPage',
+					/* The frontend resolves the schema type from these two keys.
+					 * Only blog posts are articles by default; every other post
+					 * type falls back to its page type alone. */
+					'schema_page_type'    => 'WebPage',
+					'schema_article_type' => 'post' === $post_type->name ? 'Article' : 'none',
 					'archive_title'       => '{{ post_type.plural_name }} {{ sep }} {{ page }} {{ sep }} {{ site.title }}',
 					'archive_description' => '{{ post_type.description }}',
 				],

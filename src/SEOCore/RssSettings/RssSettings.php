@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\RssSettings;
 
+use Mihdan\IndexNow\SEOCore\SettingsFieldsTrait;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\Views\WPOSA;
 
@@ -20,6 +21,8 @@ use Mihdan\IndexNow\Views\WPOSA;
  */
 class RssSettings
 {
+	use SettingsFieldsTrait;
+
 	/** Option/section id (without the crawlwp_ prefix). */
 	const SECTION = 'rss';
 
@@ -65,6 +68,7 @@ class RssSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_rss_feed',
 			__('RSS feed', 'mihdan-index-now'),
 			__('Automatically add content to your RSS. This enables you to add links back to your blog and your blog posts, helping search engines identify you as the original source of the content.', 'mihdan-index-now')
@@ -464,6 +468,17 @@ class RssSettings
 			return '';
 		}
 
+		/*
+		 * The template comes straight from an admin textarea, so strip anything
+		 * that does not belong in a feed item (scripts, iframes, event handlers,
+		 * …) before the placeholders are resolved.
+		 */
+		$template = $this->sanitize_template($template);
+
+		if ($template === '') {
+			return '';
+		}
+
 		$post = get_post();
 
 		if (! $post) {
@@ -537,23 +552,48 @@ class RssSettings
 	// -------------------------------------------------------------------------
 
 	/**
-	 * A full-width sub-heading inside the settings screen.
+	 * Run the admin-supplied template through a light wp_kses() pass.
+	 *
+	 * Standard links and inline formatting are kept; everything else (script,
+	 * iframe, style, event handler attributes, …) is removed.
+	 *
+	 * @param string $template The raw template string.
+	 *
+	 * @return string
 	 */
-	private function add_heading(WPOSA $wposa, string $id, string $title, string $desc = ''): void
+	private function sanitize_template(string $template): string
 	{
-		$html = sprintf('<h3 class="cwp-tm-subheading">%s</h3>', esc_html($title));
+		$allowed = [
+			'a'      => [
+				'href'   => true,
+				'title'  => true,
+				'rel'    => true,
+				'target' => true,
+			],
+			'strong' => [],
+			'b'      => [],
+			'em'     => [],
+			'i'      => [],
+			'u'      => [],
+			'span'   => [],
+			'p'      => [],
+			'br'     => [],
+			'ul'     => [],
+			'ol'     => [],
+			'li'     => [],
+			'small'  => [],
+			'code'   => [],
+			'blockquote' => [],
+		];
 
-		if ($desc !== '') {
-			$html .= sprintf('<p class="description">%s</p>', esc_html($desc));
-		}
+		/**
+		 * Filter the HTML allowed in the RSS before/after content templates.
+		 *
+		 * @param array $allowed Allowed tags in wp_kses() format.
+		 */
+		$allowed = (array) apply_filters('crawlwp_rss_allowed_html', $allowed);
 
-		$wposa->add_field(self::SECTION, [
-			'id'    => $id,
-			'type'  => 'html',
-			'name'  => '',
-			'desc'  => $html,
-			'class' => 'wposa-form-table__row cwp-tm-heading-row',
-		]);
+		return trim(wp_kses($template, $allowed));
 	}
 
 	/**

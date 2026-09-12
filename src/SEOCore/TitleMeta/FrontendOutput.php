@@ -4,6 +4,7 @@ namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 
 use Mihdan\IndexNow\SEOCore\Breadcrumbs\Breadcrumbs;
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+use Mihdan\IndexNow\SEOCore\Schema\Graph;
 use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
@@ -23,9 +24,10 @@ class FrontendOutput
 	/**
 	 * JSON flags for every JSON-LD payload printed inside a <script> tag.
 	 *
-	 * The JSON_HEX_* flags make `</script>` and similar sequences harmless.
+	 * Kept as an alias of the canonical value on {@see Graph}, which owns the
+	 * printing, so the two can never drift apart.
 	 */
-	public const JSON_LD_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+	public const JSON_LD_FLAGS = Graph::JSON_LD_FLAGS;
 
 	/**
 	 * Memoised resolution for the current request.
@@ -41,12 +43,30 @@ class FrontendOutput
 	 */
 	private $breadcrumbs = null;
 
+	/**
+	 * Memoised BreadcrumbList node for the current request.
+	 *
+	 * @var array|null|false Null until resolved, false when nothing applies.
+	 */
+	private $breadcrumb_node = null;
+
+	/**
+	 * Request level url => attachment id map.
+	 *
+	 * `attachment_url_to_postid()` runs an uncached database query, so every
+	 * lookup is remembered for the rest of the request.
+	 *
+	 * @var array<string,int>
+	 */
+	private static $attachment_ids = [];
+
 	public function __construct()
 	{
 		add_filter('pre_get_document_title', [$this, 'filter_document_title'], 15);
 		add_filter('wp_robots', [$this, 'filter_robots'], 20);
 		add_action('wp_head', [$this, 'output'], 1);
 		add_action('wp_head', [$this, 'output_pagination_links'], 1);
+		add_action('wp_head', [$this, 'output_hreflang_links'], 1);
 		add_action('wp_head', [$this, 'output_site_graph'], 2);
 		add_action('template_redirect', [$this, 'unhook_core_canonical']);
 	}
@@ -165,7 +185,7 @@ class FrontendOutput
 			$this->output_twitter_card($data);
 		}
 
-		$this->output_schema($data);
+		$this->collect_schema($data);
 
 		echo '<!-- /CrawlWP SEO -->' . "\n";
 	}
@@ -214,13 +234,36 @@ class FrontendOutput
 
 		$post = $context['post'] ?? null;
 		$post = $post instanceof \WP_Post ? $post : null;
+
+		/*
+		 * The blog posts index carries the "Posts page" object, but that page is
+		 * not the content being rendered: the index is a collection of posts.
+		 * It therefore lives in its own context key so it can never turn the
+		 * index into an article, while still feeding the metabox values.
+		 */
+		$posts_page = $context['posts_page'] ?? null;
+		$posts_page = $posts_page instanceof \WP_Post ? $posts_page : null;
+
+		/* The post carrying the metabox values for this request, if any. */
+		$meta_post = $post ?? $posts_page;
+
 		$term = $context['term'] ?? null;
 		$term = $term instanceof \WP_Term ? $term : null;
 
-		/* Singular / term requests may carry per-object overrides from the metabox. */
-		$overrides = $post !== null
-			? $this->post_overrides($post->ID)
-			: ($term !== null ? $this->term_overrides($term->term_id) : []);
+		/* Author archives may carry per-user overrides saved on the profile screen. */
+		$user = $context['user'] ?? null;
+		$user = $user instanceof \WP_User ? $user : null;
+
+		/* Singular / term / author requests may carry per-object overrides. */
+		if ($meta_post !== null) {
+			$overrides = $this->post_overrides($meta_post->ID);
+		} elseif ($term !== null) {
+			$overrides = $this->term_overrides($term->term_id);
+		} elseif ($user !== null) {
+			$overrides = $this->user_overrides($user->ID);
+		} else {
+			$overrides = [];
+		}
 
 		$title = Variables::replace(
 			$overrides['title'] ?? $this->template($entity_key, $prefix . 'title'),
@@ -278,7 +321,11 @@ class FrontendOutput
 		$x_title_base       = $x_title !== '' ? $x_title : $og_title_base;
 		$x_description_base = $x_description !== '' ? $x_description : $og_description_base;
 
-		$canonical = $this->canonical($post, $overrides);
+		/* The unpaginated address of this request — pagination is applied on top. */
+		$canonical_base = $this->canonical_base($meta_post, $overrides);
+		$canonical      = empty($overrides['canonical_url'])
+			? $this->paginate_url($canonical_base)
+			: $canonical_base;
 
 		/**
 		 * Filter the canonical URL for the current request.
@@ -289,22 +336,37 @@ class FrontendOutput
 		 */
 		$canonical = (string) apply_filters('crawlwp_canonical_url', $canonical, $entity_key, $context);
 
+		/*
+		 * Only a real singular request describes a single piece of content. The
+		 * blog index and the static front page are collections, so they must not
+		 * emit og:type=article, article:* tags or an Article node.
+		 */
+		$is_article = $post !== null && is_singular() && ! is_home() && ! is_front_page();
+
+		$og_image = $this->image($entity_key, $prefix, 'og_image', $meta_post, $term);
+		$x_image  = $this->image($entity_key, $prefix, 'x_image', $meta_post, $term);
+
 		$this->resolved = [
 			'entity'         => $entity_key,
 			'prefix'         => $prefix,
 			'context'        => $context,
 			'post'           => $post,
+			'posts_page'     => $posts_page,
+			'meta_post'      => $meta_post,
 			'title'          => $title,
 			'description'    => $description,
-			'robots'         => $this->robots($entity_key, $prefix, $post, $term),
+			'robots'         => $this->robots($entity_key, $prefix, $meta_post, $term, $user),
 			'canonical'      => $canonical,
+			'canonical_base' => $canonical_base,
 			'og_title'       => $og_title_base,
 			'og_description' => $og_description_base,
-			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post, $term),
+			'og_image'       => $og_image['url'],
+			'og_image_id'    => $og_image['id'],
 			'x_title'        => $x_title_base,
 			'x_description'  => $x_description_base,
-			'x_image'        => $this->image($entity_key, $prefix, 'x_image', $post, $term),
-			'og_type'        => $post !== null && ! is_front_page() ? 'article' : 'website',
+			'x_image'        => $x_image['url'],
+			'x_image_id'     => $x_image['id'],
+			'og_type'        => $is_article ? 'article' : 'website',
 		];
 
 		return $this->resolved;
@@ -349,7 +411,8 @@ class FrontendOutput
 				$posts_page = get_post($page_for_posts);
 
 				if ($posts_page instanceof \WP_Post) {
-					$context['post'] = $posts_page;
+					/* Never `post`: the index itself is not that page. */
+					$context['posts_page'] = $posts_page;
 				}
 			}
 
@@ -512,15 +575,46 @@ class FrontendOutput
 	}
 
 	/**
-	 * Build the robots directive list from the entity defaults and, when
-	 * available, the per-post or per-term metabox values.
+	 * Per-user overrides stored as user meta.
+	 *
+	 * The importer migrates the per-author SEO meta of Yoast, Rank Math,
+	 * AIOSEO, SEOPress and Slim SEO into the very same `_crawlwp_*` keys the
+	 * post metabox uses, and the profile screen writes them too — so the author
+	 * archive reads them here before falling back to the `tm_author` templates.
+	 *
+	 * @return array<string,string>
 	 */
-	private function robots(string $entity_key, string $prefix, ?\WP_Post $post, ?\WP_Term $term = null): array
+	private function user_overrides(int $user_id): array
+	{
+		$map = [
+			'title'         => MetaFields::SEO_TITLE,
+			'description'   => MetaFields::SEO_DESCRIPTION,
+			'canonical_url' => MetaFields::CANONICAL_URL,
+		];
+
+		$overrides = [];
+
+		foreach ($map as $field => $meta_key) {
+			$value = UserProfile::get($user_id, $meta_key);
+
+			if ($value !== '') {
+				$overrides[$field] = $value;
+			}
+		}
+
+		return $overrides;
+	}
+
+	/**
+	 * Build the robots directive list from the entity defaults and, when
+	 * available, the per-post, per-term or per-user values.
+	 */
+	private function robots(string $entity_key, string $prefix, ?\WP_Post $post, ?\WP_Term $term = null, ?\WP_User $user = null): array
 	{
 		$directives = [];
 
 		$noindex  = $this->is_noindexed($entity_key, $prefix);
-		$nofollow = Options::is_on($entity_key, 'nofollow');
+		$nofollow = self::directive_enabled($entity_key, $prefix, 'nofollow');
 
 		if ($post !== null) {
 			$post_index  = MetaFields::get($post->ID, MetaFields::ROBOTS_INDEX);
@@ -534,22 +628,37 @@ class FrontendOutput
 				$nofollow = $post_follow === 'nofollow';
 			}
 		} elseif ($term !== null) {
-			$term_index  = TermFields::get($term->term_id, MetaFields::ROBOTS_INDEX);
-			$term_follow = TermFields::get($term->term_id, MetaFields::ROBOTS_FOLLOW);
+			/* Mirrors the post logic: an explicit per-term value wins both ways,
+			 * so "index" can lift a taxonomy level noindex default. */
+			$term_index  = (string) TermFields::get($term->term_id, MetaFields::ROBOTS_INDEX);
+			$term_follow = (string) TermFields::get($term->term_id, MetaFields::ROBOTS_FOLLOW);
 
-			if ($term_index === 'noindex') {
-				$noindex = true;
+			if ($term_index !== '') {
+				$noindex = $term_index === 'noindex';
 			}
 
-			if ($term_follow === 'nofollow') {
-				$nofollow = true;
+			if ($term_follow !== '') {
+				$nofollow = $term_follow === 'nofollow';
+			}
+		} elseif ($user !== null) {
+			/* Mirrors the post and term logic: an explicit per-user value wins
+			 * both ways, so "index" can lift the author archive noindex default. */
+			$user_index  = UserProfile::get($user->ID, MetaFields::ROBOTS_INDEX);
+			$user_follow = UserProfile::get($user->ID, MetaFields::ROBOTS_FOLLOW);
+
+			if ($user_index !== '') {
+				$noindex = $user_index === 'noindex';
+			}
+
+			if ($user_follow !== '') {
+				$nofollow = $user_follow === 'nofollow';
 			}
 		}
 
 		$directives[] = $noindex ? 'noindex' : 'index';
 		$directives[] = $nofollow ? 'nofollow' : 'follow';
 
-		if (Options::is_on($entity_key, 'noarchive')) {
+		if (self::directive_enabled($entity_key, $prefix, 'noarchive')) {
 			$directives[] = 'noarchive';
 		}
 
@@ -616,21 +725,65 @@ class FrontendOutput
 	 */
 	public static function is_noindexed(string $entity_key, string $prefix = ''): bool
 	{
-		$stored = Options::all($entity_key);
-		$field  = $prefix . 'noindex';
-
-		if (isset($stored[$field]) && $stored[$field] !== '') {
-			return $stored[$field] === 'on';
-		}
-
-		return Entities::default_value($entity_key, 'noindex', 'off') === 'on';
+		/*
+		 * The singular and the archive screen of a post type both expose their
+		 * own "Hide from search results" switch, so the singular value must not
+		 * leak into the archive.
+		 */
+		return self::directive_enabled($entity_key, $prefix, 'noindex', false);
 	}
 
 	/**
-	 * Canonical URL for the current request.
-	 * For paged archive/taxonomy/author views, returns the paginated URL.
+	 * Whether a robots switch is enabled for an entity screen.
+	 *
+	 * Archive screens store their values under the `archive_` prefix. Every
+	 * directive is looked up the same way: the prefixed stored value first, the
+	 * prefixed registered default next, and only then the unprefixed value — so
+	 * a registered `archive_noindex` default is honoured, and a directive that
+	 * has no archive specific field still inherits the entity level switch.
+	 *
+	 * @param string $entity_key           Entity key, e.g. `pt_post`.
+	 * @param string $prefix               Field prefix, e.g. `archive_`.
+	 * @param string $directive            Directive name, e.g. `nofollow`.
+	 * @param bool   $inherit_stored_value Whether the unprefixed stored value applies.
 	 */
-	private function canonical(?\WP_Post $post, array $overrides): string
+	private static function directive_enabled(string $entity_key, string $prefix, string $directive, bool $inherit_stored_value = true): bool
+	{
+		$stored = Options::all($entity_key);
+
+		if ($prefix !== '') {
+			$field = $prefix . $directive;
+
+			if (isset($stored[$field]) && $stored[$field] !== '') {
+				return $stored[$field] === 'on';
+			}
+
+			$default = Entities::default_value($entity_key, $field);
+
+			if ($default !== '') {
+				return $default === 'on';
+			}
+
+			if (! $inherit_stored_value) {
+				return Entities::default_value($entity_key, $directive, 'off') === 'on';
+			}
+		}
+
+		if (isset($stored[$directive]) && $stored[$directive] !== '') {
+			return $stored[$directive] === 'on';
+		}
+
+		return Entities::default_value($entity_key, $directive, 'off') === 'on';
+	}
+
+	/**
+	 * Unpaginated canonical URL for the current request.
+	 *
+	 * Pagination is layered on top by {@see self::paginate_url()} so the
+	 * paginated address is always derived from the URL we resolved, never from
+	 * the raw request — which may carry unrelated query arguments.
+	 */
+	private function canonical_base(?\WP_Post $post, array $overrides): string
 	{
 		if (! empty($overrides['canonical_url'])) {
 			return $overrides['canonical_url'];
@@ -658,27 +811,140 @@ class FrontendOutput
 		} elseif (is_home()) {
 			$page_for_posts = (int) get_option('page_for_posts');
 			$url            = $page_for_posts ? (string) get_permalink($page_for_posts) : home_url('/');
+		} elseif (is_date()) {
+			$url = $this->date_archive_url();
 		} else {
 			$url = '';
-		}
-
-		/* Adjust canonical for paged archive/taxonomy/author pages. */
-		$paged = (int) get_query_var('paged');
-
-		if ($paged > 1 && $url !== '' && ! is_singular()) {
-			$url = (string) get_pagenum_link($paged);
 		}
 
 		return $url;
 	}
 
 	/**
+	 * Permalink of the year, month or day archive being requested.
+	 *
+	 * Built from the query vars because date archives have no queried object,
+	 * and the loop may be empty.
+	 */
+	private function date_archive_url(): string
+	{
+		$year  = (int) get_query_var('year');
+		$month = (int) get_query_var('monthnum');
+		$day   = (int) get_query_var('day');
+
+		if ($year <= 0) {
+			return '';
+		}
+
+		if ($month > 0 && $day > 0) {
+			return (string) get_day_link($year, $month, $day);
+		}
+
+		if ($month > 0) {
+			return (string) get_month_link($year, $month);
+		}
+
+		return (string) get_year_link($year);
+	}
+
+	/**
+	 * Apply the requested page to a resolved base URL.
+	 *
+	 * Handles both archive pagination (`paged`) and multipage singulars split
+	 * with `<!--nextpage-->` (`page`).
+	 */
+	private function paginate_url(string $url): string
+	{
+		if ($url === '') {
+			return '';
+		}
+
+		if (is_singular()) {
+			return $this->page_url($url, (int) get_query_var('page'));
+		}
+
+		return $this->paged_url($url, (int) get_query_var('paged'));
+	}
+
+	/**
+	 * The `page/N` variant of an archive URL.
+	 */
+	private function paged_url(string $url, int $page): string
+	{
+		if ($page < 2 || $url === '') {
+			return $url;
+		}
+
+		[$base, $query] = $this->split_query_string($url);
+
+		global $wp_rewrite;
+
+		if (! is_object($wp_rewrite) || ! $wp_rewrite->using_permalinks()) {
+			return add_query_arg('paged', $page, $base . $query);
+		}
+
+		return user_trailingslashit(
+			trailingslashit($base) . $wp_rewrite->pagination_base . '/' . $page,
+			'paged'
+		) . $query;
+	}
+
+	/**
+	 * The `N` variant of a multipage singular URL.
+	 */
+	private function page_url(string $url, int $page): string
+	{
+		if ($page < 2 || $url === '') {
+			return $url;
+		}
+
+		[$base, $query] = $this->split_query_string($url);
+
+		global $wp_rewrite;
+
+		if (! is_object($wp_rewrite) || ! $wp_rewrite->using_permalinks()) {
+			return add_query_arg('page', $page, $base . $query);
+		}
+
+		return user_trailingslashit(trailingslashit($base) . $page, 'single_paged') . $query;
+	}
+
+	/**
+	 * Split a URL into its path part and its (leading `?` included) query string.
+	 *
+	 * @return array{0: string, 1: string}
+	 */
+	private function split_query_string(string $url): array
+	{
+		$parts = explode('?', $url, 2);
+		$query = isset($parts[1]) && $parts[1] !== '' ? '?' . $parts[1] : '';
+
+		return [$parts[0], $query];
+	}
+
+	/**
 	 * Emit rel=prev and rel=next pagination links.
-	 * Only active on paged non-singular pages (archives, taxonomies, author, etc.).
+	 *
+	 * Active on paged archives (archives, taxonomies, author, date, …) and on
+	 * multipage singulars split with `<!--nextpage-->`. Both are built from the
+	 * canonical base we resolved, not from the raw request.
 	 */
 	public function output_pagination_links(): void
 	{
-		if (is_admin() || is_singular()) {
+		if (is_admin() || is_feed() || is_trackback() || is_robots()) {
+			return;
+		}
+
+		$data = $this->resolve();
+		$base = $data !== false ? (string) $data['canonical_base'] : '';
+
+		if ($base === '') {
+			return;
+		}
+
+		if (is_singular()) {
+			$this->output_singular_pagination_links($data, $base);
+
 			return;
 		}
 
@@ -686,42 +952,124 @@ class FrontendOutput
 		$max_pages = isset($GLOBALS['wp_query']) ? (int) $GLOBALS['wp_query']->max_num_pages : 1;
 
 		if ($paged > 1) {
-			echo '<link rel="prev" href="' . esc_url(get_pagenum_link($paged - 1)) . '" />' . "\n";
+			echo '<link rel="prev" href="' . esc_url($this->paged_url($base, $paged - 1)) . '" />' . "\n";
 		}
 
 		if ($paged < $max_pages) {
-			echo '<link rel="next" href="' . esc_url(get_pagenum_link($paged + 1)) . '" />' . "\n";
+			echo '<link rel="next" href="' . esc_url($this->paged_url($base, $paged + 1)) . '" />' . "\n";
+		}
+	}
+
+	/**
+	 * rel=prev / rel=next for a post split into several pages.
+	 *
+	 * @param array  $data The resolved page data.
+	 * @param string $base The unpaginated permalink.
+	 */
+	private function output_singular_pagination_links(array $data, string $base): void
+	{
+		$post = $data['post'];
+
+		if (! $post instanceof \WP_Post) {
+			return;
+		}
+
+		$numpages = count(explode('<!--nextpage-->', (string) $post->post_content));
+
+		if ($numpages < 2) {
+			return;
+		}
+
+		$page = (int) max(1, get_query_var('page'));
+
+		if ($page > 1) {
+			echo '<link rel="prev" href="' . esc_url($this->page_url($base, $page - 1)) . '" />' . "\n";
+		}
+
+		if ($page < $numpages) {
+			echo '<link rel="next" href="' . esc_url($this->page_url($base, $page + 1)) . '" />' . "\n";
+		}
+	}
+
+	/**
+	 * Emit hreflang alternates for the current request.
+	 *
+	 * This layer has no translation data of its own: multilingual integrations
+	 * (WPML, Polylang, TranslatePress, …) supply the alternates through the
+	 * `crawlwp_hreflang_links` filter. Nothing is printed while it is empty.
+	 */
+	public function output_hreflang_links(): void
+	{
+		if (is_admin() || is_feed() || is_trackback() || is_robots()) {
+			return;
+		}
+
+		$data = $this->resolve();
+
+		/**
+		 * Filter the hreflang alternates for the current request.
+		 *
+		 * Accepts either a map of language code => URL, e.g.
+		 * `['en-US' => 'https://example.com/', 'x-default' => '…']`, or a list of
+		 * `['hreflang' => …, 'href' => …]` pairs. Empty by default, in which
+		 * case no tag is printed.
+		 *
+		 * @param array       $links The hreflang alternates.
+		 * @param array|false $data  The resolved page data, false when nothing applies.
+		 */
+		$links = (array) apply_filters('crawlwp_hreflang_links', [], $data);
+
+		foreach ($links as $key => $link) {
+			if (is_array($link)) {
+				$lang = (string) ($link['hreflang'] ?? $link['lang'] ?? $key);
+				$href = (string) ($link['href'] ?? $link['url'] ?? '');
+			} else {
+				$lang = (string) $key;
+				$href = (string) $link;
+			}
+
+			if ($lang === '' || $href === '') {
+				continue;
+			}
+
+			echo '<link rel="alternate" hreflang="' . esc_attr($lang) . '" href="' . esc_url($href) . '" />' . "\n";
 		}
 	}
 
 	/**
 	 * Resolve a social image, honouring the per-post value, then the global
 	 * default, then the featured image.
+	 *
+	 * The attachment id is threaded through with the URL, so consumers that
+	 * need the attachment metadata (dimensions, alt text) do not have to walk
+	 * back from the URL with `attachment_url_to_postid()`.
+	 *
+	 * @return array{id: int, url: string} Attachment id (0 when unknown) and URL ('' when unresolved).
 	 */
-	private function image(string $entity_key, string $prefix, string $field, ?\WP_Post $post, ?\WP_Term $term = null): string
+	private function image(string $entity_key, string $prefix, string $field, ?\WP_Post $post, ?\WP_Term $term = null): array
 	{
+		$meta_key = $field === 'og_image' ? MetaFields::OG_IMAGE : MetaFields::X_IMAGE;
+
 		if ($post !== null) {
-			$meta_key = $field === 'og_image' ? MetaFields::OG_IMAGE : MetaFields::X_IMAGE;
 			$image_id = (int) MetaFields::get($post->ID, $meta_key, 0);
 
 			if ($image_id > 0) {
 				$url = wp_get_attachment_image_url($image_id, 'full');
 
 				if ($url) {
-					return $url;
+					return ['id' => $image_id, 'url' => (string) $url];
 				}
 			}
 		}
 
 		if ($term !== null) {
-			$meta_key = $field === 'og_image' ? MetaFields::OG_IMAGE : MetaFields::X_IMAGE;
 			$image_id = (int) TermFields::get($term->term_id, $meta_key, 0);
 
 			if ($image_id > 0) {
 				$url = wp_get_attachment_image_url($image_id, 'full');
 
 				if ($url) {
-					return $url;
+					return ['id' => $image_id, 'url' => (string) $url];
 				}
 			}
 		}
@@ -730,14 +1078,29 @@ class FrontendOutput
 		$global = (string) Options::get($entity_key, $prefix . $field, '');
 
 		if ($global !== '') {
-			return $global;
+			[$global_id, $global_url] = $this->resolve_image_setting($global);
+
+			if ($global_url !== '') {
+				return ['id' => $global_id, 'url' => $global_url];
+			}
+
+			return ['id' => 0, 'url' => $global];
 		}
 
 		if ($post !== null) {
-			return (string) (get_the_post_thumbnail_url($post->ID, 'full') ?: '');
+			/* The featured image id is already known — keep it. */
+			$thumbnail_id = (int) get_post_thumbnail_id($post->ID);
+
+			if ($thumbnail_id > 0) {
+				$url = wp_get_attachment_image_url($thumbnail_id, 'full');
+
+				if ($url) {
+					return ['id' => $thumbnail_id, 'url' => (string) $url];
+				}
+			}
 		}
 
-		return '';
+		return ['id' => 0, 'url' => ''];
 	}
 
 	/**
@@ -791,6 +1154,10 @@ class FrontendOutput
 	 * The media picker stores the image URL, while older installs may hold an
 	 * attachment ID — accept both.
 	 *
+	 * No database lookup is performed for URL values: the id stays 0 and callers
+	 * that really need it resolve it lazily through
+	 * {@see self::attachment_id_from_url()}.
+	 *
 	 * @param mixed $value Stored option value.
 	 *
 	 * @return array{0: int, 1: string} Attachment ID (0 when unknown) and URL ('' when unresolved).
@@ -820,16 +1187,37 @@ class FrontendOutput
 			return [0, ''];
 		}
 
-		return [(int) attachment_url_to_postid($url), $url];
+		return [0, $url];
+	}
+
+	/**
+	 * Attachment id behind an image URL, remembered for the whole request.
+	 *
+	 * `attachment_url_to_postid()` is an uncached database query, so it is only
+	 * used when the id could not be threaded through from the featured image or
+	 * the metabox, and never twice for the same URL.
+	 */
+	private function attachment_id_from_url(string $url): int
+	{
+		if ($url === '') {
+			return 0;
+		}
+
+		if (! isset(self::$attachment_ids[$url])) {
+			self::$attachment_ids[$url] = (int) attachment_url_to_postid($url);
+		}
+
+		return self::$attachment_ids[$url];
 	}
 
 	private function output_open_graph(array $data): void
 	{
 		/* Use entity image first; fall back to global social image fallback. */
-		$og_image = $data['og_image'];
+		$og_image    = $data['og_image'];
+		$og_image_id = (int) ($data['og_image_id'] ?? 0);
 
 		if ($og_image === '') {
-			[, $og_image] = $this->resolve_image_setting(SocialSettings::get('social_image_fallback', ''));
+			[$og_image_id, $og_image] = $this->resolve_image_setting(SocialSettings::get('social_image_fallback', ''));
 		}
 
 		/* Build OG tags array — keyed by property name. */
@@ -845,8 +1233,8 @@ class FrontendOutput
 		if ($og_image !== '') {
 			$og_tags['og:image'] = $og_image;
 
-			/* Image dimensions — try to resolve from WordPress attachment metadata. */
-			$img_id = attachment_url_to_postid($og_image);
+			/* Image dimensions — the id is usually already known. */
+			$img_id = $og_image_id > 0 ? $og_image_id : $this->attachment_id_from_url($og_image);
 
 			if ($img_id > 0) {
 				$img_meta = wp_get_attachment_metadata($img_id);
@@ -860,8 +1248,8 @@ class FrontendOutput
 			/* Alt text: metabox field → attachment alt. */
 			$img_alt = '';
 
-			if ($data['post'] instanceof \WP_Post) {
-				$img_alt = (string) MetaFields::get($data['post']->ID, MetaFields::OG_IMAGE_ALT, '');
+			if ($data['meta_post'] instanceof \WP_Post) {
+				$img_alt = (string) MetaFields::get($data['meta_post']->ID, MetaFields::OG_IMAGE_ALT, '');
 			}
 
 			if ($img_alt === '' && $img_id > 0) {
@@ -874,7 +1262,7 @@ class FrontendOutput
 		}
 
 		/* article:author for posts — per-author Facebook URL overrides the global fallback. */
-		if ($data['post'] instanceof \WP_Post) {
+		if ($data['og_type'] === 'article' && $data['post'] instanceof \WP_Post) {
 			$author_id       = (int) $data['post']->post_author;
 			$facebook_author = $author_id > 0 ? UserProfile::get($author_id, UserProfile::META_FACEBOOK) : '';
 
@@ -927,6 +1315,13 @@ class FrontendOutput
 			}
 		}
 
+		/* fb:app_id — added before the filter runs so it can be removed there. */
+		$fb_app_id = (string) SocialSettings::get('fb_app_id', '');
+
+		if ($fb_app_id !== '') {
+			$og_tags['fb:app_id'] = $fb_app_id;
+		}
+
 		/**
 		 * Filter the Open Graph meta tags array before output.
 		 *
@@ -938,13 +1333,6 @@ class FrontendOutput
 		 * @param array $data    The resolved page data.
 		 */
 		$og_tags = (array) apply_filters('crawlwp_open_graph_tags', $og_tags, $data);
-
-		/* fb:app_id — output when a Facebook App ID is configured. */
-		$fb_app_id = (string) SocialSettings::get('fb_app_id', '');
-
-		if ($fb_app_id !== '') {
-			$og_tags['fb:app_id'] = $fb_app_id;
-		}
 
 		/* Print each tag; use esc_url for URL properties. */
 		$url_props = ['og:url', 'og:image', 'article:author'];
@@ -1003,10 +1391,16 @@ class FrontendOutput
 		}
 
 		/* Use entity image; fall back to OG image and then global fallback. */
-		$x_image = $data['x_image'] !== '' ? $data['x_image'] : $data['og_image'];
+		if ($data['x_image'] !== '') {
+			$x_image    = $data['x_image'];
+			$x_image_id = (int) ($data['x_image_id'] ?? 0);
+		} else {
+			$x_image    = $data['og_image'];
+			$x_image_id = (int) ($data['og_image_id'] ?? 0);
+		}
 
 		if ($x_image === '') {
-			[, $x_image] = $this->resolve_image_setting(SocialSettings::get('social_image_fallback', ''));
+			[$x_image_id, $x_image] = $this->resolve_image_setting(SocialSettings::get('social_image_fallback', ''));
 		}
 
 		/* twitter:creator — per-post → author profile → global setting. */
@@ -1040,12 +1434,12 @@ class FrontendOutput
 			/* Alt text: metabox OG image alt → attachment alt. */
 			$img_alt = '';
 
-			if ($data['post'] instanceof \WP_Post) {
-				$img_alt = (string) MetaFields::get($data['post']->ID, MetaFields::OG_IMAGE_ALT, '');
+			if ($data['meta_post'] instanceof \WP_Post) {
+				$img_alt = (string) MetaFields::get($data['meta_post']->ID, MetaFields::OG_IMAGE_ALT, '');
 			}
 
 			if ($img_alt === '') {
-				$img_id = attachment_url_to_postid($x_image);
+				$img_id = $x_image_id > 0 ? $x_image_id : $this->attachment_id_from_url($x_image);
 
 				if ($img_id > 0) {
 					$img_alt = (string) get_post_meta($img_id, '_wp_attachment_image_alt', true);
@@ -1085,7 +1479,12 @@ class FrontendOutput
 	}
 
 	/**
-	 * JSON-LD for the current request.
+	 * Collect the JSON-LD nodes describing the current request.
+	 *
+	 * Nodes are pushed into {@see Graph}, which prints the nodes of every
+	 * producer inside a single `@graph` script tag later in wp_head. Every node
+	 * carries a stable `@id` so the WebPage, Article, WebSite, Organization and
+	 * BreadcrumbList nodes can reference each other.
 	 *
 	 * For singular posts: resolves schema type from the two-select model (page_type +
 	 * article_type). When page_type is a WebPage subtype and article_type is set
@@ -1095,13 +1494,20 @@ class FrontendOutput
 	 * For non-singular pages: emits a minimal WebPage subtype (CollectionPage,
 	 * SearchResultsPage, ProfilePage) when the page is indexable.
 	 */
-	private function output_schema(array $data): void
+	private function collect_schema(array $data): void
 	{
-		$post = $data['post'];
+		/* Skip noindexed pages — no value in structured data for them. */
+		if (! empty($data['robots']) && in_array('noindex', $data['robots'], true)) {
+			return;
+		}
+
+		$post       = $data['post'];
+		$lang       = get_bloginfo('language');
+		$webpage_id = $this->schema_id('webpage');
 
 		if (! $post instanceof \WP_Post) {
 			/* Non-singular schema: determine appropriate WebPage subtype. */
-			if (is_home() || is_post_type_archive() || is_category() || is_tag() || is_tax()) {
+			if (is_home() || is_post_type_archive() || is_category() || is_tag() || is_tax() || is_date()) {
 				$schema_type = 'CollectionPage';
 			} elseif (is_author()) {
 				$schema_type = 'ProfilePage';
@@ -1111,28 +1517,32 @@ class FrontendOutput
 				return;
 			}
 
-			/* Skip noindexed pages — no value in structured data for them. */
-			if (! empty($data['robots']) && in_array('noindex', $data['robots'], true)) {
-				return;
-			}
-
 			$schema = [
-				'@context' => 'https://schema.org',
-				'@type'    => $schema_type,
-				'url'      => $data['canonical'],
-				'name'     => $data['title'],
+				'@context'   => 'https://schema.org',
+				'@type'      => $schema_type,
+				'@id'        => $webpage_id,
+				'url'        => $data['canonical'],
+				'name'       => $data['title'],
+				'isPartOf'   => ['@id' => $this->schema_website_id()],
+				'inLanguage' => $lang,
 			];
+
+			if ($data['canonical'] === '') {
+				unset($schema['url']);
+			}
 
 			if ($data['description'] !== '') {
 				$schema['description'] = $data['description'];
 			}
 
-			/** This filter is documented below in the singular branch. */
-			$schema = apply_filters('crawlwp_schema_data', $schema, null);
+			if (($breadcrumb = $this->breadcrumb_node()) !== null) {
+				$schema['breadcrumb'] = ['@id' => $breadcrumb['@id']];
+			}
 
-			echo '<script type="application/ld+json">' . "\n";
-			echo wp_json_encode($schema, self::JSON_LD_FLAGS);
-			echo "\n" . '</script>' . "\n";
+			/** This filter is documented below in the singular branch. */
+			$schema = (array) apply_filters('crawlwp_schema_data', $schema, null);
+
+			Graph::add_node($schema);
 
 			return;
 		}
@@ -1154,13 +1564,25 @@ class FrontendOutput
 		$article_type = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_ARTICLE_TYPE, '');
 
 		if ($article_type === '') {
-			/* Check legacy single-select value. */
+			/* Check legacy single-select value. Page types all end in "Page",
+			 * so only the other values name an article type. */
 			$legacy = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_TYPE, '');
 
-			if ($legacy !== '' && $legacy !== 'none') {
+			if ($legacy !== '' && $legacy !== 'none' && strpos($legacy, 'Page') === false) {
 				$article_type = $legacy;
 			} else {
 				$article_type = (string) Options::get($data['entity'], 'schema_article_type', '');
+
+				if ($article_type === '') {
+					/* Backwards compatibility with the single-select option that
+					 * used to be stored as `schema_type`. Page types all end in
+					 * "Page", so anything else is an article type. */
+					$legacy_option = (string) Options::get($data['entity'], 'schema_type', '');
+
+					if ($legacy_option !== '' && $legacy_option !== 'none' && strpos($legacy_option, 'Page') === false) {
+						$article_type = $legacy_option;
+					}
+				}
 
 				if ($article_type === '') {
 					/* Only blog posts are articles by default; pages and other
@@ -1186,13 +1608,66 @@ class FrontendOutput
 
 		$author      = get_userdata((int) $post->post_author);
 		$author_name = $author ? $author->display_name : '';
+		$is_article  = $article_type !== '' && $article_type !== 'none';
 
-		$schema = [
-			'@context' => 'https://schema.org',
-			'@type'    => $schema_type,
-			'headline' => (string) MetaFields::get($post->ID, MetaFields::SCHEMA_HEADLINE, '') ?: $data['title'],
-			'url'      => $data['canonical'],
+		/* --- the WebPage node the rest of the graph hangs off --- */
+		$webpage_node = [
+			'@type'         => $page_type,
+			'@id'           => $webpage_id,
+			'url'           => $data['canonical'],
+			'name'          => $data['title'],
+			'isPartOf'      => ['@id' => $this->schema_website_id()],
+			'inLanguage'    => $lang,
+			'datePublished' => get_the_date('c', $post),
+			'dateModified'  => get_the_modified_date('c', $post),
 		];
+
+		if ($data['canonical'] === '') {
+			unset($webpage_node['url']);
+		}
+
+		if ($data['description'] !== '') {
+			$webpage_node['description'] = $data['description'];
+		}
+
+		if ($this->breadcrumb_node() !== null) {
+			$webpage_node['breadcrumb'] = ['@id' => $this->schema_id('breadcrumb')];
+		}
+
+		if ($data['og_image'] !== '') {
+			$primary_image_id = $this->schema_id('primaryimage');
+
+			$webpage_node['primaryImageOfPage'] = ['@id' => $primary_image_id];
+
+			Graph::add_node([
+				'@type'      => 'ImageObject',
+				'@id'        => $primary_image_id,
+				'url'        => $data['og_image'],
+				'contentUrl' => $data['og_image'],
+				'inLanguage' => $lang,
+			]);
+		}
+
+		/* --- the primary entity --- */
+		if ($is_article) {
+			$schema = [
+				'@context'         => 'https://schema.org',
+				'@type'            => $schema_type,
+				'@id'              => $this->schema_id('article'),
+				'headline'         => (string) MetaFields::get($post->ID, MetaFields::SCHEMA_HEADLINE, '') ?: $data['title'],
+				'url'              => $data['canonical'],
+				'isPartOf'         => ['@id' => $webpage_id],
+				'mainEntityOfPage' => ['@id' => $webpage_id],
+				'publisher'        => ['@id' => $this->schema_publisher_id()],
+			];
+
+			if ($data['canonical'] === '') {
+				unset($schema['url']);
+			}
+		} else {
+			/* Page type only — the WebPage node is itself the primary entity. */
+			$schema = array_merge(['@context' => 'https://schema.org'], $webpage_node);
+		}
 
 		$section = MetaFields::get($post->ID, MetaFields::SCHEMA_SECTION);
 
@@ -1224,23 +1699,84 @@ class FrontendOutput
 		$schema['dateModified']  = get_the_modified_date('c', $post);
 
 		/**
-		 * Filter the JSON-LD graph before it is printed.
+		 * Filter the JSON-LD node describing the queried content.
+		 *
+		 * The node is added to the single `@graph` printed by {@see Graph}.
 		 *
 		 * @param array    $schema The schema array.
 		 * @param \WP_Post $post   The queried post.
 		 */
-		$schema = apply_filters('crawlwp_schema_data', $schema, $post);
+		$schema = (array) apply_filters('crawlwp_schema_data', $schema, $post);
 
-		echo '<script type="application/ld+json">' . "\n";
-		echo wp_json_encode($schema, self::JSON_LD_FLAGS);
-		echo "\n" . '</script>' . "\n";
+		if ($is_article) {
+			Graph::add_node($webpage_node);
+		}
+
+		Graph::add_node($schema);
 	}
 
 	/**
-	 * Output the site-wide WebSite + Organization/Person JSON-LD @graph.
+	 * Stable `@id` for a node describing the current page.
+	 */
+	private function schema_id(string $fragment): string
+	{
+		$data = $this->resolve();
+		$base = $data !== false ? (string) $data['canonical_base'] : '';
+
+		if ($base === '') {
+			$base = home_url('/');
+		}
+
+		return $base . '#' . $fragment;
+	}
+
+	/**
+	 * `@id` of the site-wide WebSite node.
+	 */
+	private function schema_website_id(): string
+	{
+		return home_url('/') . '#website';
+	}
+
+	/**
+	 * `@id` of the site-wide Organization or Person node.
+	 */
+	private function schema_publisher_id(): string
+	{
+		$site_type = (string) SiteInfoSettings::get('site_type', 'organization');
+
+		return home_url('/') . '#' . ($site_type === 'person' ? 'person' : 'organization');
+	}
+
+	/**
+	 * Memoised BreadcrumbList node, re-keyed onto the canonical URL.
 	 *
-	 * Emitted on every public front-end page. The graph matches the structure
-	 * produced by Yoast SEO:
+	 * Breadcrumbs builds the `@id` from the requested URL. Every other node in
+	 * the graph is keyed off the *canonical* base, so a page carrying a custom
+	 * canonical keeps one consistent set of ids — hence the re-key here.
+	 */
+	private function breadcrumb_node(): ?array
+	{
+		if ($this->breadcrumb_node === null) {
+			$node = $this->get_breadcrumbs()->get_schema_node();
+
+			if (is_array($node)) {
+				$node['@id']           = $this->schema_id('breadcrumb');
+				$this->breadcrumb_node = $node;
+			} else {
+				$this->breadcrumb_node = false;
+			}
+		}
+
+		return $this->breadcrumb_node === false ? null : $this->breadcrumb_node;
+	}
+
+	/**
+	 * Collect the site-wide WebSite + Organization/Person JSON-LD nodes.
+	 *
+	 * Built on every public front-end page and handed to {@see Graph}, which
+	 * prints one `@graph` holding the nodes of every producer. The structure
+	 * matches the one produced by Yoast SEO:
 	 *
 	 *  - WebSite node  (@id #website)  — site name, url, description, language,
 	 *                                    optional SearchAction potentialAction.
@@ -1288,6 +1824,10 @@ class FrontendOutput
 		];
 
 		if ($logo_url !== '') {
+			if ($logo_id <= 0) {
+				$logo_id = $this->attachment_id_from_url($logo_url);
+			}
+
 			$logo_meta = $logo_id > 0 ? wp_get_attachment_metadata($logo_id) : false;
 			$logo_node = [
 				'@type'      => 'ImageObject',
@@ -1306,8 +1846,14 @@ class FrontendOutput
 				$logo_node['caption'] = $name;
 			}
 
-			$entity_node['logo']  = $logo_node;
-			$entity_node['image'] = ['@id' => $home_url . '#/schema/logo/image/'];
+			if ($is_org) {
+				/* Google expects `logo` on Organization … */
+				$entity_node['logo']  = $logo_node;
+				$entity_node['image'] = ['@id' => $home_url . '#/schema/logo/image/'];
+			} else {
+				/* … and `image` on Person. */
+				$entity_node['image'] = $logo_node;
+			}
 		}
 
 		if (! empty($same_as)) {
@@ -1351,9 +1897,9 @@ class FrontendOutput
 		}
 
 		/* --- BreadcrumbList node --- */
-		$bc_node = $this->get_breadcrumbs()->get_schema_node();
+		$bc_node = $this->breadcrumb_node();
 
-		/* --- assemble and print --- */
+		/* --- assemble --- */
 		$graph_nodes = [$website_node, $entity_node];
 		if ($bc_node !== null) {
 			$graph_nodes[] = $bc_node;
@@ -1365,15 +1911,15 @@ class FrontendOutput
 		];
 
 		/**
-		 * Filter the site graph before it is printed.
+		 * Filter the site graph before it is handed to the request graph.
 		 *
 		 * @param array $graph The @graph array (WebSite + Organization/Person nodes).
 		 */
-		$graph = apply_filters('crawlwp_site_graph', $graph);
+		$graph = (array) apply_filters('crawlwp_site_graph', $graph);
 
-		echo '<script type="application/ld+json">' . "\n";
-		echo wp_json_encode($graph, self::JSON_LD_FLAGS | JSON_PRETTY_PRINT);
-		echo "\n" . '</script>' . "\n";
+		$nodes = isset($graph['@graph']) && is_array($graph['@graph']) ? $graph['@graph'] : [];
+
+		Graph::add_nodes($nodes);
 	}
 
 	/**

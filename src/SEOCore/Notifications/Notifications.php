@@ -36,6 +36,41 @@ class Notifications
 	private const DISMISSED_KEY = 'crawlwp_dismissed_notices';
 
 	/**
+	 * Transient caching the robots.txt "blocks all crawlers" verdict.
+	 *
+	 * The check may have to fetch the site's own robots.txt over HTTP, which
+	 * is far too expensive to repeat on every admin page load.
+	 */
+	private const ROBOTS_BLOCK_TRANSIENT = 'crawlwp_robots_txt_blocks_all';
+
+	/**
+	 * How long the robots.txt verdict stays cached.
+	 */
+	private const ROBOTS_BLOCK_TTL = 12 * HOUR_IN_SECONDS;
+
+	/**
+	 * Every notice id this class can produce.
+	 *
+	 * Used to validate the id sent to the dismiss endpoint so arbitrary
+	 * strings never end up in the options table.
+	 *
+	 * @var string[]
+	 */
+	private const NOTICE_IDS = [
+		'blog_not_public',
+		'crawlwp_site_noindex',
+		'conflicting_seo_plugin',
+		'missing_homepage_title',
+		'missing_homepage_description',
+		'sitemap_disabled',
+		'robots_txt_blocking',
+		'no_ssl',
+		'physical_robots_txt_exists',
+		'no_permalink_structure',
+		'rss_full_text',
+	];
+
+	/**
 	 * Known conflicting SEO plugin basenames.
 	 *
 	 * @var string[]
@@ -60,7 +95,7 @@ class Notifications
 	 *
 	 * @var array[]|null
 	 */
-	private $active_notices = null;
+	private ?array $active_notices = null;
 
 	public function __construct()
 	{
@@ -69,6 +104,18 @@ class Notifications
 		add_action('admin_footer', [$this, 'print_panel_html']);
 		add_action('admin_footer', [$this, 'print_scripts']);
 		add_action('wp_ajax_crawlwp_dismiss_notice', [$this, 'ajax_dismiss_notice']);
+
+		/* The cached robots.txt verdict is stale as soon as the editor is saved. */
+		add_action('add_option_crawlwp_robots', [__CLASS__, 'flush_robots_txt_cache']);
+		add_action('update_option_crawlwp_robots', [__CLASS__, 'flush_robots_txt_cache']);
+	}
+
+	/**
+	 * Drop the cached robots.txt verdict so the next admin page load re-checks it.
+	 */
+	public static function flush_robots_txt_cache(): void
+	{
+		delete_transient(self::ROBOTS_BLOCK_TRANSIENT);
 	}
 
 	// -------------------------------------------------------------------------
@@ -563,6 +610,11 @@ class Notifications
 			wp_send_json_error('missing notice_id');
 		}
 
+		/* Only ids this plugin actually renders may be stored. */
+		if (! in_array($notice_id, $this->known_notice_ids(), true)) {
+			wp_send_json_error('unknown notice_id');
+		}
+
 		$dismissed = $this->get_dismissed();
 		$dismissed[$notice_id] = true;
 		update_option(self::DISMISSED_KEY, $dismissed, false);
@@ -604,8 +656,13 @@ class Notifications
 	{
 		$notices = [];
 
+		$dismissed = $this->get_dismissed();
+
+		/* Health checks are expensive, so never run one for a dismissed notice. */
+		$wanted = fn(string $id): bool => ! isset($dismissed[$id]);
+
 		/* 1. WordPress "Discourage search engines" setting. */
-		if (!get_option('blog_public', 1)) {
+		if ($wanted('blog_not_public') && !get_option('blog_public', 1)) {
 			$notices[] = [
 				'id' => 'blog_not_public',
 				'severity' => 'error',
@@ -619,7 +676,7 @@ class Notifications
 		}
 
 		/* 2. Homepage noindex check. */
-		$homepage_noindex = $this->get_homepage_noindex_info();
+		$homepage_noindex = $wanted('crawlwp_site_noindex') ? $this->get_homepage_noindex_info() : null;
 
 		if ($homepage_noindex !== null) {
 			$notices[] = [
@@ -635,7 +692,7 @@ class Notifications
 		}
 
 		/* 3. Conflicting SEO plugin detected (only relevant when our output is active). */
-		$conflict = $this->detect_conflicting_plugin();
+		$conflict = $wanted('conflicting_seo_plugin') ? $this->detect_conflicting_plugin() : null;
 
 		if ($conflict !== null) {
 			$notices[] = [
@@ -653,7 +710,9 @@ class Notifications
 		 * When a static page is set as homepage, inspect its metabox data.
 		 * Otherwise, the frontend falls back to the registered default template, so only
 		 * warn when the stored value AND the default are both empty. */
-		if (CoreSettings::is_static_front_page()) {
+		$check_homepage_title = $wanted('missing_homepage_title');
+
+		if ($check_homepage_title && CoreSettings::is_static_front_page()) {
 			$page_on_front_id = (int) get_option('page_on_front');
 			$seo_title        = trim((string) MetaFields::get($page_on_front_id, MetaFields::SEO_TITLE, ''));
 
@@ -671,7 +730,7 @@ class Notifications
 					),
 				];
 			}
-		} elseif ($this->home_template_is_empty('title')) {
+		} elseif ($check_homepage_title && $this->home_template_is_empty('title')) {
 			$notices[] = [
 				'id' => 'missing_homepage_title',
 				'severity' => 'warning',
@@ -685,7 +744,9 @@ class Notifications
 		}
 
 		/* 5. Missing homepage meta description. */
-		if (CoreSettings::is_static_front_page()) {
+		$check_homepage_description = $wanted('missing_homepage_description');
+
+		if ($check_homepage_description && CoreSettings::is_static_front_page()) {
 			$page_on_front_id = (int) get_option('page_on_front');
 			$seo_description  = trim((string) MetaFields::get($page_on_front_id, MetaFields::SEO_DESCRIPTION, ''));
 
@@ -703,7 +764,7 @@ class Notifications
 					),
 				];
 			}
-		} elseif ($this->home_template_is_empty('description')) {
+		} elseif ($check_homepage_description && $this->home_template_is_empty('description')) {
 			$notices[] = [
 				'id' => 'missing_homepage_description',
 				'severity' => 'warning',
@@ -717,7 +778,7 @@ class Notifications
 		}
 
 		/* 6. WordPress core sitemaps disabled. */
-		if (!$this->is_sitemap_enabled()) {
+		if ($wanted('sitemap_disabled') && !$this->is_sitemap_enabled()) {
 			$notices[] = [
 				'id' => 'sitemap_disabled',
 				'severity' => 'warning',
@@ -726,7 +787,7 @@ class Notifications
 		}
 
 		/* 7. robots.txt blocking all crawlers. */
-		if ($this->robots_txt_blocks_all()) {
+		if ($wanted('robots_txt_blocking') && $this->robots_txt_blocks_all()) {
 			$notices[] = [
 				'id' => 'robots_txt_blocking',
 				'severity' => 'error',
@@ -740,7 +801,7 @@ class Notifications
 		}
 
 		/* 8. No SSL / HTTPS. */
-		if (!is_ssl() && !$this->site_uses_https()) {
+		if ($wanted('no_ssl') && !is_ssl() && !$this->site_uses_https()) {
 			$notices[] = [
 				'id' => 'no_ssl',
 				'severity' => 'warning',
@@ -749,7 +810,7 @@ class Notifications
 		}
 
 		/* 9. Physical robots.txt file on the server overrides WordPress's virtual one. */
-		if ($this->physical_robots_txt_exists()) {
+		if ($wanted('physical_robots_txt_exists') && $this->physical_robots_txt_exists()) {
 			$notices[] = [
 				'id' => 'physical_robots_txt_exists',
 				'severity' => 'warning',
@@ -761,7 +822,7 @@ class Notifications
 		}
 
 		/* 10. Not using a pretty permalink structure. */
-		if (!get_option('permalink_structure')) {
+		if ($wanted('no_permalink_structure') && !get_option('permalink_structure')) {
 			$notices[] = [
 				'id' => 'no_permalink_structure',
 				'severity' => 'warning',
@@ -775,7 +836,7 @@ class Notifications
 		}
 
 		/* 11. RSS feed shows full text instead of a summary. */
-		if (!get_option('rss_use_excerpt')) {
+		if ($wanted('rss_full_text') && !get_option('rss_use_excerpt')) {
 			$notices[] = [
 				'id' => 'rss_full_text',
 				'severity' => 'warning',
@@ -809,6 +870,26 @@ class Notifications
 	{
 		$stored = get_option(self::DISMISSED_KEY, []);
 		return is_array($stored) ? $stored : [];
+	}
+
+	/**
+	 * Notice ids that may be dismissed (and therefore stored).
+	 *
+	 * @return string[]
+	 */
+	private function known_notice_ids(): array
+	{
+		/**
+		 * Filter the notice ids the dismiss endpoint accepts.
+		 *
+		 * Extensions adding notices through `crawlwp_seo_notices` must register
+		 * their ids here for those notices to be dismissible.
+		 *
+		 * @param string[] $ids Known notice ids.
+		 */
+		$ids = (array) apply_filters('crawlwp_seo_notice_ids', self::NOTICE_IDS);
+
+		return array_values(array_filter(array_map('strval', $ids)));
 	}
 
 	/**
@@ -966,6 +1047,15 @@ class Notifications
 			return $checked;
 		}
 
+		/* Remote robots.txt fetches are far too slow to repeat per page load. */
+		$cached = get_transient(self::ROBOTS_BLOCK_TRANSIENT);
+
+		if ($cached !== false) {
+			$checked = ('1' === $cached);
+
+			return $checked;
+		}
+
 		$file_path = $this->get_physical_robots_txt_path();
 		$fs = $this->get_filesystem();
 		$exists = $fs !== null ? $fs->exists($file_path) : file_exists($file_path);
@@ -983,6 +1073,8 @@ class Notifications
 		}
 
 		$checked = $this->content_blocks_all_crawlers((string)$content);
+
+		set_transient(self::ROBOTS_BLOCK_TRANSIENT, $checked ? '1' : '0', self::ROBOTS_BLOCK_TTL);
 
 		return $checked;
 	}

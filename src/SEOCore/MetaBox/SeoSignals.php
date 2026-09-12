@@ -51,6 +51,18 @@ class SeoSignals
 	private const SOCIAL_MIN_HEIGHT = 630;
 
 	/**
+	 * Cached signal list, refreshed on save_post.
+	 *
+	 * Building the signals scans the post content (strip_shortcodes +
+	 * wp_strip_all_tags for the keyword check), which is far too expensive to
+	 * repeat for every row of a post list table.
+	 */
+	public const CACHE_META = '_crawlwp_seo_signals';
+
+	/** Bumped whenever the cached payload shape or the signal logic changes. */
+	private const CACHE_VERSION = 1;
+
+	/**
 	 * Every signal for a post, in display order.
 	 *
 	 * @return array<int, array>
@@ -58,7 +70,107 @@ class SeoSignals
 	public static function for_post(\WP_Post $post): array
 	{
 		$entity = Entities::post_type_key($post->post_type);
-		$title  = self::resolved_title($post, $entity);
+
+		return self::build($post, $entity);
+	}
+
+	/**
+	 * Signals for a post, served from the post meta cache when possible.
+	 *
+	 * A stale cache is detected through a fingerprint of everything the signals
+	 * depend on outside the post meta we write ourselves (locale, modification
+	 * time, last IndexNow ping, the global entity options), so the list table
+	 * never shows values from before a settings change.
+	 *
+	 * @return array<int, array>
+	 */
+	public static function cached(\WP_Post $post): array
+	{
+		$entity      = Entities::post_type_key($post->post_type);
+		$fingerprint = self::fingerprint($post, $entity);
+
+		/**
+		 * Filters whether the SEO signals may be served from the post meta cache.
+		 *
+		 * @param bool     $enabled Defaults to true.
+		 * @param \WP_Post $post    The post being rendered.
+		 */
+		if (apply_filters('crawlwp_seo_signals_cache_enabled', true, $post)) {
+			$cached = get_post_meta($post->ID, self::CACHE_META, true);
+
+			if (
+				is_array($cached) &&
+				isset($cached['fingerprint'], $cached['signals']) &&
+				$cached['fingerprint'] === $fingerprint &&
+				is_array($cached['signals'])
+			) {
+				return $cached['signals'];
+			}
+		}
+
+		$signals = self::build($post, $entity);
+
+		update_post_meta($post->ID, self::CACHE_META, [
+			'fingerprint' => $fingerprint,
+			'signals'     => $signals,
+		]);
+
+		return $signals;
+	}
+
+	/**
+	 * Recompute and store the cached signals for a post.
+	 */
+	public static function persist(int $post_id): void
+	{
+		$post = get_post($post_id);
+
+		if (! $post instanceof \WP_Post) {
+			return;
+		}
+
+		$entity = Entities::post_type_key($post->post_type);
+
+		update_post_meta($post_id, self::CACHE_META, [
+			'fingerprint' => self::fingerprint($post, $entity),
+			'signals'     => self::build($post, $entity),
+		]);
+	}
+
+	/**
+	 * Drop the cached signals so the next read recomputes them.
+	 */
+	public static function flush(int $post_id): void
+	{
+		delete_post_meta($post_id, self::CACHE_META);
+	}
+
+	/**
+	 * Identifies the inputs the signals were built from.
+	 */
+	private static function fingerprint(\WP_Post $post, string $entity): string
+	{
+		$parts = [
+			(string) self::CACHE_VERSION,
+			function_exists('determine_locale') ? determine_locale() : get_locale(),
+			(string) $post->post_modified_gmt,
+			(string) $post->post_status,
+			(string) get_post_meta($post->ID, '_crawlwp_last_indexnow', true),
+			(string) get_option('blog_public', 1),
+			(string) wp_json_encode(Options::all($entity)),
+		];
+
+		return md5(implode('|', $parts));
+	}
+
+	/**
+	 * Build the signal list from scratch.
+	 *
+	 * @return array<int, array>
+	 */
+	private static function build(\WP_Post $post, string $entity): array
+	{
+		$title = self::resolved_title($post, $entity);
 
 		$signals = [
 			self::title_signal($post, $entity, $title),
@@ -534,11 +646,46 @@ class SeoSignals
 		return '“' . $text . '”';
 	}
 
+	/**
+	 * Translatable one-character abbreviation shown in the post list strip.
+	 *
+	 * Uses _x() so translators get the context: on its own a letter like "T"
+	 * is meaningless and would otherwise collide with unrelated strings.
+	 */
+	private static function letter(string $id, string $fallback): string
+	{
+		switch ($id) {
+			case 'title':
+				/* translators: One-character abbreviation of "Title" in the post list SEO strip. Keep it to a single character. */
+				return _x('T', 'SEO signal letter: Title', 'mihdan-index-now');
+			case 'description':
+				/* translators: One-character abbreviation of "Description" in the post list SEO strip. Keep it to a single character. */
+				return _x('D', 'SEO signal letter: Description', 'mihdan-index-now');
+			case 'keyword':
+				/* translators: One-character abbreviation of "Keyword" in the post list SEO strip. Keep it to a single character. */
+				return _x('K', 'SEO signal letter: Keyword', 'mihdan-index-now');
+			case 'indexing':
+				/* translators: One-character abbreviation of "Indexing" in the post list SEO strip. Keep it to a single character. */
+				return _x('I', 'SEO signal letter: Indexing', 'mihdan-index-now');
+			case 'follow':
+				/* translators: One-character abbreviation of "Following" in the post list SEO strip. Keep it to a single character. */
+				return _x('F', 'SEO signal letter: Following', 'mihdan-index-now');
+			case 'social':
+				/* translators: One-character abbreviation of "Social" in the post list SEO strip. Keep it to a single character. */
+				return _x('S', 'SEO signal letter: Social', 'mihdan-index-now');
+			case 'indexnow':
+				/* translators: One-character abbreviation of "IndexNow" in the post list SEO strip. Keep it to a single character. */
+				return _x('N', 'SEO signal letter: IndexNow', 'mihdan-index-now');
+			default:
+				return $fallback;
+		}
+	}
+
 	private static function signal(string $id, string $letter, string $label, string $state, string $summary, string $detail = ''): array
 	{
 		return [
 			'id'      => $id,
-			'letter'  => $letter,
+			'letter'  => self::letter($id, $letter),
 			'label'   => $label,
 			'state'   => $state,
 			'summary' => $summary,

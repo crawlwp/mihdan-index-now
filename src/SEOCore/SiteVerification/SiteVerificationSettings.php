@@ -7,7 +7,13 @@ use Mihdan\IndexNow\Views\WPOSA;
 
 class SiteVerificationSettings
 {
-	private const META_TAG_REGEX = '/<meta.+content=(?:"|\')(.+)(?:"|\').+/';
+	/**
+	 * Pulls the content attribute out of a pasted <meta> tag.
+	 *
+	 * The character class stops at the closing quote, so extra attributes
+	 * (data-*, id, nonce…) on either side of `content` are not captured.
+	 */
+	private const META_TAG_REGEX = '/<meta\b[^>]*?\bcontent=["\']([^"\']+)["\'][^>]*>/i';
 
 	/** Characters allowed in a stored verification code — everything else is stripped. */
 	private const CODE_DISALLOWED_REGEX = '/[^A-Za-z0-9_\-=.:]+/';

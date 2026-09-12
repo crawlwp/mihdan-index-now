@@ -24,9 +24,47 @@ class Variables
 	 */
 	private array $context;
 
+	/**
+	 * Fingerprint of {@see self::$context}, '' when it cannot be memoised.
+	 */
+	private string $context_key;
+
+	/**
+	 * Resolved templates for this request, keyed by context + template.
+	 *
+	 * A single request resolves up to six templates (title, description, social
+	 * title/description, X title/description) against the same context, and the
+	 * same template often repeats between them.
+	 *
+	 * @var array<string,string>
+	 */
+	private static array $resolved = [];
+
+	/**
+	 * Resolved token values for this request, keyed by context + token.
+	 *
+	 * @var array<string,string>
+	 */
+	private static array $tokens = [];
+
+	/**
+	 * Memoised separator for this request.
+	 *
+	 * @var string|null
+	 */
+	private static ?string $separator = null;
+
+	/**
+	 * Generated post descriptions, keyed by post ID.
+	 *
+	 * @var array<int,string>
+	 */
+	private static array $auto_descriptions = [];
+
 	public function __construct(array $context = [])
 	{
-		$this->context = $context;
+		$this->context     = $context;
+		$this->context_key = self::context_key($context);
 	}
 
 	/**
@@ -38,11 +76,62 @@ class Variables
 			return '';
 		}
 
-		if (strpos($template, '{{') === false) {
-			return self::cleanup($template);
+		$instance = new self($context);
+		$memo_key = $instance->context_key === '' ? '' : $instance->context_key . '|' . $template;
+
+		if ($memo_key !== '' && isset(self::$resolved[$memo_key])) {
+			return self::$resolved[$memo_key];
 		}
 
-		return (new self($context))->resolve($template);
+		$value = strpos($template, '{{') === false
+			? self::cleanup($template)
+			: $instance->resolve($template);
+
+		if ($memo_key !== '') {
+			self::$resolved[$memo_key] = $value;
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Fingerprint identifying a context for the memo caches.
+	 *
+	 * Returns '' for a context holding something we cannot describe, so that
+	 * such a context is never served a memoised value.
+	 */
+	private static function context_key(array $context): string
+	{
+		$parts = [];
+
+		foreach ($context as $name => $value) {
+			if ($value instanceof \WP_Post) {
+				$parts[] = $name . ':post:' . $value->ID;
+			} elseif ($value instanceof \WP_Term) {
+				$parts[] = $name . ':term:' . $value->term_taxonomy_id;
+			} elseif ($value instanceof \WP_User) {
+				$parts[] = $name . ':user:' . $value->ID;
+			} elseif ($value instanceof \WP_Post_Type) {
+				$parts[] = $name . ':post_type:' . $value->name;
+			} elseif ($value === null || is_scalar($value)) {
+				$parts[] = $name . ':' . (string) $value;
+			} else {
+				return '';
+			}
+		}
+
+		return implode('|', $parts);
+	}
+
+	/**
+	 * Drop the per-request memo caches. Mainly useful for tests.
+	 */
+	public static function flush_cache(): void
+	{
+		self::$resolved          = [];
+		self::$tokens            = [];
+		self::$auto_descriptions = [];
+		self::$separator         = null;
 	}
 
 	/**
@@ -54,7 +143,7 @@ class Variables
 			self::TOKEN_REGEX,
 			function ($matches) {
 				$token = strtolower($matches[1]);
-				$value = $this->resolve_token($token);
+				$value = $this->token_value($token);
 
 				/**
 				 * Filter the value resolved for a single template variable.
@@ -86,6 +175,10 @@ class Variables
 	 */
 	public static function separator(): string
 	{
+		if (self::$separator !== null) {
+			return self::$separator;
+		}
+
 		$separators = self::separator_choices();
 		$stored     = Options::get('home', 'separator', '-');
 		$separator  = $separators[$stored] ?? $stored;
@@ -99,7 +192,9 @@ class Variables
 		 *
 		 * @param string $separator The separator character.
 		 */
-		return (string) apply_filters('crawlwp_title_separator', $separator);
+		self::$separator = (string) apply_filters('crawlwp_title_separator', $separator);
+
+		return self::$separator;
 	}
 
 	/**
@@ -124,6 +219,26 @@ class Variables
 	}
 
 	/**
+	 * Resolve a single token, remembering the value for this request.
+	 */
+	private function token_value(string $token): string
+	{
+		$memo_key = $this->context_key === '' ? '' : $this->context_key . '|' . $token;
+
+		if ($memo_key !== '' && isset(self::$tokens[$memo_key])) {
+			return self::$tokens[$memo_key];
+		}
+
+		$value = $this->resolve_token($token);
+
+		if ($memo_key !== '') {
+			self::$tokens[$memo_key] = $value;
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Resolve a single token to its replacement value.
 	 */
 	private function resolve_token(string $token): string
@@ -144,14 +259,15 @@ class Variables
 			case 'site.url':
 				return home_url('/');
 
+			/* Site timezone and locale, like {{ current.date }} below. */
 			case 'current.year':
-				return gmdate('Y');
+				return (string) (wp_date('Y') ?: gmdate('Y'));
 
 			case 'current.month':
-				return gmdate('F');
+				return (string) (wp_date('F') ?: gmdate('F'));
 
 			case 'current.day':
-				return gmdate('j');
+				return (string) (wp_date('j') ?: gmdate('j'));
 
 			case 'current.date':
 				return wp_date((string) get_option('date_format')) ?: gmdate('Y-m-d');
@@ -196,7 +312,10 @@ class Variables
 
 	private function resolve_post_token(string $key): string
 	{
-		$post = $this->context['post'] ?? null;
+		/* The blog posts index keeps its "Posts page" under its own key so it is
+		 * not mistaken for the content being rendered — but its values still
+		 * feed the title and description templates. */
+		$post = $this->context['post'] ?? $this->context['posts_page'] ?? null;
 
 		if (! $post instanceof \WP_Post) {
 			return '';
@@ -210,8 +329,7 @@ class Variables
 				return $post->post_excerpt;
 
 			case 'auto_description':
-				return $post->post_excerpt
-					?: wp_trim_words(wp_strip_all_tags(strip_shortcodes($post->post_content)), 30, '...');
+				return self::post_auto_description($post);
 
 			case 'content':
 				return wp_strip_all_tags($post->post_content);
@@ -368,6 +486,26 @@ class Variables
 		return '';
 	}
 
+	/**
+	 * Post excerpt, or the first 30 words of the content.
+	 *
+	 * Stripping the shortcodes and the markup off a full post body is expensive,
+	 * so the result is remembered for the rest of the request.
+	 */
+	private static function post_auto_description(\WP_Post $post): string
+	{
+		if (isset(self::$auto_descriptions[$post->ID])) {
+			return self::$auto_descriptions[$post->ID];
+		}
+
+		$description = $post->post_excerpt
+			?: wp_trim_words(wp_strip_all_tags(strip_shortcodes($post->post_content)), 30, '...');
+
+		self::$auto_descriptions[$post->ID] = (string) $description;
+
+		return self::$auto_descriptions[$post->ID];
+	}
+
 	private function first_term_name(\WP_Post $post, string $taxonomy): string
 	{
 		if ($taxonomy === 'category') {
@@ -396,15 +534,13 @@ class Variables
 	 */
 	private function paged_label(): string
 	{
-		global $wp_query, $page, $paged;
+		global $wp_query;
 
-		$current = 0;
-
-		if (is_singular()) {
-			$current = (int) $page;
-		} else {
-			$current = (int) $paged;
-		}
+		/* Query vars rather than the $page / $paged globals, which are only set
+		 * up once the main query starts running. */
+		$current = is_singular()
+			? (int) get_query_var('page')
+			: (int) get_query_var('paged');
 
 		if ($current < 2) {
 			return '';
@@ -430,21 +566,43 @@ class Variables
 		return sprintf(__('Page %d', 'mihdan-index-now'), $current);
 	}
 
+	/**
+	 * "March 2024" style label for the requested date archive.
+	 *
+	 * Built from the query vars, not from the loop: `get_the_date()` needs a
+	 * post, so it returns the wrong date before the loop and nothing at all on
+	 * an empty archive.
+	 */
 	private function date_archive_title(): string
 	{
-		if (is_year()) {
-			return (string) get_the_date('Y');
+		$year  = (int) get_query_var('year');
+		$month = (int) get_query_var('monthnum');
+		$day   = (int) get_query_var('day');
+
+		if ($year <= 0) {
+			return __('Archives', 'mihdan-index-now');
 		}
 
-		if (is_month()) {
-			return (string) get_the_date('F Y');
+		/* Midday keeps the date stable whatever the site timezone offset is. */
+		$timestamp = mktime(12, 0, 0, max(1, $month), max(1, $day), $year);
+
+		if ($timestamp === false) {
+			return __('Archives', 'mihdan-index-now');
 		}
 
-		if (is_day()) {
-			return (string) get_the_date();
+		if ($month > 0 && $day > 0) {
+			$format = (string) get_option('date_format');
+
+			return (string) wp_date($format !== '' ? $format : 'F j, Y', $timestamp);
 		}
 
-		return __('Archives', 'mihdan-index-now');
+		if ($month > 0) {
+			/* translators: monthly date archive title format. See https://www.php.net/manual/datetime.format.php */
+			return (string) wp_date(_x('F Y', 'monthly archives date format', 'mihdan-index-now'), $timestamp);
+		}
+
+		/* translators: yearly date archive title format. See https://www.php.net/manual/datetime.format.php */
+		return (string) wp_date(_x('Y', 'yearly archives date format', 'mihdan-index-now'), $timestamp);
 	}
 
 	/**

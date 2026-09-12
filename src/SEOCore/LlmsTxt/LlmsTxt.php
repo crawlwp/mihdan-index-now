@@ -18,16 +18,29 @@ class LlmsTxt
 		add_action('init', [$this, 'add_rewrite']);
 		add_filter('query_vars', [$this, 'query_vars']);
 		add_action('template_redirect', [$this, 'maybe_render'], 0);
+
+		/*
+		 * Flush the rewrite rules only when the settings are saved. Flushing on
+		 * 'init' rebuilt every rewrite rule on a regular front-end request, which
+		 * is one of the most expensive operations WordPress offers.
+		 */
+		add_action('update_option_crawlwp_' . self::SECTION, [$this, 'flush_rewrite']);
+		add_action('add_option_crawlwp_' . self::SECTION, [$this, 'flush_rewrite']);
 	}
 
 	public function add_rewrite(): void
 	{
 		add_rewrite_rule('^llms\.txt$', 'index.php?crawlwp_llms_txt=1', 'top');
+	}
 
-		if (get_option('crawlwp_llms_txt_rewrite') !== '1') {
-			flush_rewrite_rules(false);
-			update_option('crawlwp_llms_txt_rewrite', '1', false);
-		}
+	/**
+	 * Rebuild the rewrite rules so /llms.txt resolves.
+	 *
+	 * Hooks: update_option_crawlwp_llms_txt, add_option_crawlwp_llms_txt.
+	 */
+	public function flush_rewrite(): void
+	{
+		flush_rewrite_rules(false);
 	}
 
 	/**
@@ -111,13 +124,25 @@ class LlmsTxt
 			__('This site publishes web pages that may be used as context by language models.', 'mihdan-index-now'),
 			'',
 			'## Sitemap',
-			home_url('/wp-sitemap.xml'),
+			$this->sitemap_url(),
 			'',
 			'## Home',
 			home_url('/'),
 		];
 
 		return implode("\n", $lines) . "\n";
+	}
+
+	/**
+	 * The sitemap index URL, honouring a custom sitemap base or permalink setup.
+	 */
+	private function sitemap_url(): string
+	{
+		$url = get_sitemap_url('index');
+
+		if (is_string($url) && $url !== '') return $url;
+
+		return home_url('/wp-sitemap.xml');
 	}
 
 	public static function get(string $field, $default = '')

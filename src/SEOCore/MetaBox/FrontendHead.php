@@ -12,6 +12,11 @@ namespace Mihdan\IndexNow\SEOCore\MetaBox;
  */
 class FrontendHead
 {
+	/**
+	 * Status codes that are served as a response body instead of a redirect.
+	 */
+	private const BODY_STATUSES = [410, 451];
+
 	public function __construct()
 	{
 		add_action('template_redirect', [$this, 'handle_redirect']);
@@ -37,12 +42,9 @@ class FrontendHead
 
 		$code = (int) $redirect_type;
 
-		// 410 does not need a destination — the URL field may legitimately be empty.
-		if ($code === 410) {
-			nocache_headers();
-			status_header(410);
-			echo '<!DOCTYPE html><html><head><title>410 Gone</title></head><body><h1>410 Gone</h1><p>This content has been permanently removed.</p></body></html>';
-			exit;
+		// 410/451 need no destination — the URL field may legitimately be empty.
+		if (in_array($code, self::BODY_STATUSES, true)) {
+			$this->render_status($code, $post_id);
 		}
 
 		if ($redirect_url === '') {
@@ -71,5 +73,54 @@ class FrontendHead
 
 		wp_redirect($redirect_url, $code, 'CrawlWP');
 		exit;
+	}
+
+	/**
+	 * Render the response for a status code that needs no destination and stop.
+	 *
+	 * wp_die() is used instead of hand-rolled HTML so the output runs through
+	 * the theme's / WordPress' own error template handling, and both the title
+	 * and the body can be replaced by a theme or add-on.
+	 *
+	 * @param int $code    410 or 451.
+	 * @param int $post_id The post carrying the status.
+	 */
+	private function render_status(int $code, int $post_id): void
+	{
+		nocache_headers();
+
+		if ($code === 451) {
+			$heading = __('451 Unavailable For Legal Reasons', 'mihdan-index-now');
+			$body    = __('This content is unavailable for legal reasons.', 'mihdan-index-now');
+		} else {
+			$heading = __('410 Gone', 'mihdan-index-now');
+			$body    = __('This content has been permanently removed.', 'mihdan-index-now');
+		}
+
+		/**
+		 * Filters the title of the 410 Gone / 451 Unavailable page.
+		 *
+		 * The dynamic portion of the hook name, `$code`, is the status code.
+		 *
+		 * @param string $title   The page title.
+		 * @param int    $post_id The post carrying the status.
+		 */
+		$title = (string) apply_filters("crawlwp_{$code}_title", $heading, $post_id);
+
+		$default_message = '<h1>' . esc_html($heading) . '</h1><p>' . esc_html($body) . '</p>';
+
+		/**
+		 * Filters the body of the 410 Gone / 451 Unavailable page.
+		 *
+		 * The dynamic portion of the hook name, `$code`, is the status code.
+		 * The message is passed to wp_die(), so it may contain HTML. Anything
+		 * hooked here is responsible for escaping its own output.
+		 *
+		 * @param string $message The page body.
+		 * @param int    $post_id The post carrying the status.
+		 */
+		$message = (string) apply_filters("crawlwp_{$code}_message", $default_message, $post_id);
+
+		wp_die($message, $title, ['response' => $code]);
 	}
 }

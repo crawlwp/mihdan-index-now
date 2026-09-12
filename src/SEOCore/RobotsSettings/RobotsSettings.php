@@ -50,7 +50,46 @@ class RobotsSettings
 			'title'          => __('Robots.txt', 'mihdan-index-now'),
 		]);
 
+		$this->add_physical_file_warning($wposa);
 		$this->add_robots_fields($wposa);
+	}
+
+	/**
+	 * Warn when a physical robots.txt file shadows the virtual one.
+	 *
+	 * WordPress only serves the filtered /robots.txt when no real file exists in
+	 * the site root, so every setting below would silently have no effect.
+	 */
+	private function add_physical_file_warning(WPOSA $wposa): void
+	{
+		if (! self::has_physical_file()) {
+			return;
+		}
+
+		$notice = sprintf(
+			'<div class="notice notice-warning inline" style="margin:0;padding:10px 12px;"><p><strong>%1$s</strong></p><p>%2$s</p></div>',
+			esc_html__('A physical robots.txt file exists in your site root.', 'mihdan-index-now'),
+			sprintf(
+				/* translators: %s: absolute path to the robots.txt file. */
+				esc_html__('Your web server serves %s directly, so none of the settings below affect what search engines see. Delete or rename that file to use the settings on this screen.', 'mihdan-index-now'),
+				'<code>' . esc_html(ABSPATH . 'robots.txt') . '</code>'
+			)
+		);
+
+		$wposa->add_field(self::SECTION, [
+			'id'   => 'physical_file_warning',
+			'type' => 'html',
+			'name' => '',
+			'desc' => $notice,
+		]);
+	}
+
+	/**
+	 * Whether a physical robots.txt file exists in the site root.
+	 */
+	public static function has_physical_file(): bool
+	{
+		return file_exists(ABSPATH . 'robots.txt');
 	}
 
 	// -------------------------------------------------------------------------
@@ -79,6 +118,12 @@ class RobotsSettings
 		$saved_content   = $options['robots_content'] ?? '';
 		$default_content = $saved_content !== '' ? $saved_content : $this->get_full_robots_txt();
 
+		$content_desc = __('The full content of your virtual robots.txt file. Pre-filled with the current output (WordPress defaults plus any additions from other plugins). Edit as needed — whatever you save here becomes the complete /robots.txt file.', 'mihdan-index-now');
+
+		if (self::has_physical_file()) {
+			$content_desc .= ' <strong>' . esc_html__('This content is currently ignored because a physical robots.txt file exists in the site root.', 'mihdan-index-now') . '</strong>';
+		}
+
 		$wposa->add_field(self::SECTION, [
 			'id'         => 'robots_content',
 			'type'       => 'textarea',
@@ -86,7 +131,7 @@ class RobotsSettings
 			'default'    => $default_content,
 			'rows'       => 15,
 			'attributes' => $editing_enabled ? [] : ['readonly' => 'readonly'],
-			'desc'       => __('The full content of your virtual robots.txt file. Pre-filled with the current output (WordPress defaults plus any additions from other plugins). Edit as needed — whatever you save here becomes the complete /robots.txt file.', 'mihdan-index-now'),
+			'desc'       => $content_desc,
 		]);
 
 		/* Small inline script to live-toggle the textarea readonly state. */
