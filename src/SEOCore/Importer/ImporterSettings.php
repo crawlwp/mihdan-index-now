@@ -14,7 +14,7 @@ class ImporterSettings
 
 	public function __construct()
 	{
-		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 28, 2);
+		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 99, 2);
 		add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
 		add_action('wp_ajax_crawlwp_import_inventory', [$this, 'ajax_inventory']);
 		add_action('wp_ajax_crawlwp_import_step', [$this, 'ajax_step']);
