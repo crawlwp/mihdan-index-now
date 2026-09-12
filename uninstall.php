@@ -49,7 +49,6 @@ function crawlwp_lite_mo_uninstall_function()
 		'crawlwp_logs',
 		'crawlwp_version',
 		'crawlwp_lite_db_ver',
-		'crawlwp_redirects_db_version',
 		'crawlwp_google_indexing_rate_limit_expiration',
 		'crawlwp_bing_indexing_rate_limit_expiration',
 		'crawlwp_yandex_indexing_rate_limit_expiration',

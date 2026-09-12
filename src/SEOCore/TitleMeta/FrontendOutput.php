@@ -889,6 +889,7 @@ class FrontendOutput
 
 		/* article:published_time / article:modified_time for posts. */
 		if ($data['og_type'] === 'article' && $data['post'] instanceof \WP_Post) {
+
 			if (SocialSettings::get('post_publish_time', 'on') !== 'off') {
 				$pub = get_the_date('c', $data['post']);
 

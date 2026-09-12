@@ -2,21 +2,8 @@
 
 namespace Mihdan\IndexNow\SEOCore\Redirects;
 
-/**
- * Core database manager for CrawlWP redirects.
- *
- * Manages the {prefix}crawlwp_redirects custom table. Provides CRUD
- * operations and a query layer used by both the admin UI and the frontend
- * processor.
- *
- * Table option key: crawlwp_redirects_db_version
- * Table name:       {prefix}crawlwp_redirects
- */
 class RedirectsManager
 {
-	/** Current DB schema version. Bump to trigger a dbDelta() upgrade. */
-	const DB_VERSION = '1.0';
-
 	/** Transient key for the cached redirect list used by the frontend. */
 	const CACHE_KEY = 'crawlwp_redirects_cache';
 
@@ -37,62 +24,7 @@ class RedirectsManager
 	{
 		global $wpdb;
 		$this->table = $wpdb->prefix . 'crawlwp_redirects';
-
-		// Create / upgrade the table if needed.
-		add_action('plugins_loaded', [$this, 'maybe_install_table'], 1);
 	}
-
-	// -------------------------------------------------------------------------
-	// Table installation
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Create or upgrade the DB table when the schema version changes.
-	 */
-	public function maybe_install_table(): void
-	{
-		if (get_option('crawlwp_redirects_db_version') === self::DB_VERSION) {
-			return;
-		}
-
-		$this->install_table();
-	}
-
-	/**
-	 * Run dbDelta() to create / upgrade the redirects table.
-	 */
-	public function install_table(): void
-	{
-		global $wpdb;
-
-		$charset_collate = $wpdb->get_charset_collate();
-
-		$sql = "CREATE TABLE {$this->table} (
-			id bigint(20) NOT NULL AUTO_INCREMENT,
-			from_url varchar(2048) NOT NULL DEFAULT '',
-			to_url varchar(2048) NOT NULL DEFAULT '',
-			redirect_type smallint(4) NOT NULL DEFAULT 301,
-			match_type varchar(20) NOT NULL DEFAULT 'exact',
-			note text NOT NULL DEFAULT '',
-			ignore_query_string tinyint(1) NOT NULL DEFAULT 1,
-			enabled tinyint(1) NOT NULL DEFAULT 1,
-			hits bigint(20) NOT NULL DEFAULT 0,
-			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-			last_accessed datetime DEFAULT NULL,
-			PRIMARY KEY  (id),
-			KEY from_url (from_url(255)),
-			KEY enabled (enabled)
-		) $charset_collate;";
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta($sql);
-
-		update_option('crawlwp_redirects_db_version', self::DB_VERSION);
-	}
-
-	// -------------------------------------------------------------------------
-	// CRUD
-	// -------------------------------------------------------------------------
 
 	/**
 	 * Insert a new redirect row.

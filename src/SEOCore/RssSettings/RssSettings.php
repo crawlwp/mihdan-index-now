@@ -572,6 +572,6 @@ class RssSettings
 			return $default;
 		}
 
-		return isset($options[$field]) ? $options[$field] : $default;
+		return $options[$field] ?? $default;
 	}
 }
