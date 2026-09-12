@@ -177,10 +177,28 @@ Outputs on `wp_head` (priority 1):
 
 ---
 
+## Dev Tooling
+
+Dev dependencies live in `require-dev` (PHPUnit, PHPStan + `szepeviktor/phpstan-wordpress`, PHPCS/WPCS). After `composer install`:
+
+- `composer test` — runs the zero-dependency smoke script (`tests/TokenMapperTest.php`) and the PHPUnit suite in `tests/unit/`.
+- `composer analyse` — PHPStan level 5 over `src/` (`phpstan.neon`, baseline in `phpstan-baseline.neon`; keep the baseline shrinking).
+- `composer lint` — PHPCS.
+
+`tests/bootstrap.php` stubs the handful of WordPress helpers the pure classes call (`TokenMapper`, `Schema\Graph`, `InternalLinks\AutoLinker`), so those can be unit tested without a WordPress install. New logic that does not need WordPress should be testable the same way.
+
+`plugin-build.php` aborts the release build when a debug helper (`ray`, `dd`, `dump`, `var_dump`, …) is found anywhere under `src/`, and strips `tests/` plus the tooling configs from the packaged zip.
+
+**Deliberate deviation:** files do **not** declare `strict_types=1`. Option values throughout the plugin flow as loose scalars (`''`, `'0'`, `false`) through untyped helpers, so enabling strict typing wholesale without a WordPress integration test harness would risk silent `TypeError`s at runtime. Prefer adding parameter/return types (as most SEOCore classes now do) over flipping the strict-types switch file by file.
+
+---
+
 ## Testing & Verification Checklist
 
 Before submitting changes:
 
+- [ ] `composer test` — smoke script + PHPUnit suite pass
+- [ ] `composer analyse` — no new PHPStan errors outside the baseline
 - [ ] `node -c crawlwp-metabox.js` — JS syntax check passes
 - [ ] `php -l Assets.php` — PHP syntax check passes
 - [ ] `php -l metabox-template.php` — PHP syntax check passes

@@ -22,7 +22,17 @@ function crawlwp_lite_mo_uninstall_function()
 	global $wpdb;
 
 	// Scheduled events.
-	wp_clear_scheduled_hook('mihdan-index-now__clear-log');
+	$cron_hooks = [
+		'mihdan-index-now__clear-log',
+		'crawlwp_video_sitemap_backfill',
+		'crawlwp_backfill_robots_index_meta',
+		'crawlwp_redirects_flush_hits',
+		'crawlwp_404_prune',
+	];
+
+	foreach ($cron_hooks as $cron_hook) {
+		wp_clear_scheduled_hook($cron_hook);
+	}
 
 	// Background process healthcheck crons (see BackgroundProcess\Setup and WP_Background_Process).
 	$bg_identifier = 'wp_' . get_current_blog_id() . '_crawlwp_bg_process';
@@ -33,6 +43,7 @@ function crawlwp_lite_mo_uninstall_function()
 	$drop_tables = [
 		"DROP TABLE IF EXISTS {$wpdb->prefix}crawlwp_log",
 		"DROP TABLE IF EXISTS {$wpdb->prefix}crawlwp_redirects",
+		"DROP TABLE IF EXISTS {$wpdb->prefix}crawlwp_404_log",
 		"DROP TABLE IF EXISTS {$wpdb->prefix}index_now_log", // Legacy.
 	];
 
@@ -76,6 +87,24 @@ function crawlwp_lite_mo_uninstall_function()
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
 				$pattern
+			)
+		);
+	}
+
+	// Post, term and user meta written by the plugin (see SEOCore\MetaBox\MetaFields).
+	$meta_tables = [
+		$wpdb->postmeta,
+		$wpdb->termmeta,
+		$wpdb->usermeta,
+	];
+
+	$meta_like = $wpdb->esc_like('_crawlwp_') . '%';
+
+	foreach ($meta_tables as $meta_table) {
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$meta_table} WHERE meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$meta_like
 			)
 		);
 	}
