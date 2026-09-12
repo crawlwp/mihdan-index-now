@@ -201,6 +201,7 @@
 			$saveBtn.text(i18n.saveChanges || 'Save Changes');
 
 			if (!resp.success) {
+				markFailedRows((resp.data && resp.data.failed) ? resp.data.failed : []);
 				showNotice((resp.data && resp.data.message) ? resp.data.message : (i18n.saveError || 'Save failed.'), true);
 				$saveBtn.prop('disabled', false);
 				return;
@@ -215,14 +216,52 @@
 				$row.find('.cwp-bulk-input').each(function () {
 					$(this).data('original', $(this).val()).attr('data-original', $(this).val());
 				});
-				$row.removeClass('is-dirty');
+				$row.removeClass('is-dirty is-failed');
+				$row.find('.cwp-bulk-row-error').remove();
 			});
 
+			// Rows the server refused stay dirty and are called out in the table.
+			var failedIds = (resp.data && resp.data.failed) ? resp.data.failed : [];
+			markFailedRows(failedIds);
+
 			toggleSaveButton();
-			showNotice((resp.data && resp.data.message) ? resp.data.message : (i18n.saved || 'Saved.'), false);
+
+			var message = (resp.data && resp.data.message) ? resp.data.message : (i18n.saved || 'Saved.');
+
+			showNotice(message, failedIds.length > 0);
 		}).fail(function () {
 			$saveBtn.prop('disabled', false).text(i18n.saveChanges || 'Save Changes');
 			showNotice(i18n.saveError || 'Save failed.', true);
+		});
+	}
+
+	/**
+	 * Flag the rows the server could not save, so a partial failure is visible
+	 * in the table instead of being swallowed.
+	 *
+	 * @param {Array} ids Post IDs that failed.
+	 */
+	function markFailedRows(ids) {
+		if (!ids || !ids.length) {
+			return;
+		}
+
+		var label = (i18n.rowsFailed || '%d row(s) could not be saved.').replace('%d', ids.length);
+
+		ids.forEach(function (id) {
+			var $row = $tbody.find('tr[data-id="' + id + '"]');
+
+			if (!$row.length) {
+				return;
+			}
+
+			$row.addClass('is-failed');
+
+			var $cell = $row.find('.cwp-bulk-col-post');
+
+			if (!$cell.find('.cwp-bulk-row-error').length) {
+				$cell.append($('<span class="cwp-bulk-row-error"></span>').text(label));
+			}
 		});
 	}
 
@@ -238,6 +277,9 @@
 		if (!id || !field) {
 			return;
 		}
+
+		// Editing the row clears a previous failure marker.
+		$row.removeClass('is-failed').find('.cwp-bulk-row-error').remove();
 
 		var $title = $row.find('[data-field="seo_title"]');
 		var $desc  = $row.find('[data-field="seo_description"]');

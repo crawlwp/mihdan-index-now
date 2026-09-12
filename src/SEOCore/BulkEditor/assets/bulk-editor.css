@@ -127,6 +127,23 @@
 	background: #fef8e7;
 }
 
+/* Rows the server could not save. */
+.cwp-bulk-table tbody tr.is-failed td {
+	background: #fde8e8;
+}
+
+.cwp-bulk-table tbody tr.is-failed td:first-child {
+	box-shadow: inset 3px 0 0 #d63638;
+}
+
+.cwp-bulk-row-error {
+	display: block;
+	margin-top: 4px;
+	color: #a72628;
+	font-size: 11px;
+	font-style: italic;
+}
+
 /* Column widths — scoped inside .cwp-bulk-table to outspecify WP's
    .form-table th { width: 200px } default. */
 .cwp-bulk-table .cwp-bulk-col-post {

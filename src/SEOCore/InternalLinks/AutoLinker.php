@@ -348,7 +348,7 @@ class AutoLinker
 		$skip = [
 			'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
 			'script', 'style', 'code', 'pre', 'textarea',
-			'select', 'option', 'button', 'iframe', 'noscript',
+			'select', 'option', 'button', 'iframe', 'noscript', 'nav'
 		];
 
 		/**
