@@ -2,7 +2,6 @@
 
 namespace Mihdan\IndexNow\SEOCore\Redirects;
 
-use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\Views\WPOSA;
 
@@ -11,7 +10,6 @@ use Mihdan\IndexNow\Views\WPOSA;
  */
 class Monitor404
 {
-	const DB_VERSION = '1.0';
 	const SECTION    = 'monitor_404';
 
 	/** @var RedirectsManager */
@@ -26,8 +24,6 @@ class Monitor404
 		$this->manager = $manager;
 		$this->table   = $wpdb->prefix . 'crawlwp_404_log';
 
-		add_action('plugins_loaded', [$this, 'maybe_install_table'], 2);
-		$this->maybe_install_table();
 		add_action('template_redirect', [$this, 'log'], 0);
 		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 26, 2);
 
@@ -35,31 +31,6 @@ class Monitor404
 		add_action('wp_ajax_crawlwp_404_redirect', [$this, 'ajax_redirect']);
 		add_action('wp_ajax_crawlwp_404_delete', [$this, 'ajax_delete']);
 		add_action('wp_ajax_crawlwp_404_clear', [$this, 'ajax_clear']);
-	}
-
-	public function maybe_install_table(): void
-	{
-		if (get_option('crawlwp_404_db_version') === self::DB_VERSION) {
-			return;
-		}
-
-		global $wpdb;
-		$charset = $wpdb->get_charset_collate();
-
-		$sql = "CREATE TABLE {$this->table} (
-			id bigint(20) NOT NULL AUTO_INCREMENT,
-			url varchar(2048) NOT NULL DEFAULT '',
-			referer varchar(2048) NOT NULL DEFAULT '',
-			hits bigint(20) NOT NULL DEFAULT 1,
-			last_seen datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-			PRIMARY KEY  (id),
-			KEY url (url(191))
-		) $charset;";
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta($sql);
-		update_option('crawlwp_404_db_version', self::DB_VERSION);
 	}
 
 	public function log(): void
@@ -182,7 +153,7 @@ class Monitor404
 		$this->guard();
 
 		$id  = isset($_POST['id']) ? absint($_POST['id']) : 0;
-		$to  = isset($_POST['to']) ? MetaFields::sanitize_url(wp_unslash($_POST['to'])) : '';
+		$to  = isset($_POST['to']) ? sanitize_text_field(wp_unslash($_POST['to'])) : '';
 
 		global $wpdb;
 		$row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $id));

@@ -6,7 +6,7 @@ class DBUpdates
 {
 	public static $instance;
 
-	const DB_VER = 2;
+	const DB_VER = 3;
 
 	public function init_options()
 	{
@@ -108,7 +108,6 @@ class DBUpdates
 
 	public function update_routine_2()
 	{
-
 		global $wpdb;
 
 		$table = $wpdb->prefix . 'crawlwp_redirects';
@@ -131,6 +130,29 @@ class DBUpdates
 			KEY from_url (from_url(255)),
 			KEY enabled (enabled)
 		) $charset_collate;";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta($sql);
+	}
+
+	public function update_routine_3()
+	{
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'crawlwp_404_log';
+
+		$charset = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table} (
+			id bigint(20) NOT NULL AUTO_INCREMENT,
+			url varchar(2048) NOT NULL DEFAULT '',
+			referer varchar(2048) NOT NULL DEFAULT '',
+			hits bigint(20) NOT NULL DEFAULT 1,
+			last_seen datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			PRIMARY KEY  (id),
+			KEY url (url(191))
+		) $charset;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta($sql);

@@ -342,6 +342,10 @@ input.wposa-field--switch:hover:after {
 	font-size: 12px;
 }
 
+#cwp404 p {
+	margin-bottom: revert !important;
+}
+
 #cwp404Table .cwp-404-action-group {
 	display: flex;
 	align-items: center;
@@ -353,6 +357,7 @@ input.wposa-field--switch:hover:after {
 	flex: 1;
 	min-width: 60px;
 	height: 30px;
+	min-height: 30px;
 	font-size: 13px;
 	margin: 0;
 	padding: 0 8px;
@@ -377,6 +382,7 @@ input.wposa-field--switch:hover:after {
 	font-size: 12px;
 	line-height: 1;
 	margin: 0;
+	min-height: 30px;
 }
 
 #cwp404Table .cwp-404-del:hover {

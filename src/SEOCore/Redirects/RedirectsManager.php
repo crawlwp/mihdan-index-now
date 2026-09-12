@@ -400,7 +400,7 @@ class RedirectsManager
 		}
 
 		if (isset($data['to_url'])) {
-			$clean['to_url'] = esc_url_raw(trim($data['to_url']));
+			$clean['to_url'] = $this->normalize_to_url((string) $data['to_url']);
 		}
 
 		if (isset($data['redirect_type'])) {
@@ -481,6 +481,89 @@ class RedirectsManager
 		}
 
 		return $url;
+	}
+
+	/**
+	 * Normalise a "to" URL destination before DB storage.
+	 *
+	 * When the destination does not include the site's home URL (e.g. "hello-post",
+	 * "/hello-post", or "hello-post/"), it is converted to an absolute URL rooted
+	 * at home_url() with trailing slash applied according to WordPress permalink rules.
+	 *
+	 * External URLs (with a different host) are preserved and sanitised.
+	 *
+	 * @param string $url Destination input.
+	 * @return string Normalised destination URL.
+	 */
+	private function normalize_to_url(string $url): string
+	{
+		$url = trim($url);
+
+		if ($url === '') {
+			return '';
+		}
+
+		// Reject protocol-relative ("//") and backslash tricks ("/\") immediately.
+		if (isset($url[1]) && $url[0] === '/' && ($url[1] === '/' || $url[1] === '\\')) {
+			return '';
+		}
+
+		// Check for non-http(s) scheme (e.g. javascript:, data:, etc.).
+		$scheme = (string) wp_parse_url($url, PHP_URL_SCHEME);
+		if ($scheme !== '' && !in_array(strtolower($scheme), ['http', 'https'], true)) {
+			return '';
+		}
+
+		$home_host   = (string) wp_parse_url(home_url(), PHP_URL_HOST);
+		$target_host = (string) wp_parse_url($url, PHP_URL_HOST);
+
+		// External destination: host is specified and differs from our home host.
+		if ($target_host !== '' && strcasecmp($target_host, $home_host) !== 0) {
+			return esc_url_raw($url);
+		}
+
+		$parsed = wp_parse_url($url);
+		if (!is_array($parsed)) {
+			return '';
+		}
+
+		$path = $parsed['path'] ?? '/';
+		if ($path === '') {
+			$path = '/';
+		}
+
+		// Strip home subfolder path if WordPress is installed in a subdirectory.
+		$home_path = (string) wp_parse_url(home_url(), PHP_URL_PATH);
+		$home_path = untrailingslashit($home_path);
+		if ($home_path !== '') {
+			if (stripos($path, $home_path) === 0) {
+				$path = substr($path, strlen($home_path));
+			} elseif (stripos($path, ltrim($home_path, '/')) === 0) {
+				$path = substr($path, strlen(ltrim($home_path, '/')));
+			}
+		}
+
+		if ($path === '' || $path[0] !== '/') {
+			$path = '/' . $path;
+		}
+
+		// Add trailing slash for non-root paths unless an extension is present (e.g. .pdf, .jpg).
+		$basename = basename($path);
+		$has_ext  = (strpos($basename, '.') !== false && !str_ends_with($path, '/'));
+
+		if ($path !== '/' && !$has_ext) {
+			$path = trailingslashit($path);
+		}
+
+		if (!empty($parsed['query'])) {
+			$path .= '?' . $parsed['query'];
+		}
+
+		if (!empty($parsed['fragment'])) {
+			$path .= '#' . $parsed['fragment'];
+		}
+
+		return home_url($path);
 	}
 
 	/**
