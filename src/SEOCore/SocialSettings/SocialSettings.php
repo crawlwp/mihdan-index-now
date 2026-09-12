@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\SocialSettings;
 
+use Mihdan\IndexNow\SEOCore\SettingsFieldsTrait;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\Views\WPOSA;
 
@@ -13,6 +14,8 @@ use Mihdan\IndexNow\Views\WPOSA;
  */
 class SocialSettings
 {
+	use SettingsFieldsTrait;
+
 	/** Option/section id (without the crawlwp_ prefix). */
 	const SECTION = 'social';
 
@@ -47,6 +50,7 @@ class SocialSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_general',
 			__('Social Meta Tags Settings', 'mihdan-index-now'),
 			__('Output various meta tags for social site integration, among other third-party services.', 'mihdan-index-now')
@@ -70,6 +74,7 @@ class SocialSettings
 
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_social_title',
 			__('Social Title Settings', 'mihdan-index-now'),
 			__('Most social sites and third-party services automatically include the website URL inside their embeds. When the site title is described well in the site URL, including it in the social title will be redundant.', 'mihdan-index-now')
@@ -85,6 +90,7 @@ class SocialSettings
 
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_social_image',
 			__('Social Image Settings', 'mihdan-index-now'),
 			__('A social image can be displayed when a link to your website is shared. It is a great way to grab attention.', 'mihdan-index-now')
@@ -106,6 +112,7 @@ class SocialSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_facebook',
 			__('Facebook Integration Settings', 'mihdan-index-now'),
 			__('Facebook post sharing works mostly through Open Graph. Configure the Facebook page URL in Site Information (under Advanced settings).', 'mihdan-index-now')
@@ -136,6 +143,7 @@ class SocialSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_twitter',
 			__('X (Twitter) Integration Settings', 'mihdan-index-now'),
 			__('Sharing posts on X (formerly Twitter) works mostly via Twitter Cards and may fall back to use Open Graph. However, you can also link your Business and Personal X pages, among various other options.', 'mihdan-index-now')
@@ -155,6 +163,7 @@ class SocialSettings
 
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_twitter_attribution',
 			__('Card and Content Attribution', 'mihdan-index-now'),
 			__('X (formerly Twitter) claims users will be able to follow and view the profiles of attributed accounts directly from the card when these fields are filled in.', 'mihdan-index-now')
@@ -177,6 +186,7 @@ class SocialSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_postdates',
 			__('Post Date Settings', 'mihdan-index-now'),
 			__("Some social sites output the shared post's publishing and modified data in the sharing snippet.", 'mihdan-index-now')
@@ -202,34 +212,6 @@ class SocialSettings
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
-
-	/**
-	 * A full-width sub-heading inside the settings screen.
-	 */
-	private function add_heading(WPOSA $wposa, string $id, string $title, string $desc = ''): void
-	{
-		$html = sprintf('<h3 class="cwp-tm-subheading">%s</h3>', esc_html($title));
-
-		if ($desc !== '') {
-			$html .= sprintf('<p class="description">%s</p>', esc_html($desc));
-		}
-
-		$wposa->add_field(self::SECTION, [
-			'id'    => $id,
-			'type'  => 'html',
-			'name'  => '',
-			'desc'  => $html,
-			'class' => 'wposa-form-table__row cwp-tm-heading-row',
-		]);
-	}
-
-	/**
-	 * Wrap copy inside a description paragraph so it renders below a toggle.
-	 */
-	private function description(string $text): string
-	{
-		return sprintf('<p class="description">%s</p>', esc_html($text));
-	}
 
 	/**
 	 * Read a social setting value.
