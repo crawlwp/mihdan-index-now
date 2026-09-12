@@ -753,17 +753,36 @@ class FrontendOutput
 			return $title;
 		}
 
-		$site_name = get_bloginfo('name');
+		$site_name = trim((string) get_bloginfo('name'));
 
 		if ($site_name === '') {
 			return $title;
 		}
 
-		/* Strip any trailing " {anything} {site name}" suffix (sep + site name). */
-		$suffix = preg_quote($site_name, '/');
-		$cleaned = preg_replace('/\s*.+?\s*' . $suffix . '\s*$/', '', $title);
+		$decoded_site = html_entity_decode($site_name, ENT_QUOTES, 'UTF-8');
+		$encoded_site = htmlspecialchars($decoded_site, ENT_QUOTES, 'UTF-8');
 
-		return ($cleaned !== null && $cleaned !== '') ? trim($cleaned) : $title;
+		$quoted_variants = array_unique([
+			preg_quote($site_name, '/'),
+			preg_quote($decoded_site, '/'),
+			preg_quote($encoded_site, '/'),
+		]);
+
+		$site_pattern = '(?:' . implode('|', $quoted_variants) . ')';
+
+		/* Strip trailing " {sep} {site name}" or " {site name}" suffix. */
+		$cleaned = preg_replace('/(?:\s*[\p{P}\p{S}]+\s*|\s+)' . $site_pattern . '\s*$/ui', '', $title);
+
+		/* If no suffix was stripped, also check if the title starts with "{site name} {sep} ". */
+		if ($cleaned === $title) {
+			$cleaned = preg_replace('/^\s*' . $site_pattern . '(?:\s*[\p{P}\p{S}]+\s*|\s+)/ui', '', $title);
+		}
+
+		if ($cleaned !== null && trim($cleaned) !== '') {
+			return trim($cleaned);
+		}
+
+		return $title;
 	}
 
 	/**
