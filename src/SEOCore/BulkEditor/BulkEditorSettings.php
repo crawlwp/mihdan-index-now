@@ -9,8 +9,7 @@ use Mihdan\IndexNow\Views\WPOSA;
 
 /**
  * "SEO Bulk Editor" — edit the SEO title and meta description of many posts
- * at once from a single spreadsheet-like table, similar to Yoast SEO's
- * bulk editor (https://yoast.com/help/yoast-seo-tools-bulk-editor/).
+ * at once from a single spreadsheet-like table.
  *
  * Registers a "Bulk Editor" section under the "Advanced" settings tab.
  * Renders a custom AJAX-powered table with a post type filter, a
@@ -33,7 +32,7 @@ class BulkEditorSettings
 
 	public function __construct()
 	{
-		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 27, 2);
+		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 90, 2);
 		add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
 
 		add_action('wp_ajax_crawlwp_bulk_editor_list', [$this, 'ajax_list']);

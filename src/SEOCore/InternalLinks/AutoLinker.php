@@ -15,7 +15,7 @@ class AutoLinker
 	public function __construct()
 	{
 		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 42, 2);
-		add_filter('the_content', [$this, 'link_content'], 12);
+		add_filter('the_content', [$this, 'link_content'], 99);
 	}
 
 	public function settings_fields(WPOSA $wposa, $settingsInstance): void

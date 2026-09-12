@@ -51,8 +51,6 @@ class ImageSEO
 			return $attr;
 		}
 
-		ray($attr);
-
 		if (! is_array($attr)) {
 			return $attr;
 		}
