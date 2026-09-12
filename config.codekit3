@@ -445,6 +445,14 @@
       "oAP" : "\/src\/SEOCore\/AI\/Generator.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/Audit\/SiteAudit.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Audit\/SiteAudit.php",
+      "oF" : 0
+    },
     "\/src\/SEOCore\/Breadcrumbs\/assets\/breadcrumbs.css" : {
       "aP" : 1,
       "bl" : 0,
@@ -504,6 +512,14 @@
       "oAP" : "\/src\/SEOCore\/BulkEditor\/BulkEditorSettings.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/Code\/CodeSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Code\/CodeSettings.php",
+      "oF" : 0
+    },
     "\/src\/SEOCore\/CoreSettings\/Assets.php" : {
       "cB" : 0,
       "ft" : 8192,
@@ -559,12 +575,155 @@
       "oAP" : "\/src\/SEOCore\/GetInstanceTrait.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/ImageSEO\/ImageSEO.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/ImageSEO\/ImageSEO.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/assets\/importer.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/assets\/importer.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/Importer\/assets\/importer.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/assets\/importer.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
+    "\/src\/SEOCore\/Importer\/ImporterSettings.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/ImporterSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Runner.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Runner.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Source.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Source.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Sources\/AIOSEO.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Sources\/AIOSEO.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Sources\/RankMath.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Sources\/RankMath.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Sources\/SEOPress.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Sources\/SEOPress.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Sources\/SlimSEO.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Sources\/SlimSEO.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Sources\/TheSEOFramework.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Sources\/TheSEOFramework.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Sources\/Yoast.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Sources\/Yoast.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/TokenMapper.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/TokenMapper.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Importer\/Writer.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Importer\/Writer.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Integrations\/Elementor.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Integrations\/Elementor.php",
+      "oF" : 0
+    },
     "\/src\/SEOCore\/Integrations\/WooCommerce.php" : {
       "cB" : 0,
       "ft" : 8192,
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/src\/SEOCore\/Integrations\/WooCommerce.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/InternalLinks\/AutoLinker.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/InternalLinks\/AutoLinker.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/LlmsTxt\/LlmsTxt.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/LlmsTxt\/LlmsTxt.php",
       "oF" : 0
     },
     "\/src\/SEOCore\/MetaBox\/Assets.php" : {
@@ -630,6 +789,14 @@
       "oAP" : "\/src\/SEOCore\/MetaBox\/PostListColumn.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/MetaBox\/SeoSignals.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/MetaBox\/SeoSignals.php",
+      "oF" : 0
+    },
     "\/src\/SEOCore\/MetaBox\/views\/metabox-template.php" : {
       "cB" : 0,
       "ft" : 8192,
@@ -668,6 +835,14 @@
       "oF" : 0,
       "sC" : 3,
       "tS" : 0
+    },
+    "\/src\/SEOCore\/Redirects\/Monitor404.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Redirects\/Monitor404.php",
+      "oF" : 0
     },
     "\/src\/SEOCore\/Redirects\/PermalinkTracker.php" : {
       "cB" : 0,
@@ -715,6 +890,33 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/src\/SEOCore\/RssSettings\/RssSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Schema\/assets\/blocks.js" : {
+      "bF" : 0,
+      "ft" : 64,
+      "ma" : 0,
+      "mi" : 1,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Schema\/assets\/blocks.min.js",
+      "oF" : 0,
+      "sC" : 3,
+      "tS" : 0
+    },
+    "\/src\/SEOCore\/Schema\/Blocks.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Schema\/Blocks.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/Schema\/Graph.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Schema\/Graph.php",
       "oF" : 0
     },
     "\/src\/SEOCore\/SEOCoreInit.php" : {
@@ -773,6 +975,14 @@
       "oAP" : "\/src\/SEOCore\/SitemapSettings\/CustomUrlsSitemapProvider.php",
       "oF" : 0
     },
+    "\/src\/SEOCore\/SitemapSettings\/HtmlSitemap.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SitemapSettings\/HtmlSitemap.php",
+      "oF" : 0
+    },
     "\/src\/SEOCore\/SitemapSettings\/NewsSitemapProvider.php" : {
       "cB" : 0,
       "ft" : 8192,
@@ -787,6 +997,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/src\/SEOCore\/SitemapSettings\/SitemapSettings.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/SitemapSettings\/VideoSitemapProvider.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/SitemapSettings\/VideoSitemapProvider.php",
       "oF" : 0
     },
     "\/src\/SEOCore\/SiteVerification\/SiteVerificationFrontendOutput.php" : {
@@ -819,6 +1037,22 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/src\/SEOCore\/SocialSettings\/UserProfile.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/TermSEO\/TermFields.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/TermSEO\/TermFields.php",
+      "oF" : 0
+    },
+    "\/src\/SEOCore\/TermSEO\/TermMetaBox.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/TermSEO\/TermMetaBox.php",
       "oF" : 0
     },
     "\/src\/SEOCore\/TitleMeta\/Entities.php" : {
@@ -922,6 +1156,14 @@
       "hM" : 0,
       "oA" : 0,
       "oAP" : "\/src\/WebmasterAbstract.php",
+      "oF" : 0
+    },
+    "\/tests\/TokenMapperTest.php" : {
+      "cB" : 0,
+      "ft" : 8192,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/tests\/TokenMapperTest.php",
       "oF" : 0
     },
     "\/uninstall.php" : {

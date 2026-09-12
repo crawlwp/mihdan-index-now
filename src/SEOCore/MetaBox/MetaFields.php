@@ -37,6 +37,11 @@ class MetaFields
 	public const SCHEMA_HEADLINE     = '_crawlwp_schema_headline';
 	public const SCHEMA_BREADCRUMB   = '_crawlwp_schema_breadcrumb';
 	public const SCHEMA_SECTION      = '_crawlwp_schema_section';
+	public const SCHEMA_EXTRA        = '_crawlwp_schema_extra';
+	public const SCHEMA_CUSTOM       = '_crawlwp_schema_custom';
+
+	public const PRIMARY_CATEGORY = '_crawlwp_primary_category';
+	public const CORNERSTONE      = '_crawlwp_cornerstone';
 
 	/** Cached SEO score (0–100 float stored as string). Updated on each metabox/inline save. */
 	public const SEO_SCORE = '_crawlwp_seo_score';
@@ -123,6 +128,7 @@ class MetaFields
 	private static array $checkbox_fields = [
 		self::OG_SYNC,
 		self::X_SYNC,
+		self::CORNERSTONE,
 	];
 
 	private static array $image_fields = [
@@ -205,6 +211,125 @@ class MetaFields
 				update_post_meta($post_id, $key, []);
 			}
 		}
+
+		if (isset($_POST[self::PRIMARY_CATEGORY])) {
+			update_post_meta($post_id, self::PRIMARY_CATEGORY, absint($_POST[self::PRIMARY_CATEGORY]));
+		}
+
+		if (isset($_POST[self::SCHEMA_CUSTOM])) {
+			$custom = trim((string) wp_unslash($_POST[self::SCHEMA_CUSTOM]));
+			if ($custom !== '' && json_decode($custom, true) === null && json_last_error() !== JSON_ERROR_NONE) {
+				$custom = '';
+			}
+			update_post_meta($post_id, self::SCHEMA_CUSTOM, $custom);
+		}
+
+		update_post_meta($post_id, self::SCHEMA_EXTRA, self::sanitize_schema_extra($_POST['crawlwp_schema_extra'] ?? []));
+	}
+
+	/**
+	 * @param mixed $raw
+	 * @return array<string,mixed>
+	 */
+	public static function sanitize_schema_extra($raw): array
+	{
+		if (! is_array($raw)) {
+			return [];
+		}
+
+		$allowed_types = ['', 'FAQPage', 'HowTo', 'Recipe', 'Event', 'JobPosting', 'Course', 'VideoObject'];
+		$type = sanitize_text_field((string) ($raw['extra_type'] ?? ''));
+
+		$out = [
+			'extra_type' => in_array($type, $allowed_types, true) ? $type : '',
+		];
+
+		$faq = [];
+		$questions = is_array($raw['faq_q'] ?? null) ? $raw['faq_q'] : [];
+		$answers   = is_array($raw['faq_a'] ?? null) ? $raw['faq_a'] : [];
+
+		foreach ($questions as $i => $q) {
+			$q = sanitize_text_field(wp_unslash((string) $q));
+			$a = sanitize_textarea_field(wp_unslash((string) ($answers[$i] ?? '')));
+			if ($q !== '' && $a !== '') {
+				$faq[] = ['question' => $q, 'answer' => $a];
+			}
+		}
+
+		$out['faq'] = $faq;
+
+		$howto_steps = [];
+		if (is_array($raw['howto_steps'] ?? null)) {
+			foreach ($raw['howto_steps'] as $step) {
+				$step = sanitize_text_field(wp_unslash((string) $step));
+				if ($step !== '') {
+					$howto_steps[] = ['text' => $step];
+				}
+			}
+		}
+
+		$out['howto'] = [
+			'name'  => sanitize_text_field(wp_unslash((string) ($raw['howto_name'] ?? ''))),
+			'steps' => $howto_steps,
+		];
+
+		$out['recipe'] = [
+			'name'        => sanitize_text_field(wp_unslash((string) ($raw['recipe_name'] ?? ''))),
+			'description' => sanitize_textarea_field(wp_unslash((string) ($raw['recipe_description'] ?? ''))),
+			'prep_time'   => sanitize_text_field(wp_unslash((string) ($raw['recipe_prep'] ?? ''))),
+			'cook_time'   => sanitize_text_field(wp_unslash((string) ($raw['recipe_cook'] ?? ''))),
+			'ingredients' => array_values(array_filter(array_map('sanitize_text_field', preg_split('/\r\n|\r|\n/', wp_unslash((string) ($raw['recipe_ingredients'] ?? ''))) ?: []))),
+		];
+
+		$out['event'] = [
+			'name'       => sanitize_text_field(wp_unslash((string) ($raw['event_name'] ?? ''))),
+			'start_date' => sanitize_text_field(wp_unslash((string) ($raw['event_start'] ?? ''))),
+			'end_date'   => sanitize_text_field(wp_unslash((string) ($raw['event_end'] ?? ''))),
+			'location'   => sanitize_text_field(wp_unslash((string) ($raw['event_location'] ?? ''))),
+		];
+
+		$out['job'] = [
+			'title'        => sanitize_text_field(wp_unslash((string) ($raw['job_title'] ?? ''))),
+			'description'  => sanitize_textarea_field(wp_unslash((string) ($raw['job_description'] ?? ''))),
+			'organization' => sanitize_text_field(wp_unslash((string) ($raw['job_org'] ?? ''))),
+			'date_posted'  => sanitize_text_field(wp_unslash((string) ($raw['job_date'] ?? ''))),
+		];
+
+		$out['course'] = [
+			'name'        => sanitize_text_field(wp_unslash((string) ($raw['course_name'] ?? ''))),
+			'description' => sanitize_textarea_field(wp_unslash((string) ($raw['course_description'] ?? ''))),
+			'provider'    => sanitize_text_field(wp_unslash((string) ($raw['course_provider'] ?? ''))),
+		];
+
+		$out['video'] = [
+			'name'        => sanitize_text_field(wp_unslash((string) ($raw['video_name'] ?? ''))),
+			'url'         => esc_url_raw(wp_unslash((string) ($raw['video_url'] ?? ''))),
+			'description' => sanitize_textarea_field(wp_unslash((string) ($raw['video_description'] ?? ''))),
+			'thumbnail'   => esc_url_raw(wp_unslash((string) ($raw['video_thumb'] ?? ''))),
+			'upload_date' => sanitize_text_field(wp_unslash((string) ($raw['video_date'] ?? ''))),
+		];
+
+		return $out;
+	}
+
+	/**
+	 * Comma-separated focus keywords; first is the primary.
+	 *
+	 * @return string[]
+	 */
+	public static function keywords(int $post_id): array
+	{
+		$raw = (string) self::get($post_id, self::FOCUS_KEYWORD, '');
+
+		if ($raw === '') {
+			return [];
+		}
+
+		$parts = array_map('trim', explode(',', $raw));
+
+		return array_values(array_filter($parts, static function ($v) {
+			return $v !== '';
+		}));
 	}
 
 	/**
@@ -306,6 +431,10 @@ class MetaFields
 			'schema_headline'     => self::get($post_id, self::SCHEMA_HEADLINE),
 			'schema_breadcrumb'   => self::get($post_id, self::SCHEMA_BREADCRUMB),
 			'schema_section'      => self::get($post_id, self::SCHEMA_SECTION),
+			'schema_extra'        => self::get($post_id, self::SCHEMA_EXTRA, []),
+			'schema_custom'       => self::get($post_id, self::SCHEMA_CUSTOM),
+			'primary_category'    => (int) self::get($post_id, self::PRIMARY_CATEGORY, 0),
+			'cornerstone'         => self::get($post_id, self::CORNERSTONE, '0'),
 			'redirect_url'        => self::get($post_id, self::REDIRECT_URL),
 			'redirect_type'       => self::get($post_id, self::REDIRECT_TYPE, '301'),
 		];

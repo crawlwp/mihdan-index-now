@@ -7,6 +7,7 @@ use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use Mihdan\IndexNow\SEOCore\SiteInfoSettings\SiteInfoSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\SocialSettings;
 use Mihdan\IndexNow\SEOCore\SocialSettings\UserProfile;
+use Mihdan\IndexNow\SEOCore\TermSEO\TermFields;
 
 /**
  * Emits the document title and meta tags for every front end request.
@@ -213,9 +214,13 @@ class FrontendOutput
 
 		$post = $context['post'] ?? null;
 		$post = $post instanceof \WP_Post ? $post : null;
+		$term = $context['term'] ?? null;
+		$term = $term instanceof \WP_Term ? $term : null;
 
-		/* Singular requests may carry per-post overrides from the metabox. */
-		$overrides = $post !== null ? $this->post_overrides($post->ID) : [];
+		/* Singular / term requests may carry per-object overrides from the metabox. */
+		$overrides = $post !== null
+			? $this->post_overrides($post->ID)
+			: ($term !== null ? $this->term_overrides($term->term_id) : []);
 
 		$title = Variables::replace(
 			$overrides['title'] ?? $this->template($entity_key, $prefix . 'title'),
@@ -291,14 +296,14 @@ class FrontendOutput
 			'post'           => $post,
 			'title'          => $title,
 			'description'    => $description,
-			'robots'         => $this->robots($entity_key, $prefix, $post),
+			'robots'         => $this->robots($entity_key, $prefix, $post, $term),
 			'canonical'      => $canonical,
 			'og_title'       => $og_title_base,
 			'og_description' => $og_description_base,
-			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post),
+			'og_image'       => $this->image($entity_key, $prefix, 'og_image', $post, $term),
 			'x_title'        => $x_title_base,
 			'x_description'  => $x_description_base,
-			'x_image'        => $this->image($entity_key, $prefix, 'x_image', $post),
+			'x_image'        => $this->image($entity_key, $prefix, 'x_image', $post, $term),
 			'og_type'        => $post !== null && ! is_front_page() ? 'article' : 'website',
 		];
 
@@ -466,10 +471,40 @@ class FrontendOutput
 	}
 
 	/**
-	 * Build the robots directive list from the entity defaults and, when
-	 * available, the per-post metabox values.
+	 * Per-term overrides stored as term meta.
+	 *
+	 * @return array<string,string>
 	 */
-	private function robots(string $entity_key, string $prefix, ?\WP_Post $post): array
+	private function term_overrides(int $term_id): array
+	{
+		$map = [
+			'title'          => MetaFields::SEO_TITLE,
+			'description'    => MetaFields::SEO_DESCRIPTION,
+			'og_title'       => MetaFields::OG_TITLE,
+			'og_description' => MetaFields::OG_DESCRIPTION,
+			'x_title'        => MetaFields::X_TITLE,
+			'x_description'  => MetaFields::X_DESCRIPTION,
+			'canonical_url'  => MetaFields::CANONICAL_URL,
+		];
+
+		$overrides = [];
+
+		foreach ($map as $field => $meta_key) {
+			$value = TermFields::get($term_id, $meta_key);
+
+			if ($value !== '' && $value !== null) {
+				$overrides[$field] = (string) $value;
+			}
+		}
+
+		return $overrides;
+	}
+
+	/**
+	 * Build the robots directive list from the entity defaults and, when
+	 * available, the per-post or per-term metabox values.
+	 */
+	private function robots(string $entity_key, string $prefix, ?\WP_Post $post, ?\WP_Term $term = null): array
 	{
 		$directives = [];
 
@@ -486,6 +521,17 @@ class FrontendOutput
 
 			if ($post_follow !== '') {
 				$nofollow = $post_follow === 'nofollow';
+			}
+		} elseif ($term !== null) {
+			$term_index  = TermFields::get($term->term_id, MetaFields::ROBOTS_INDEX);
+			$term_follow = TermFields::get($term->term_id, MetaFields::ROBOTS_FOLLOW);
+
+			if ($term_index === 'noindex') {
+				$noindex = true;
+			}
+
+			if ($term_follow === 'nofollow') {
+				$nofollow = true;
 			}
 		}
 
@@ -641,11 +687,24 @@ class FrontendOutput
 	 * Resolve a social image, honouring the per-post value, then the global
 	 * default, then the featured image.
 	 */
-	private function image(string $entity_key, string $prefix, string $field, ?\WP_Post $post): string
+	private function image(string $entity_key, string $prefix, string $field, ?\WP_Post $post, ?\WP_Term $term = null): string
 	{
 		if ($post !== null) {
 			$meta_key = $field === 'og_image' ? MetaFields::OG_IMAGE : MetaFields::X_IMAGE;
 			$image_id = (int) MetaFields::get($post->ID, $meta_key, 0);
+
+			if ($image_id > 0) {
+				$url = wp_get_attachment_image_url($image_id, 'full');
+
+				if ($url) {
+					return $url;
+				}
+			}
+		}
+
+		if ($term !== null) {
+			$meta_key = $field === 'og_image' ? MetaFields::OG_IMAGE : MetaFields::X_IMAGE;
+			$image_id = (int) TermFields::get($term->term_id, $meta_key, 0);
 
 			if ($image_id > 0) {
 				$url = wp_get_attachment_image_url($image_id, 'full');

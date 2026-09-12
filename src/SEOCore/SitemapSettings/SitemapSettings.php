@@ -59,6 +59,7 @@ class SitemapSettings
 
 		$this->add_sitemap_fields($wposa);
 		$this->add_news_sitemap_fields($wposa);
+		$this->add_video_html_fields($wposa);
 		$this->add_custom_urls_fields($wposa);
 	}
 
@@ -129,6 +130,40 @@ class SitemapSettings
 			'desc' => esc_html__('Select which post types should appear in the News Sitemap. Only published posts from the last 2 days are included.', 'mihdan-index-now'),
 			'options' => $this->get_post_type_options(),
 			'default' => ['post' => 'post'],
+		]);
+	}
+
+	private function add_video_html_fields(WPOSA $wposa): void
+	{
+		$video_url = function_exists('get_sitemap_url') ? get_sitemap_url(VideoSitemapProvider::PROVIDER_NAME) : '';
+
+		$this->add_heading(
+			$wposa,
+			'heading_video_html',
+			__('Video &amp; HTML sitemaps', 'mihdan-index-now'),
+			__('A Video sitemap lists posts that embed YouTube/Vimeo or have VideoObject schema. An HTML sitemap is a shortcode for visitors.')
+		);
+
+		$wposa->add_field(self::SECTION, [
+			'id'      => 'video_enabled',
+			'type'    => 'switch',
+			'name'    => __('Enable Video Sitemap', 'mihdan-index-now'),
+			'default' => 'off',
+			'desc'    => $video_url
+				? sprintf(
+					/* translators: %s: video sitemap URL */
+					esc_html__('Available at %s', 'mihdan-index-now'),
+					'<a href="' . esc_url($video_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($video_url) . '</a>'
+				)
+				: '',
+		]);
+
+		$wposa->add_field(self::SECTION, [
+			'id'      => 'html_enabled',
+			'type'    => 'switch',
+			'name'    => __('Enable HTML sitemap shortcode', 'mihdan-index-now'),
+			'default' => 'on',
+			'desc'    => esc_html__('Use [crawlwp_html_sitemap] on any page.', 'mihdan-index-now'),
 		]);
 	}
 

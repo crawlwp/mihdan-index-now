@@ -48,6 +48,7 @@ class WooCommerce
 		add_action('wp_footer', [$this, 'remove_woocommerce_schema'], 0);
 		add_filter('crawlwp_breadcrumbs_args', [$this, 'change_breadcrumbs_taxonomy']);
 		add_filter('crawlwp_schema_data', [$this, 'add_product_schema'], 10, 2);
+		add_filter('crawlwp_robots_directives', [$this, 'noindex_checkout_pages']);
 	}
 
 	/**
@@ -98,6 +99,34 @@ class WooCommerce
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Default noindex for cart, checkout and account pages.
+	 *
+	 * @param string[] $directives
+	 * @return string[]
+	 */
+	public function noindex_checkout_pages(array $directives): array
+	{
+		if (! apply_filters('crawlwp_woocommerce_noindex_account_pages', true)) {
+			return $directives;
+		}
+
+		if (! function_exists('is_cart')) {
+			return $directives;
+		}
+
+		if (! is_cart() && ! is_checkout() && ! is_account_page()) {
+			return $directives;
+		}
+
+		$directives = array_values(array_diff($directives, ['index']));
+		if (! in_array('noindex', $directives, true)) {
+			array_unshift($directives, 'noindex');
+		}
+
+		return $directives;
 	}
 
 	/**

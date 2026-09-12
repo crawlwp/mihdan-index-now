@@ -113,7 +113,7 @@ class CoreSettings
 	 *
 	 * @param string $prefix Field id prefix, e.g. `archive_`.
 	 */
-	private function add_template_fields(WPOSA $wposa, string $section, array $entity, string $prefix, string $entity_override = null): void
+	private function add_template_fields(WPOSA $wposa, string $section, array $entity, string $prefix, ?string $entity_override = null): void
 	{
 		$wposa->add_field($section, [
 			'id' => $prefix . 'title',
@@ -323,7 +323,7 @@ class CoreSettings
 	 * @param string $field Field id used as the `data-cwp-tm` value.
 	 * @param string|null $entity_override Override the entity key sent to JS (used for archive sub-sections).
 	 */
-	private function template_attributes(string $entity_key, string $field, string $entity_override = null): array
+	private function template_attributes(string $entity_key, string $field, ?string $entity_override = null): array
 	{
 		return [
 			'data-cwp-tm' => $field,

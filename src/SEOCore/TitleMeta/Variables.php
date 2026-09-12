@@ -2,6 +2,8 @@
 
 namespace Mihdan\IndexNow\SEOCore\TitleMeta;
 
+use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+
 /**
  * Resolves template variables used in the global title & meta defaults.
  *
@@ -347,9 +349,11 @@ class Variables
 
 		switch ($key) {
 			case 'name':
+			case 'singular':
 			case 'singular_name':
 				return (string) $post_type->labels->singular_name;
 
+			case 'plural':
 			case 'plural_name':
 			case 'label':
 				return (string) $post_type->label;
@@ -366,6 +370,18 @@ class Variables
 
 	private function first_term_name(\WP_Post $post, string $taxonomy): string
 	{
+		if ($taxonomy === 'category') {
+			$primary = (int) MetaFields::get($post->ID, MetaFields::PRIMARY_CATEGORY, 0);
+
+			if ($primary > 0) {
+				$term = get_term($primary, $taxonomy);
+
+				if ($term instanceof \WP_Term) {
+					return $term->name;
+				}
+			}
+		}
+
 		$terms = get_the_terms($post->ID, $taxonomy);
 
 		if (empty($terms) || is_wp_error($terms)) {

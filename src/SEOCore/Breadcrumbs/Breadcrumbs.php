@@ -307,7 +307,18 @@ class Breadcrumbs
 			/* Non-hierarchical: add the primary term and its ancestors. */
 			$terms = get_the_terms($post, $this->args['taxonomy']);
 			if (is_array($terms) && ! empty($terms)) {
-				$term = reset($terms);
+				$term    = reset($terms);
+				$primary = (int) MetaFields::get($post->ID, MetaFields::PRIMARY_CATEGORY, 0);
+
+				if ($primary > 0) {
+					foreach ($terms as $candidate) {
+						if ((int) $candidate->term_id === $primary) {
+							$term = $candidate;
+							break;
+						}
+					}
+				}
+
 				$this->add_term_ancestors($term);
 				$this->add_link((string) get_term_link($term), $term->name);
 			}

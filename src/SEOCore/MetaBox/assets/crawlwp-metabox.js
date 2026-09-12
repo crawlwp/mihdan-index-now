@@ -1163,7 +1163,7 @@
     /* ---------- focus keyword duplicate check ---------- */
     checkDuplicateKeyword: function() {
       var self = this;
-      var keyword = $.trim($('#cwpKeyword').val());
+      var keyword = $.trim($('#cwpKeyword').val()).split(',')[0].replace(/^\s+|\s+$/g, '');
       var $warning = $('#cwpKwWarning');
       var $text = $('#cwpKwWarningText');
       var L = crawlwpSEO.i18n;
@@ -1237,7 +1237,7 @@
     /* ---------- analysis panel ---------- */
     runAnalysis: function() {
       var self = this;
-      var keyword = $.trim($('#cwpKeyword').val()).toLowerCase();
+      var keyword = $.trim($('#cwpKeyword').val()).split(',')[0].replace(/^\s+|\s+$/g, '').toLowerCase();
       var $checklist = $('#cwpChecklist');
       var $noticeText = $('#cwpAnalysisNoticeText');
       var $analysisDot = this.$mb.find('.cwp-dot-analysis');

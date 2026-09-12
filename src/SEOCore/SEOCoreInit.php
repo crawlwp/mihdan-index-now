@@ -25,9 +25,21 @@ use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsSettings;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsProcessor;
 use Mihdan\IndexNow\SEOCore\Redirects\PermalinkTracker;
+use Mihdan\IndexNow\SEOCore\Redirects\Monitor404;
 use Mihdan\IndexNow\SEOCore\BulkEditor\BulkEditorSettings;
 use Mihdan\IndexNow\SEOCore\Integrations\WooCommerce;
+use Mihdan\IndexNow\SEOCore\Integrations\Elementor;
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
+use Mihdan\IndexNow\SEOCore\Importer\ImporterSettings;
+use Mihdan\IndexNow\SEOCore\TermSEO\TermMetaBox;
+use Mihdan\IndexNow\SEOCore\Schema\Graph;
+use Mihdan\IndexNow\SEOCore\Schema\Blocks;
+use Mihdan\IndexNow\SEOCore\SitemapSettings\VideoSitemapProvider;
+use Mihdan\IndexNow\SEOCore\SitemapSettings\HtmlSitemap;
+use Mihdan\IndexNow\SEOCore\ImageSEO\ImageSEO;
+use Mihdan\IndexNow\SEOCore\LlmsTxt\LlmsTxt;
+use Mihdan\IndexNow\SEOCore\InternalLinks\AutoLinker;
+use Mihdan\IndexNow\SEOCore\Code\CodeSettings;
 
 class SEOCoreInit
 {
@@ -56,7 +68,19 @@ class SEOCoreInit
 			new RedirectsSettings($redirects_manager);
 			new RedirectsProcessor($redirects_manager);
 			new PermalinkTracker($redirects_manager);
+			new Monitor404($redirects_manager);
 			new BulkEditorSettings();
+			new ImporterSettings();
+			new TermMetaBox();
+			new Graph();
+			new Blocks();
+			new VideoSitemapProvider();
+			new HtmlSitemap();
+			new ImageSEO();
+			new LlmsTxt();
+			new AutoLinker();
+			new CodeSettings();
+			new Elementor();
 			new CoreSettings\CoreSettings();
 			new CoreSettings\Assets();
 			new SiteInfoSettings();

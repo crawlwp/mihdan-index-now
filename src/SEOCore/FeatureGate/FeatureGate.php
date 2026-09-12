@@ -203,6 +203,16 @@ class FeatureGate
 				'title' => __('Post List SEO Column', 'mihdan-index-now'),
 				'desc'  => __('Per-post SEO score column with Quick Edit support for SEO title and meta description directly from the list table.', 'mihdan-index-now'),
 			],
+			[
+				'icon'  => '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>',
+				'title' => __('Import from other SEO plugins', 'mihdan-index-now'),
+				'desc'  => __('One-click migration of titles, descriptions, robots, canonicals and redirects from Yoast, Rank Math, AIOSEO, SEOPress, The SEO Framework and Slim SEO.', 'mihdan-index-now'),
+			],
+			[
+				'icon'  => '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
+				'title' => __('Local SEO &amp; 404 monitor', 'mihdan-index-now'),
+				'desc'  => __('LocalBusiness NAP schema, a 404 log with one-click redirects, Video/HTML sitemaps and llms.txt for AI crawlers.', 'mihdan-index-now'),
+			],
 		];
 
 		?>

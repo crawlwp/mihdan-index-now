@@ -4,6 +4,10 @@ use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 
 if (! defined('ABSPATH')) exit;
 $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : [];
+$schema_extra = is_array($data['schema_extra'] ?? null) ? $data['schema_extra'] : [];
+$schema_faq = is_array($schema_extra['faq'] ?? null) ? $schema_extra['faq'] : [['question' => '', 'answer' => '']];
+$categories = get_the_terms($post, 'category');
+$categories = is_array($categories) ? $categories : [];
 
 /**
  * Render the "generate with AI" button for a field.
@@ -429,6 +433,65 @@ $cwp_ai_button = static function (string $target, string $field): void {
     </div>
 
     <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Rich result type', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Optional extra schema (FAQ, HowTo, Recipe, Event, Job, Course, Video) output as its own JSON-LD block.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-field">
+        <select class="cwp-select" name="crawlwp_schema_extra[extra_type]" id="cwpExtraType">
+          <option value="" <?php selected($schema_extra['extra_type'] ?? '', ''); ?>><?php esc_html_e('None', 'mihdan-index-now'); ?></option>
+          <option value="FAQPage" <?php selected($schema_extra['extra_type'] ?? '', 'FAQPage'); ?>>FAQ</option>
+          <option value="HowTo" <?php selected($schema_extra['extra_type'] ?? '', 'HowTo'); ?>>HowTo</option>
+          <option value="Recipe" <?php selected($schema_extra['extra_type'] ?? '', 'Recipe'); ?>>Recipe</option>
+          <option value="Event" <?php selected($schema_extra['extra_type'] ?? '', 'Event'); ?>>Event</option>
+          <option value="JobPosting" <?php selected($schema_extra['extra_type'] ?? '', 'JobPosting'); ?>>JobPosting</option>
+          <option value="Course" <?php selected($schema_extra['extra_type'] ?? '', 'Course'); ?>>Course</option>
+          <option value="VideoObject" <?php selected($schema_extra['extra_type'] ?? '', 'VideoObject'); ?>>Video</option>
+        </select>
+      </div>
+      <?php foreach ($schema_faq as $faq_row) : ?>
+      <div class="cwp-grid-2">
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[faq_q][]" type="text" value="<?php echo esc_attr($faq_row['question'] ?? ''); ?>" placeholder="<?php esc_attr_e('FAQ question', 'mihdan-index-now'); ?>">
+        </div>
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[faq_a][]" type="text" value="<?php echo esc_attr($faq_row['answer'] ?? ''); ?>" placeholder="<?php esc_attr_e('FAQ answer', 'mihdan-index-now'); ?>">
+        </div>
+      </div>
+      <?php endforeach; ?>
+      <div class="cwp-field">
+        <input class="cwp-input" name="crawlwp_schema_extra[howto_name]" type="text" value="<?php echo esc_attr($schema_extra['howto']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('How-to title', 'mihdan-index-now'); ?>">
+        <textarea class="cwp-textarea" name="crawlwp_schema_extra[howto_steps][]" rows="2" placeholder="<?php esc_attr_e('How-to step (one field; add more by duplicating in HTML or use the HowTo block)', 'mihdan-index-now'); ?>"><?php echo esc_textarea($schema_extra['howto']['steps'][0]['text'] ?? ''); ?></textarea>
+      </div>
+      <div class="cwp-grid-2">
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[recipe_name]" type="text" value="<?php echo esc_attr($schema_extra['recipe']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Recipe name', 'mihdan-index-now'); ?>">
+        </div>
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[event_name]" type="text" value="<?php echo esc_attr($schema_extra['event']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Event name', 'mihdan-index-now'); ?>">
+        </div>
+      </div>
+      <div class="cwp-grid-2">
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[job_title]" type="text" value="<?php echo esc_attr($schema_extra['job']['title'] ?? ''); ?>" placeholder="<?php esc_attr_e('Job title', 'mihdan-index-now'); ?>">
+        </div>
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[course_name]" type="text" value="<?php echo esc_attr($schema_extra['course']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Course name', 'mihdan-index-now'); ?>">
+        </div>
+      </div>
+      <div class="cwp-grid-2">
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[video_name]" type="text" value="<?php echo esc_attr($schema_extra['video']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Video title', 'mihdan-index-now'); ?>">
+        </div>
+        <div class="cwp-field">
+          <input class="cwp-input" name="crawlwp_schema_extra[video_url]" type="url" value="<?php echo esc_attr($schema_extra['video']['url'] ?? ''); ?>" placeholder="https://">
+        </div>
+      </div>
+      <div class="cwp-field">
+        <label class="cwp-label" for="cwpSchemaCustom"><?php esc_html_e('Custom JSON-LD', 'mihdan-index-now'); ?></label>
+        <textarea class="cwp-textarea" id="cwpSchemaCustom" name="<?php echo esc_attr(MetaFields::SCHEMA_CUSTOM); ?>" rows="4" placeholder="{ &quot;@type&quot;: &quot;WebPage&quot; }"><?php echo esc_textarea($data['schema_custom']); ?></textarea>
+      </div>
+    </div>
+
+    <div class="cwp-section">
       <h4 class="cwp-section-title"><?php esc_html_e('Output', 'mihdan-index-now'); ?></h4>
       <p class="cwp-section-desc"><?php esc_html_e('What gets written into the page. Read-only.', 'mihdan-index-now'); ?></p>
       <div class="cwp-code-head">
@@ -568,6 +631,26 @@ $cwp_ai_button = static function (string $target, string $field): void {
     </div>
 
     <div class="cwp-section">
+      <h4 class="cwp-section-title"><?php esc_html_e('Content flags', 'mihdan-index-now'); ?></h4>
+      <label class="cwp-switch">
+        <input type="checkbox" name="<?php echo esc_attr(MetaFields::CORNERSTONE); ?>" value="1" <?php checked($data['cornerstone'], '1'); ?>>
+        <span class="cwp-switch-ui"></span>
+        <span class="cwp-switch-text"><?php esc_html_e('Cornerstone content', 'mihdan-index-now'); ?></span>
+      </label>
+      <?php if ($categories !== []) : ?>
+      <div class="cwp-field" style="margin-top:12px">
+        <label class="cwp-label" for="cwpPrimaryCat"><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></label>
+        <select class="cwp-select" id="cwpPrimaryCat" name="<?php echo esc_attr(MetaFields::PRIMARY_CATEGORY); ?>">
+          <option value="0"><?php esc_html_e('Default (first category)', 'mihdan-index-now'); ?></option>
+          <?php foreach ($categories as $cat) : ?>
+            <option value="<?php echo esc_attr((string) $cat->term_id); ?>" <?php selected((int) $data['primary_category'], (int) $cat->term_id); ?>><?php echo esc_html($cat->name); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
+    </div>
+
+    <div class="cwp-section">
       <h4 class="cwp-section-title"><?php esc_html_e('Canonical URL', 'mihdan-index-now'); ?></h4>
       <p class="cwp-section-desc"><?php esc_html_e('Point engines at the original when this content exists elsewhere.', 'mihdan-index-now'); ?></p>
       <div class="cwp-field">
@@ -587,10 +670,11 @@ $cwp_ai_button = static function (string $target, string $field): void {
   <div class="cwp-panel" id="cwp-panel-analysis" role="tabpanel">
     <div class="cwp-field">
       <div class="cwp-label-row">
-        <label class="cwp-label" for="cwpKeyword"><?php esc_html_e('Focus keyword', 'mihdan-index-now'); ?></label>
-        <span class="cwp-help" title="<?php esc_attr_e('The phrase you want this post to rank for.', 'mihdan-index-now'); ?>">?</span>
+        <label class="cwp-label" for="cwpKeyword"><?php esc_html_e('Focus keywords', 'mihdan-index-now'); ?></label>
+        <span class="cwp-help" title="<?php esc_attr_e('Comma-separated. The first phrase is the primary keyword used in analysis.', 'mihdan-index-now'); ?>">?</span>
       </div>
-      <input class="cwp-input" id="cwpKeyword" name="<?php echo esc_attr(MetaFields::FOCUS_KEYWORD); ?>" type="text" value="<?php echo esc_attr($data['focus_keyword']); ?>">
+      <input class="cwp-input" id="cwpKeyword" name="<?php echo esc_attr(MetaFields::FOCUS_KEYWORD); ?>" type="text" value="<?php echo esc_attr($data['focus_keyword']); ?>" placeholder="<?php esc_attr_e('primary keyword, extra keyword', 'mihdan-index-now'); ?>">
+      <p class="cwp-hint"><?php esc_html_e('Separate extra keywords with commas. Analysis scores the first one.', 'mihdan-index-now'); ?></p>
       <div class="cwp-kw-warning" id="cwpKwWarning" style="display:none">
         <svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1l7 14H1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.5v3.5M8 12v.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         <span id="cwpKwWarningText"></span>
