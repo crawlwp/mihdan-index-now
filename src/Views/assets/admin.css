@@ -231,6 +231,174 @@ input.wposa-field--switch:hover:after {
 	padding: 0;
 }
 
+/* 404 Monitor manager — take the row out of the form-table column layout entirely */
+#crawlwp_monitor_404 .form-table,
+#crawlwp_monitor_404 .form-table > tbody {
+	display: block;
+	width: 100%;
+}
+
+#crawlwp_monitor_404 .form-table > tbody > tr.wposa-form-table__row:not(.wposa-form-table__row_crawlwp_monitor_404_manager_ui) {
+	display: flex;
+	align-items: center;
+	padding: 12px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+#crawlwp_monitor_404 .form-table > tbody > tr.wposa-form-table__row:not(.wposa-form-table__row_crawlwp_monitor_404_manager_ui) > th {
+	width: 200px;
+	padding: 0;
+	font-weight: 600;
+}
+
+#crawlwp_monitor_404 .form-table > tbody > tr.wposa-form-table__row:not(.wposa-form-table__row_crawlwp_monitor_404_manager_ui) > td {
+	padding: 0;
+}
+
+.wposa-form-table__row_crawlwp_monitor_404_manager_ui {
+	display: block;
+	width: 100%;
+	padding-top: 16px;
+}
+
+.wposa-form-table__row_crawlwp_monitor_404_manager_ui > th {
+	display: none !important;
+}
+
+.wposa-form-table__row_crawlwp_monitor_404_manager_ui > td {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0;
+}
+
+/* 404 Monitor table */
+#cwp404 {
+	position: relative;
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+#cwp404Table table {
+	width: 100%;
+	min-width: 520px;
+	table-layout: fixed;
+	border-collapse: collapse;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+#cwp404Table table th,
+#cwp404Table table td {
+	display: table-cell !important;
+	vertical-align: middle;
+	box-sizing: border-box;
+	padding: 8px 10px;
+	text-align: left;
+	border-bottom: 1px solid #dcdcde;
+}
+
+#cwp404Table table thead th {
+	background: #f6f7f7;
+	font-size: 12px;
+	font-weight: 600;
+	color: #1d2327;
+	border-bottom: 2px solid #dcdcde;
+	white-space: nowrap;
+}
+
+#cwp404Table .cwp-404-col-url {
+	width: auto;
+}
+
+#cwp404Table .cwp-404-col-hits {
+	width: 55px;
+	text-align: center;
+}
+
+#cwp404Table .cwp-404-col-date {
+	width: 145px;
+	white-space: nowrap;
+	color: #646970;
+	font-size: 12px;
+}
+
+#cwp404Table .cwp-404-col-redirect {
+	width: 250px;
+}
+
+#cwp404Table td code {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+	background: #f0f0f1;
+	padding: 3px 6px;
+	border-radius: 3px;
+	color: #2271b1;
+	font-size: 12px;
+}
+
+#cwp404Table .cwp-404-action-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+}
+
+#cwp404Table input.cwp-404-to {
+	flex: 1;
+	min-width: 60px;
+	height: 30px;
+	font-size: 13px;
+	margin: 0;
+	padding: 0 8px;
+	box-sizing: border-box;
+}
+
+#cwp404Table .cwp-404-save {
+	flex-shrink: 0;
+	height: 30px;
+	line-height: 28px;
+	padding: 0 10px;
+	font-size: 12px;
+	margin: 0;
+}
+
+#cwp404Table .cwp-404-del {
+	flex-shrink: 0;
+	color: #b32d2e;
+	text-decoration: none;
+	cursor: pointer;
+	padding: 2px 4px;
+	font-size: 12px;
+	line-height: 1;
+	margin: 0;
+}
+
+#cwp404Table .cwp-404-del:hover {
+	color: #b32d2e;
+	text-decoration: underline;
+}
+
+#cwp404Table tbody tr:hover td {
+	background: #f9f9f9;
+}
+
+#cwp404Table .cwp-404-no-items {
+	padding: 20px;
+	text-align: center;
+	color: #646970;
+	font-style: italic;
+}
+
+#cwp404Clear {
+	margin-top: 10px;
+}
+
 /* Redirects and Bulk Editor already have their own AJAX save controls —
    hide the settings framework's default "Save Changes" submit button so
    there is only one, unambiguous way to save on these two screens. */

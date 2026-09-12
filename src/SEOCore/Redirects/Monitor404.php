@@ -145,30 +145,34 @@ class Monitor404
 		$rows = $wpdb->get_results("SELECT * FROM {$this->table} ORDER BY hits DESC, last_seen DESC LIMIT 100");
 
 		ob_start();
-		echo '<table class="widefat striped"><thead><tr>';
-		echo '<th>' . esc_html__('URL', 'mihdan-index-now') . '</th>';
-		echo '<th>' . esc_html__('Hits', 'mihdan-index-now') . '</th>';
-		echo '<th>' . esc_html__('Last seen', 'mihdan-index-now') . '</th>';
-		echo '<th>' . esc_html__('Redirect to', 'mihdan-index-now') . '</th>';
+		echo '<table class="widefat striped cwp-404-table"><thead><tr>';
+		echo '<th class="cwp-404-col-url">' . esc_html__('URL', 'mihdan-index-now') . '</th>';
+		echo '<th class="cwp-404-col-hits">' . esc_html__('Hits', 'mihdan-index-now') . '</th>';
+		echo '<th class="cwp-404-col-date">' . esc_html__('Last seen', 'mihdan-index-now') . '</th>';
+		echo '<th class="cwp-404-col-redirect">' . esc_html__('Redirect to', 'mihdan-index-now') . '</th>';
 		echo '</tr></thead><tbody>';
 
 		if (! $rows) {
-			echo '<tr><td colspan="4">' . esc_html__('No 404s logged yet.', 'mihdan-index-now') . '</td></tr>';
+			echo '<tr><td colspan="4" class="cwp-404-no-items">' . esc_html__('No 404s logged yet.', 'mihdan-index-now') . '</td></tr>';
 		} else {
 			foreach ($rows as $row) {
 				echo '<tr data-id="' . esc_attr((string) $row->id) . '">';
-				echo '<td><code>' . esc_html($row->url) . '</code></td>';
-				echo '<td>' . esc_html((string) $row->hits) . '</td>';
-				echo '<td>' . esc_html((string) $row->last_seen) . '</td>';
-				echo '<td><input type="text" class="cwp-404-to regular-text" placeholder="/new-url"> ';
-				echo '<button type="button" class="button cwp-404-save">' . esc_html__('Redirect', 'mihdan-index-now') . '</button> ';
-				echo '<button type="button" class="button-link-delete cwp-404-del">' . esc_html__('Delete', 'mihdan-index-now') . '</button></td>';
+				echo '<td class="cwp-404-col-url"><code title="' . esc_attr($row->url) . '">' . esc_html($row->url) . '</code></td>';
+				echo '<td class="cwp-404-col-hits">' . esc_html((string) $row->hits) . '</td>';
+				echo '<td class="cwp-404-col-date">' . esc_html((string) $row->last_seen) . '</td>';
+				echo '<td class="cwp-404-col-redirect"><div class="cwp-404-action-group">';
+				echo '<input type="text" class="cwp-404-to" placeholder="/new-url"> ';
+				echo '<button type="button" class="button button-small cwp-404-save">' . esc_html__('Redirect', 'mihdan-index-now') . '</button> ';
+				echo '<button type="button" class="button-link-delete cwp-404-del">' . esc_html__('Delete', 'mihdan-index-now') . '</button>';
+				echo '</div></td>';
 				echo '</tr>';
 			}
 		}
 
 		echo '</tbody></table>';
-		echo '<p><button type="button" class="button" id="cwp404Clear">' . esc_html__('Clear log', 'mihdan-index-now') . '</button></p>';
+		if ($rows) {
+			echo '<p><button type="button" class="button" id="cwp404Clear">' . esc_html__('Clear log', 'mihdan-index-now') . '</button></p>';
+		}
 
 		wp_send_json_success(['html' => ob_get_clean()]);
 	}
@@ -241,18 +245,35 @@ class Monitor404
 		<script>
 		(function ($) {
 			function load() {
+				var $btn = $('#cwp404Refresh');
+				$btn.prop('disabled', true);
 				$.post(ajaxurl, { action: 'crawlwp_404_list', nonce: $('#cwp404').data('nonce') }).done(function (res) {
 					if (res && res.success) { $('#cwp404Table').html(res.data.html); }
+				}).always(function () {
+					$btn.prop('disabled', false);
 				});
 			}
 			$(document).on('click', '#cwp404Refresh', load);
+			$(document).on('keydown', '.cwp-404-to', function (e) {
+				if (e.which === 13) {
+					e.preventDefault();
+					$(this).closest('tr').find('.cwp-404-save').trigger('click');
+				}
+			});
 			$(document).on('click', '.cwp-404-save', function () {
-				var $tr = $(this).closest('tr');
+				var $btn = $(this);
+				var $tr = $btn.closest('tr');
+				var toUrl = $tr.find('.cwp-404-to').val();
+				if (!toUrl) {
+					$tr.find('.cwp-404-to').focus();
+					return;
+				}
+				$btn.prop('disabled', true);
 				$.post(ajaxurl, {
 					action: 'crawlwp_404_redirect',
 					nonce: $('#cwp404').data('nonce'),
 					id: $tr.data('id'),
-					to: $tr.find('.cwp-404-to').val()
+					to: toUrl
 				}).done(load);
 			});
 			$(document).on('click', '.cwp-404-del', function () {

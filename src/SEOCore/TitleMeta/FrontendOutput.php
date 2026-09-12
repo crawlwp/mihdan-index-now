@@ -134,7 +134,7 @@ class FrontendOutput
 			return;
 		}
 
-		echo "\n" . '<!-- CrawlWP SEO -->' . "\n";
+		echo "\n" . '<!-- CrawlWP SEO  (https://crawlwp.com/) -->' . "\n";
 
 		/*
 		 * Only print the title ourselves when nothing in core will do it, which
