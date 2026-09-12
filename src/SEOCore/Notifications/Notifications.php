@@ -2,7 +2,9 @@
 
 namespace Mihdan\IndexNow\SEOCore\Notifications;
 
+use Mihdan\IndexNow\SEOCore\CoreSettings\CoreSettings;
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
+use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
 
@@ -15,7 +17,7 @@ use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
  *
  * Checks performed:
  *  1. WordPress "Discourage search engines" setting is enabled.
- *  2. CrawlWP site-wide noindex is active.
+ *  2. Homepage is set to noindex.
  *  3. A conflicting SEO plugin is active alongside CrawlWP.
  *  4. Homepage has no SEO title configured.
  *  5. Homepage has no meta description configured.
@@ -616,15 +618,17 @@ class Notifications
 			];
 		}
 
-		/* 2. CrawlWP site-wide noindex. */
-		if (Options::is_on('home', 'noindex')) {
+		/* 2. Homepage noindex check. */
+		$homepage_noindex = $this->get_homepage_noindex_info();
+
+		if ($homepage_noindex !== null) {
 			$notices[] = [
-				'id' => 'crawlwp_site_noindex',
+				'id'       => 'crawlwp_site_noindex',
 				'severity' => 'warning',
-				'message' => sprintf(
+				'message'  => sprintf(
 				/* translators: 1: link opening tag, 2: link closing tag */
-					__('Your <strong>Homepage is set to noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now'),
-					'<a href="' . esc_url(add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL)) . '">',
+					$homepage_noindex['message'],
+					'<a href="' . esc_url($homepage_noindex['edit_url']) . '">',
 					'</a>'
 				),
 			];
@@ -646,9 +650,28 @@ class Notifications
 		}
 
 		/* 4. Missing homepage SEO title.
-		 * The frontend falls back to the registered default template, so only
+		 * When a static page is set as homepage, inspect its metabox data.
+		 * Otherwise, the frontend falls back to the registered default template, so only
 		 * warn when the stored value AND the default are both empty. */
-		if ($this->home_template_is_empty('title')) {
+		if (CoreSettings::is_static_front_page()) {
+			$page_on_front_id = (int) get_option('page_on_front');
+			$seo_title        = trim((string) MetaFields::get($page_on_front_id, MetaFields::SEO_TITLE, ''));
+
+			if ($seo_title === '') {
+				$edit_url = $this->get_static_front_page_edit_url($page_on_front_id);
+
+				$notices[] = [
+					'id'       => 'missing_homepage_title',
+					'severity' => 'warning',
+					'message'  => sprintf(
+					/* translators: 1: link opening tag, 2: link closing tag */
+						__('Your homepage has <strong>no SEO title configured</strong>. A descriptive title is critical for search engine rankings. %1$sConfigure now%2$s', 'mihdan-index-now'),
+						'<a href="' . esc_url($edit_url) . '">',
+						'</a>'
+					),
+				];
+			}
+		} elseif ($this->home_template_is_empty('title')) {
 			$notices[] = [
 				'id' => 'missing_homepage_title',
 				'severity' => 'warning',
@@ -662,7 +685,25 @@ class Notifications
 		}
 
 		/* 5. Missing homepage meta description. */
-		if ($this->home_template_is_empty('description')) {
+		if (CoreSettings::is_static_front_page()) {
+			$page_on_front_id = (int) get_option('page_on_front');
+			$seo_description  = trim((string) MetaFields::get($page_on_front_id, MetaFields::SEO_DESCRIPTION, ''));
+
+			if ($seo_description === '') {
+				$edit_url = $this->get_static_front_page_edit_url($page_on_front_id);
+
+				$notices[] = [
+					'id'       => 'missing_homepage_description',
+					'severity' => 'warning',
+					'message'  => sprintf(
+					/* translators: 1: link opening tag, 2: link closing tag */
+						__('Your homepage has <strong>no meta description configured</strong>. A good description improves click-through rates from search results. %1$sConfigure now%2$s', 'mihdan-index-now'),
+						'<a href="' . esc_url($edit_url) . '">',
+						'</a>'
+					),
+				];
+			}
+		} elseif ($this->home_template_is_empty('description')) {
 			$notices[] = [
 				'id' => 'missing_homepage_description',
 				'severity' => 'warning',
@@ -823,6 +864,80 @@ class Notifications
 		}
 
 		return trim(Entities::default_value('home', $field, '')) === '';
+	}
+
+	/**
+	 * Check whether the homepage is configured as noindex.
+	 *
+	 * When a static page is set as the front page, checks the SEO metabox
+	 * setting on that page first (which overrides global settings). If not
+	 * overridden, or when the homepage is set to display latest posts, checks
+	 * the global CrawlWP Title & Meta setting.
+	 *
+	 * @return array{message: string, edit_url: string}|null Null if homepage is indexable.
+	 */
+	private function get_homepage_noindex_info(): ?array
+	{
+		$is_noindexed = false;
+		$edit_url     = '';
+		$message      = '';
+
+		if (CoreSettings::is_static_front_page()) {
+			$page_on_front_id = (int) get_option('page_on_front');
+			$robots_index     = (string) MetaFields::get($page_on_front_id, MetaFields::ROBOTS_INDEX, '');
+
+			if ($robots_index === 'noindex') {
+				$is_noindexed = true;
+				$edit_url     = $this->get_static_front_page_edit_url($page_on_front_id);
+				$message      = __('Your homepage is set to <strong>noindex</strong>. Search engines will not index your homepage. %1$sEdit homepage%2$s', 'mihdan-index-now');
+			} elseif ($robots_index !== 'index' && Options::is_on('home', 'noindex')) {
+				$is_noindexed = true;
+				$edit_url     = add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL);
+				$message      = __('Your homepage is set to <strong>noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now');
+			}
+		} elseif (Options::is_on('home', 'noindex')) {
+			$is_noindexed = true;
+			$edit_url     = add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL);
+			$message      = __('Your homepage is set to <strong>noindex</strong> in CrawlWP Title &amp; Meta settings. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now');
+		}
+
+		/* Check if developer filters alter the robots directives for the homepage. */
+		$directives = [$is_noindexed ? 'noindex' : 'index'];
+		$directives = (array) apply_filters('crawlwp_robots_directives', $directives, 'home');
+
+		if (!in_array('noindex', $directives, true)) {
+			return null;
+		}
+
+		if (!$is_noindexed) {
+			// A developer filter added noindex.
+			$edit_url = CoreSettings::is_static_front_page()
+				? $this->get_static_front_page_edit_url((int) get_option('page_on_front'))
+				: add_query_arg(['wposa-menu' => 'crawlwp_tm_home'], CRAWLWP_SETTINGS_URL);
+			$message  = __('Your homepage is set to <strong>noindex</strong>. Search engines will not index your homepage. %1$sReview settings%2$s', 'mihdan-index-now');
+		}
+
+		return [
+			'message'  => $message,
+			'edit_url' => $edit_url,
+		];
+	}
+
+	/**
+	 * Get the edit URL for the static front page.
+	 *
+	 * @param int $post_id Post ID of the front page.
+	 * @return string
+	 */
+	private function get_static_front_page_edit_url(int $post_id): string
+	{
+		$edit_url = get_edit_post_link($post_id);
+
+		if (!$edit_url && $post_id > 0) {
+			$edit_url = admin_url('post.php?post=' . $post_id . '&action=edit');
+		}
+
+		return (string) $edit_url;
 	}
 
 	/**

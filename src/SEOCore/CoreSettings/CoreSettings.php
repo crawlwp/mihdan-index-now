@@ -59,6 +59,13 @@ class CoreSettings
 
 		if ($key === 'home') {
 			$this->add_separator_field($wposa, $section);
+
+			if (self::is_static_front_page()) {
+				$this->add_static_home_notice($wposa, $section, $entity);
+				return;
+			}
+
+			$this->add_noindex_field($wposa, $section, $entity);
 		} else {
 			$this->add_noindex_field($wposa, $section, $entity);
 		}
@@ -91,6 +98,84 @@ class CoreSettings
 			'options' => Variables::separator_choices(),
 			'default' => '-',
 			'desc' => esc_html__('The character used wherever the {{ sep }} variable appears in a title.', 'mihdan-index-now'),
+		]);
+	}
+
+	/**
+	 * Whether a static page is set as the WordPress front page.
+	 */
+	public static function is_static_front_page(): bool
+	{
+		return 'page' === get_option('show_on_front') && (int) get_option('page_on_front') > 0;
+	}
+
+	/**
+	 * When a static page is set as the homepage, inform the admin that the
+	 * SEO title and description are configured directly on the page itself.
+	 */
+	private function add_static_home_notice(WPOSA $wposa, string $section, array $entity): void
+	{
+		$this->add_heading(
+			$wposa,
+			$section,
+			'heading_main',
+			__('Homepage', 'mihdan-index-now'),
+			__('Determine how your homepage should look in the search results and on social media. This is what people probably will see when they search for your brand name.', 'mihdan-index-now')
+		);
+
+		$page_on_front_id = (int) get_option('page_on_front');
+		$home_edit_url    = $page_on_front_id > 0 ? get_edit_post_link($page_on_front_id) : '';
+
+		if (! $home_edit_url && $page_on_front_id > 0) {
+			$home_edit_url = admin_url('post.php?post=' . $page_on_front_id . '&action=edit');
+		}
+
+		$page_for_posts_id = (int) get_option('page_for_posts');
+		$posts_edit_url    = $page_for_posts_id > 0 ? get_edit_post_link($page_for_posts_id) : '';
+
+		if (! $posts_edit_url && $page_for_posts_id > 0) {
+			$posts_edit_url = admin_url('post.php?post=' . $page_for_posts_id . '&action=edit');
+		}
+
+		$home_link = $home_edit_url
+			? sprintf('<a href="%s">%s</a>', esc_url($home_edit_url), esc_html__('editing the homepage itself', 'mihdan-index-now'))
+			: esc_html__('editing the homepage itself', 'mihdan-index-now');
+
+		$messages = [];
+		$messages[] = sprintf(
+			/* translators: %s: link to edit the homepage page */
+			__('You can determine the title and description for the homepage by %s.', 'mihdan-index-now'),
+			$home_link
+		);
+
+		if ($posts_edit_url) {
+			$posts_link = sprintf('<a href="%s">%s</a>', esc_url($posts_edit_url), esc_html__('editing the blog page itself', 'mihdan-index-now'));
+			$messages[] = sprintf(
+				/* translators: %s: link to edit the blog page */
+				__('You can determine the title and description for the blog page by %s.', 'mihdan-index-now'),
+				$posts_link
+			);
+		}
+
+		$icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+
+		$paragraphs = '';
+		foreach ($messages as $msg) {
+			$paragraphs .= sprintf('<p>%s</p>', $msg);
+		}
+
+		$alert_html = sprintf(
+			'<div class="cwp-tm-alert"><span class="cwp-tm-alert__icon" aria-hidden="true">%s</span><div class="cwp-tm-alert__content">%s</div></div>',
+			$icon,
+			$paragraphs
+		);
+
+		$wposa->add_field($section, [
+			'id'    => 'static_home_notice',
+			'type'  => 'html',
+			'name'  => '',
+			'desc'  => $alert_html,
+			'class' => 'wposa-form-table__row cwp-tm-alert-row',
 		]);
 	}
 
@@ -345,6 +430,9 @@ class CoreSettings
 	private function noindex_description(array $entity): string
 	{
 		switch ($entity['type']) {
+			case Entities::TYPE_HOME:
+				return __('This setting will apply the noindex robots tag to the homepage.', 'mihdan-index-now');
+
 			case Entities::TYPE_POST_TYPE:
 				return __('This setting will apply the noindex robots tag to all posts of this post type and exclude the post type from the sitemap.', 'mihdan-index-now');
 

@@ -342,10 +342,21 @@ class FrontendOutput
 
 		/* Blog posts index when a static front page is in use. */
 		if (is_home()) {
+			$context        = ['post_type' => get_post_type_object('post')];
+			$page_for_posts = (int) get_option('page_for_posts');
+
+			if ($page_for_posts > 0) {
+				$posts_page = get_post($page_for_posts);
+
+				if ($posts_page instanceof \WP_Post) {
+					$context['post'] = $posts_page;
+				}
+			}
+
 			return [
 				Entities::post_type_key('post'),
 				'archive_',
-				['post_type' => get_post_type_object('post')],
+				$context,
 			];
 		}
 
