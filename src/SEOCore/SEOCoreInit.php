@@ -45,6 +45,55 @@ class SEOCoreInit
 {
 	use GetInstanceTrait;
 
+	/**
+	 * Modules whose hooks are required on every kind of request — frontend,
+	 * admin, REST and cron alike.
+	 *
+	 * @var string[]
+	 */
+	private const MODULES_ALWAYS = [
+		Graph::class,
+		Blocks::class,
+		VideoSitemapProvider::class,
+		HtmlSitemap::class,
+		ImageSEO::class,
+		LlmsTxt::class,
+		AutoLinker::class,
+		CodeSettings::class,
+		Elementor::class,
+		CoreSettings\CoreSettings::class,
+		SiteInfoSettings::class,
+		SocialSettings::class,
+		RssSettings::class,
+		BreadcrumbSettings::class,
+		RobotsSettings::class,
+		SitemapSettings::class,
+		NewsSitemapProvider::class,
+		CustomUrlsSitemapProvider::class,
+		MetaBox::class,
+		Assets::class,
+		PostListColumn::class,
+		FrontendHead::class,
+		FrontendOutput::class,
+		Sitemap::class,
+		WooCommerce::class,
+	];
+
+	/**
+	 * Modules that only ever register admin-screen or admin-ajax hooks, so
+	 * there is nothing for them to do on a frontend, REST or cron request.
+	 *
+	 * @var string[]
+	 */
+	private const MODULES_ADMIN = [
+		Notifications::class,
+		BulkEditorSettings::class,
+		ImporterSettings::class,
+		TermMetaBox::class,
+		CoreSettings\Assets::class,
+		UserProfile::class,
+	];
+
 	public function __construct()
 	{
 		// Feature gate — registers the "SEO Features" promo/settings tab.
@@ -58,55 +107,42 @@ class SEOCoreInit
 		// The on-page SEO output features are gated behind the master toggle.
 		// Admins who are upgrading from another SEO plugin can review settings
 		// first, then flip the switch on the "SEO Features" tab.
-		if (FeatureGate::is_enabled()) {
-
-			new Notifications();
-
-			// Redirects — manager must be instantiated early so the DB table
-			// is created on plugins_loaded before any other code queries it.
-			$redirects_manager = new RedirectsManager();
-			new RedirectsSettings($redirects_manager);
-			new RedirectsProcessor($redirects_manager);
-			new PermalinkTracker($redirects_manager);
-			new Monitor404($redirects_manager);
-			new BulkEditorSettings();
-			new ImporterSettings();
-			new TermMetaBox();
-			new Graph();
-			new Blocks();
-			new VideoSitemapProvider();
-			new HtmlSitemap();
-			new ImageSEO();
-			new LlmsTxt();
-			new AutoLinker();
-			new CodeSettings();
-			new Elementor();
-			new CoreSettings\CoreSettings();
-			new CoreSettings\Assets();
-			new SiteInfoSettings();
-			new SocialSettings();
-			new RssSettings();
-			new BreadcrumbSettings();
-			new RobotsSettings();
-			new SitemapSettings();
-			new NewsSitemapProvider();
-			new CustomUrlsSitemapProvider();
-			new UserProfile();
-
-			new MetaBox();
-			new Assets();
-			new PostListColumn();
-			new FrontendHead();
-
-			// init hooking to prevent "Function _load_textdomain_just_in_time was called incorrectly" error.
-			add_action('init', function() {
-				$breadcrumbs = new Breadcrumbs();
-				$breadcrumbs->setup();
-			});
-
-			new FrontendOutput();
-			new Sitemap();
-			new WooCommerce();
+		if (!FeatureGate::is_enabled()) {
+			return;
 		}
+
+		// Redirects — manager must be instantiated early so the DB table
+		// is created on plugins_loaded before any other code queries it.
+		$redirects_manager = new RedirectsManager();
+		new RedirectsProcessor($redirects_manager);
+		new PermalinkTracker($redirects_manager);
+		new Monitor404($redirects_manager);
+
+		foreach (self::MODULES_ALWAYS as $module) {
+			new $module();
+		}
+
+		if (self::is_admin_request()) {
+			new RedirectsSettings($redirects_manager);
+
+			foreach (self::MODULES_ADMIN as $module) {
+				new $module();
+			}
+		}
+
+		// init hooking to prevent "Function _load_textdomain_just_in_time was called incorrectly" error.
+		add_action('init', function() {
+			$breadcrumbs = new Breadcrumbs();
+			$breadcrumbs->setup();
+		});
+	}
+
+	/**
+	 * True for wp-admin screens and admin-ajax requests, i.e. the only places
+	 * where the admin-only modules have any hook to fire.
+	 */
+	private static function is_admin_request(): bool
+	{
+		return is_admin();
 	}
 }

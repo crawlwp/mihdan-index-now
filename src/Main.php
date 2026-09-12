@@ -12,6 +12,7 @@ use Mihdan\IndexNow\Providers\Seznam\SeznamIndexNow;
 use Mihdan\IndexNow\Providers\Naver\NaverIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexIndexNow;
 use Mihdan\IndexNow\Providers\Yandex\YandexWebmaster;
+use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 use Mihdan\IndexNow\SEOCore\SEOCoreInit;
 use Mihdan\IndexNow\Views\Settings;
 use Mihdan\IndexNow\Views\UpsellAdminPages;
@@ -260,11 +261,27 @@ class Main
 			foreach ($sites as $site_id) {
 				switch_to_blog($site_id);
 				$this->create_tables();
+				$this->activate_site();
 				restore_current_blog();
 			}
 		} else {
 			$this->create_tables();
+			$this->activate_site();
 		}
+	}
+
+	/**
+	 * Per-site activation tasks.
+	 *
+	 * Persists the SEO feature-gate default once (so FeatureGate::is_enabled()
+	 * stays a side-effect-free read on every later request) and rebuilds the
+	 * rewrite rules the virtual llms.txt endpoint relies on.
+	 */
+	private function activate_site(): void
+	{
+		FeatureGate::maybe_persist_default();
+
+		flush_rewrite_rules();
 	}
 
 	private function drop_tables()
@@ -305,11 +322,16 @@ class Main
 	{
 		DBUpdates::get_instance()->maybe_update();
 
+		// Upgrades from a version that predates the feature gate never had the
+		// option written; record the decision now instead of on every request.
+		FeatureGate::maybe_persist_default();
+
 		$db_version = Utils::get_db_version();
 		$plugin_version = Utils::get_plugin_version();
 
 		if (version_compare($db_version, $plugin_version, '<')) {
 			$this->create_tables(true);
+			flush_rewrite_rules();
 		}
 	}
 

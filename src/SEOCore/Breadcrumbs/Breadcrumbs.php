@@ -29,6 +29,9 @@ class Breadcrumbs
 	/** @var string Display text for the current (last) crumb — not linked. */
 	private $current = '';
 
+	/** @var string Known URL of the current crumb, when it cannot be derived from the query. */
+	private $current_url = '';
+
 	/** @var bool Whether parse() has run for the current request. */
 	private $is_parsed = false;
 
@@ -92,7 +95,7 @@ class Breadcrumbs
 			return '';
 		}
 
-		$sep = '<span class="cwp-bc__sep" aria-hidden="true">' . esc_html((string) $this->args['separator']) . '</span>';
+		$sep = '<span class="cwp-bc__sep" aria-hidden="true">' . wp_kses((string) $this->args['separator'], self::separator_allowed_html()) . '</span>';
 
 		$output = '<nav class="cwp-bc" aria-label="' . esc_attr__('Breadcrumbs', 'mihdan-index-now') . '">';
 
@@ -130,6 +133,72 @@ class Breadcrumbs
 		return $output;
 	}
 
+	/**
+	 * The HTML allowed inside the separator. The separator is a free-text
+	 * setting, so entities (`&raquo;`), icon markup and inline SVG all need
+	 * to survive — running it through esc_html() would print them literally.
+	 *
+	 * @return array<string,array<string,bool>>
+	 */
+	private static function separator_allowed_html(): array
+	{
+		$allowed = [
+			'span' => [
+				'class'       => true,
+				'style'       => true,
+				'aria-hidden' => true,
+			],
+			'i'    => [
+				'class'       => true,
+				'style'       => true,
+				'aria-hidden' => true,
+			],
+			'em'   => [
+				'class' => true,
+				'style' => true,
+			],
+			'svg'  => [
+				'class'               => true,
+				'style'               => true,
+				'xmlns'               => true,
+				'viewbox'             => true,
+				'width'               => true,
+				'height'              => true,
+				'fill'                => true,
+				'stroke'              => true,
+				'stroke-width'        => true,
+				'stroke-linecap'      => true,
+				'stroke-linejoin'     => true,
+				'role'                => true,
+				'focusable'           => true,
+				'aria-hidden'         => true,
+				'preserveaspectratio' => true,
+			],
+			'g'    => [
+				'fill'      => true,
+				'stroke'    => true,
+				'transform' => true,
+			],
+			'path' => [
+				'd'               => true,
+				'fill'            => true,
+				'fill-rule'       => true,
+				'clip-rule'       => true,
+				'stroke'          => true,
+				'stroke-width'    => true,
+				'stroke-linecap'  => true,
+				'stroke-linejoin' => true,
+			],
+		];
+
+		/**
+		 * Filters the HTML allowed inside the breadcrumb separator.
+		 *
+		 * @param array $allowed Tag => attribute allowlist, in wp_kses() format.
+		 */
+		return (array) apply_filters('crawlwp_breadcrumbs_separator_allowed_html', $allowed);
+	}
+
 	// -------------------------------------------------------------------------
 	// BreadcrumbList JSON-LD
 	// -------------------------------------------------------------------------
@@ -141,7 +210,7 @@ class Breadcrumbs
 	 *
 	 * @return array|null
 	 */
-	public function get_schema_node()
+	public function get_schema_node(): ?array
 	{
 		if (BreadcrumbSettings::get('schema_enabled', 'on') === 'off') {
 			return null;
@@ -151,12 +220,9 @@ class Breadcrumbs
 
 		$links = $this->get_links();
 
-		/* Include the current page as the last item when it has a URL.
-		 * We don't call get_permalink() here because it is unreliable on
-		 * non-singular pages.  The actual URL is resolved below in the
-		 * is_singular / is_home / … branches.
+		/* The current page is included as the last item when its URL can be
+		 * resolved — see get_current_url().
 		 */
-
 		if (empty($links) && $this->current === '') {
 			return null;
 		}
@@ -174,21 +240,7 @@ class Breadcrumbs
 		}
 
 		if ($this->current !== '') {
-			/* Determine the canonical URL of the current page. */
-			if (is_singular()) {
-				$cur_url = (string) get_permalink();
-			} elseif (is_home()) {
-				$cur_url = (string) get_permalink(get_option('page_for_posts'));
-			} elseif (is_post_type_archive()) {
-				$cur_url = (string) get_post_type_archive_link(get_query_var('post_type'));
-			} elseif (is_tax() || is_category() || is_tag()) {
-				$term    = get_queried_object();
-				$cur_url = $term ? (string) get_term_link($term) : '';
-			} elseif (is_author()) {
-				$cur_url = (string) get_author_posts_url(get_queried_object_id());
-			} else {
-				$cur_url = '';
-			}
+			$cur_url = $this->get_current_url();
 
 			if ($cur_url !== '') {
 				$list[] = [
@@ -204,9 +256,19 @@ class Breadcrumbs
 			return null;
 		}
 
+		/* The node describes this request, not the site: key it on the current
+		 * page so every URL gets its own BreadcrumbList in the graph. Falls
+		 * back to the homepage when the URL cannot be resolved.
+		 */
+		$base = $this->get_current_url();
+
+		if ($base === '') {
+			$base = home_url('/');
+		}
+
 		return [
 			'@type'           => 'BreadcrumbList',
-			'@id'             => home_url('/') . '#breadcrumb',
+			'@id'             => $base . '#breadcrumb',
 			'itemListElement' => $list,
 		];
 	}
@@ -223,6 +285,44 @@ class Breadcrumbs
 	public function get_links(): array
 	{
 		return apply_filters('crawlwp_breadcrumbs_links', $this->links);
+	}
+
+	/**
+	 * The canonical URL of the current (last) crumb, or an empty string when
+	 * it cannot be resolved. Paginated requests store their URL up front —
+	 * everything else is derived from the query, because get_permalink() is
+	 * unreliable on non-singular requests.
+	 */
+	private function get_current_url(): string
+	{
+		if ($this->current_url !== '') {
+			return $this->current_url;
+		}
+
+		if (is_singular()) {
+			return (string) get_permalink();
+		}
+
+		if (is_home()) {
+			return (string) get_permalink(get_option('page_for_posts'));
+		}
+
+		if (is_post_type_archive()) {
+			return (string) get_post_type_archive_link(get_query_var('post_type'));
+		}
+
+		if (is_tax() || is_category() || is_tag()) {
+			$term = get_queried_object();
+			$link = $term ? get_term_link($term) : '';
+
+			return is_string($link) ? $link : '';
+		}
+
+		if (is_author()) {
+			return (string) get_author_posts_url(get_queried_object_id());
+		}
+
+		return '';
 	}
 
 	// -------------------------------------------------------------------------
@@ -275,12 +375,70 @@ class Breadcrumbs
 			$this->add_date_links();
 		}
 
+		$this->add_pagination();
+
 		$this->is_parsed = true;
 	}
 
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	/**
+	 * Paginated requests are a different document: `/category/news/page/2/`
+	 * must not claim to be the page-1 trail, in the HTML output nor in the
+	 * BreadcrumbList. Demote the current crumb to a link and make the page
+	 * number the last item.
+	 */
+	private function add_pagination(): void
+	{
+		$paged = (int) get_query_var('paged');
+		/* Multi-page singulars (<!--nextpage-->) use "page" instead of "paged". */
+		$page  = (int) get_query_var('page');
+
+		if ($paged < 2 && $page < 2) {
+			return;
+		}
+
+		if ($this->current !== '') {
+			$url = $this->get_current_url();
+
+			if ($url !== '') {
+				$this->add_link($url, $this->current);
+			}
+		}
+
+		if ($paged > 1) {
+			$number            = $paged;
+			$pagenum_link      = get_pagenum_link($paged, false);
+			$this->current_url = is_string($pagenum_link) ? $pagenum_link : '';
+		} else {
+			$number            = $page;
+			$this->current_url = $this->get_singular_page_url($page);
+		}
+
+		/* translators: %s = page number */
+		$this->current = sprintf(__('Page %s', 'mihdan-index-now'), number_format_i18n($number));
+	}
+
+	/**
+	 * URL of a sub-page of a multi-page singular post, mirroring the way
+	 * WordPress' own _wp_link_page() builds it.
+	 */
+	private function get_singular_page_url(int $page): string
+	{
+		$permalink = get_permalink();
+
+		if (! is_string($permalink) || $permalink === '') {
+			return '';
+		}
+
+		if ((string) get_option('permalink_structure') === '') {
+			return (string) add_query_arg('page', $page, $permalink);
+		}
+
+		return trailingslashit($permalink) . user_trailingslashit((string) $page, 'single_paged');
+	}
 
 	private function add_singular(): void
 	{
