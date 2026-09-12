@@ -123,12 +123,15 @@ class DBUpdates
 			note text NOT NULL DEFAULT '',
 			ignore_query_string tinyint(1) NOT NULL DEFAULT 1,
 			enabled tinyint(1) NOT NULL DEFAULT 1,
+			priority smallint(6) NOT NULL DEFAULT 10,
+			allow_external tinyint(1) NOT NULL DEFAULT 0,
 			hits bigint(20) NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			last_accessed datetime DEFAULT NULL,
 			PRIMARY KEY  (id),
 			KEY from_url (from_url(255)),
-			KEY enabled (enabled)
+			KEY enabled (enabled),
+			KEY priority (priority)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -139,11 +142,11 @@ class DBUpdates
 	{
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'crawlwp_404_log';
+		$log_404 = $wpdb->prefix . 'crawlwp_404_log';
 
-		$charset = $wpdb->get_charset_collate();
+		$charset_collate = $wpdb->get_charset_collate();
 
-		$sql = "CREATE TABLE {$table} (
+		$sql = "CREATE TABLE {$log_404} (
 			id bigint(20) NOT NULL AUTO_INCREMENT,
 			url varchar(2048) NOT NULL DEFAULT '',
 			referer varchar(2048) NOT NULL DEFAULT '',
@@ -151,8 +154,8 @@ class DBUpdates
 			last_seen datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
-			KEY url (url(191))
-		) $charset;";
+			UNIQUE KEY url_unique (url(191))
+		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta($sql);

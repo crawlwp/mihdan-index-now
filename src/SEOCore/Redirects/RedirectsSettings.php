@@ -100,9 +100,9 @@ class RedirectsSettings
 		);
 
 		wp_localize_script('crawlwp-redirects', 'crawlwpRedirects', [
-			'ajaxUrl' => admin_url('admin-ajax.php'),
-			'nonce'   => wp_create_nonce('crawlwp_redirects_nonce'),
-			'i18n'    => [
+			'ajaxUrl'  => admin_url('admin-ajax.php'),
+			'nonce'    => wp_create_nonce('crawlwp_redirects_nonce'),
+			'i18n'     => [
 				'confirmDelete' => __('Delete this redirect? This action cannot be undone.', 'mihdan-index-now'),
 				'confirmBulk'   => __('Apply this action to the selected redirects?', 'mihdan-index-now'),
 				'saving'        => __('Saving…', 'mihdan-index-now'),
@@ -173,6 +173,9 @@ class RedirectsSettings
 			'enabled'             => (int) ($_POST['enabled'] ?? 1),
 		];
 
+		$data['priority']       = (int) ($_POST['priority'] ?? RedirectsManager::DEFAULT_PRIORITY);
+		$data['allow_external'] = (int) ($_POST['allow_external'] ?? 0);
+
 		if (empty($data['from_url'])) {
 			wp_send_json_error(['message' => __('From URL is required.', 'mihdan-index-now')]);
 		}
@@ -187,6 +190,21 @@ class RedirectsSettings
 		$validation = $this->manager->validate($data);
 		if (is_wp_error($validation)) {
 			wp_send_json_error(['message' => $validation->get_error_message()]);
+		}
+
+		// Refuse a second rule for the same source (the row being edited is
+		// excluded so updating it in place still works).
+		if ($this->manager->exists_from_url((string) $data['from_url'], $id, (string) $data['match_type'])) {
+			wp_send_json_error(['message' => __('A redirect for this From URL already exists. Edit the existing rule instead.', 'mihdan-index-now')]);
+		}
+
+		// Refuse loops and long chains (A→B, B→A, …).
+		if ($type !== 410 && $type !== 451) {
+			$chain = $this->manager->check_redirect_chain((string) $data['from_url'], (string) $data['to_url'], $id);
+
+			if (is_wp_error($chain)) {
+				wp_send_json_error(['message' => $chain->get_error_message()]);
+			}
 		}
 
 		if ($id > 0) {
@@ -307,6 +325,8 @@ class RedirectsSettings
 		ob_start();
 		?>
 		<div class="cwp-redirect-wrap" id="cwp-redirect-wrap">
+
+			<?php echo $this->render_notices(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in render_notices(). ?>
 
 			<?php /* ---- Toolbar ---- */ ?>
 			<div class="cwp-redirect-toolbar">
@@ -443,6 +463,23 @@ class RedirectsSettings
 						       placeholder="<?php esc_attr_e('Optional note', 'mihdan-index-now'); ?>" />
 					</div>
 
+					<div class="cwp-redirect-field">
+							<label for="cwp-redirect-priority"><?php esc_html_e('Priority', 'mihdan-index-now'); ?></label>
+							<input type="number" id="cwp-redirect-priority" class="cwp-redirect-input"
+							       min="0" max="999" step="1"
+							       value="<?php echo esc_attr((string) RedirectsManager::DEFAULT_PRIORITY); ?>" />
+							<p class="description"><?php esc_html_e('Lower numbers are matched first. Default is 10.', 'mihdan-index-now'); ?></p>
+						</div>
+
+						<div class="cwp-redirect-field cwp-redirect-field--toggle">
+							<label class="cwp-redirect-toggle-label" for="cwp-redirect-allow-external">
+								<input type="checkbox" id="cwp-redirect-allow-external" />
+								<span class="cwp-redirect-toggle-switch"></span>
+								<?php esc_html_e('Allow redirecting to an external site', 'mihdan-index-now'); ?>
+							</label>
+							<p class="description"><?php esc_html_e('Required when the To URL points at another domain. Leave off to keep visitors on this site.', 'mihdan-index-now'); ?></p>
+						</div>
+
 					<div class="cwp-redirect-field cwp-redirect-field--toggle">
 						<label class="cwp-redirect-toggle-label" for="cwp-redirect-ignore-qs">
 							<input type="checkbox" id="cwp-redirect-ignore-qs" checked />
@@ -470,6 +507,48 @@ class RedirectsSettings
 		</div><!-- .cwp-redirect-wrap -->
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render admin notices shown above the redirects table.
+	 *
+	 * @return string Escaped HTML.
+	 */
+	private function render_notices(): string
+	{
+		$html = '';
+
+		$active = $this->manager->get_count(['status' => 'active']);
+
+		if ($active > RedirectsManager::LARGE_RULESET) {
+			$html .= '<div class="notice notice-warning inline"><p>' . esc_html(sprintf(
+				/* translators: %s: number of active redirects. */
+				__('This site has %s active redirects. Every enabled rule is loaded on the frontend, so very large rule sets increase memory use — consider replacing repetitive rules with a single regex or pattern rule.', 'mihdan-index-now'),
+				number_format_i18n($active)
+			)) . '</p></div>';
+		}
+
+		$errors = $this->manager->get_runtime_errors();
+
+		if (!empty($errors)) {
+			$html .= '<div class="notice notice-error inline"><p>'
+				. esc_html__('Some redirects were disabled automatically because they could not be executed safely:', 'mihdan-index-now')
+				. '</p><ul>';
+
+			foreach ($errors as $rule_id => $error) {
+				$html .= '<li>' . esc_html(sprintf(
+					/* translators: 1: rule ID, 2: pattern, 3: reason. */
+					__('Rule #%1$d (%2$s): %3$s', 'mihdan-index-now'),
+					(int) $rule_id,
+					(string) ($error['pattern'] ?? ''),
+					(string) ($error['reason'] ?? '')
+				)) . '</li>';
+			}
+
+			$html .= '</ul></div>';
+		}
+
+		return $html;
 	}
 
 	/**
@@ -508,6 +587,8 @@ class RedirectsSettings
 			$match_label = $match_labels[$r->match_type] ?? esc_html($r->match_type);
 			$enabled     = (bool) $r->enabled;
 
+			$priority = (int) ($r->priority ?? RedirectsManager::DEFAULT_PRIORITY);
+
 			// Encode all row data as a JSON data attribute for JS to read.
 			$row_data = esc_attr(wp_json_encode([
 				'id'                  => $id,
@@ -518,6 +599,8 @@ class RedirectsSettings
 				'note'                => $r->note,
 				'ignore_query_string' => (int) $r->ignore_query_string,
 				'enabled'             => (int) $r->enabled,
+				'priority'            => $priority,
+				'allow_external'      => (int) ($r->allow_external ?? 0),
 			]));
 
 			$html .= '<tr data-id="' . $id . '" data-redirect=\'' . $row_data . '\'>';
@@ -525,9 +608,17 @@ class RedirectsSettings
 			// Checkbox.
 			$html .= '<td><input type="checkbox" class="cwp-redirect-row-cb" value="' . $id . '" /></td>';
 
-			// Type + match type.
+			// Type + match type + priority.
 			$html .= '<td><span class="cwp-redirect-badge cwp-redirect-badge--' . $type . '">' . esc_html($type_label) . '</span>'
-				. '<br><small>' . esc_html($match_label) . '</small></td>';
+				. '<br><small>' . esc_html($match_label) . '</small>';
+
+			$html .= '<br><small class="cwp-redirect-muted">' . esc_html(sprintf(
+					/* translators: %d: rule priority. */
+					__('Priority: %d', 'mihdan-index-now'),
+					$priority
+				)) . '</small>';
+
+			$html .= '</td>';
 
 			// From URL.
 			$html .= '<td class="cwp-redirect-col-url"><span class="cwp-redirect-url">' . esc_html($r->from_url) . '</span></td>';

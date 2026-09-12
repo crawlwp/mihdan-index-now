@@ -14,17 +14,96 @@ class RedirectsManager
 	const MAX_REGEX_LENGTH = 500;
 
 	/**
+	 * Schema version for the columns this class owns (priority, allow_external).
+	 *
+	 * The base table is created by \Mihdan\IndexNow\DBUpdates; this class only
+	 * adds its own columns on top, guarded by the option below so the upgrade
+	 * is idempotent and cannot fail twice on an existing install.
+	 */
+	const SCHEMA_VERSION = 2;
+
+	/** Option holding the schema version applied by this class. */
+	const SCHEMA_OPTION = 'crawlwp_redirects_schema_ver';
+
+	/** Non-autoloaded option buffering hit counts until they are flushed. */
+	const HITS_BUFFER_OPTION = 'crawlwp_redirect_hits_buffer';
+
+	/** Cron hook that flushes buffered hit counts into the database. */
+	const HITS_FLUSH_HOOK = 'crawlwp_redirects_flush_hits';
+
+	/** Flush the buffer to the DB once this many rules are pending. */
+	const HITS_FLUSH_THRESHOLD = 25;
+
+	/** Non-autoloaded option logging regex rules disabled at runtime. */
+	const REGEX_ERRORS_OPTION = 'crawlwp_redirect_regex_errors';
+
+	/** Rows fetched per batch when loading every enabled rule. */
+	const FETCH_BATCH = 1000;
+
+	/** Above this many enabled rules the admin UI shows a performance warning. */
+	const LARGE_RULESET = 2000;
+
+	/** Maximum number of hops followed when looking for a redirect chain/loop. */
+	const MAX_CHAIN_HOPS = 5;
+
+	/** Default rule priority (lower numbers run first). */
+	const DEFAULT_PRIORITY = 10;
+
+	/**
 	 * Full table name (with WP prefix).
 	 *
 	 * @var string
 	 */
 	private string $table;
 
+	/**
+	 * Pending hit counts for the current request, keyed by rule ID.
+	 *
+	 * @var int[]
+	 */
+	private array $hit_buffer = [];
+
+	/** Whether the shutdown flush for $hit_buffer is registered. */
+	private bool $hit_buffer_hooked = false;
+
+	/** Guards against registering the cron hook once per instance. */
+	private static bool $cron_hooked = false;
+
 	public function __construct()
 	{
 		global $wpdb;
 		$this->table = $wpdb->prefix . 'crawlwp_redirects';
+
+		if (!self::$cron_hooked) {
+			self::$cron_hooked = true;
+
+			add_action(self::HITS_FLUSH_HOOK, [$this, 'flush_hit_buffer']);
+
+			if (!wp_next_scheduled(self::HITS_FLUSH_HOOK)) {
+				wp_schedule_event(time() + 300, 'hourly', self::HITS_FLUSH_HOOK);
+			}
+		}
 	}
+
+	/**
+	 * Whether a column exists on the redirects table.
+	 *
+	 * @param string $column Column name.
+	 * @return bool
+	 */
+	private function has_column(string $column): bool
+	{
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$found = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$this->table} LIKE %s", $wpdb->esc_like($column)));
+
+		return !empty($found);
+	}
+
+	// -------------------------------------------------------------------------
+	// CRUD
+	// -------------------------------------------------------------------------
 
 	/**
 	 * Insert a new redirect row.
@@ -147,15 +226,19 @@ class RedirectsManager
 
 		list($where, $values) = $this->build_where($args);
 
-		$allowed_cols = ['id', 'from_url', 'to_url', 'redirect_type', 'hits', 'created_at', 'last_accessed'];
+		$allowed_cols = ['id', 'from_url', 'to_url', 'redirect_type', 'hits', 'created_at', 'last_accessed', 'priority'];
+
 		$orderby = in_array($args['orderby'], $allowed_cols, true) ? $args['orderby'] : 'id';
 		$order   = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
+
+		// Always break ties on the primary key so pagination is stable.
+		$order_sql = $orderby === 'id' ? "id {$order}" : "{$orderby} {$order}, id {$order}";
 
 		$per_page = max(1, (int) $args['per_page']);
 		$page     = max(1, (int) $args['page']);
 		$offset   = ($page - 1) * $per_page;
 
-		$sql = "SELECT * FROM {$this->table}{$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+		$sql = "SELECT * FROM {$this->table}{$where} ORDER BY {$order_sql} LIMIT %d OFFSET %d";
 		$values[] = $per_page;
 		$values[] = $offset;
 
@@ -183,47 +266,245 @@ class RedirectsManager
 		return (int) $wpdb->get_var($sql);
 	}
 
+	// -------------------------------------------------------------------------
+	// Hit counting (buffered)
+	// -------------------------------------------------------------------------
+
 	/**
-	 * Record a frontend hit: increment the counter and stamp last_accessed
-	 * in a single UPDATE rather than two round-trips.
+	 * Record a frontend hit.
+	 *
+	 * Redirected requests must not pay for a synchronous UPDATE, so hits are
+	 * accumulated in memory, merged into a non-autoloaded option on shutdown
+	 * (which still runs after wp_redirect() + exit) and written to the table
+	 * by the hourly cron — or earlier, once enough rules are pending.
 	 *
 	 * @param int $id Row ID.
 	 */
 	public function record_hit(int $id): void
 	{
-		global $wpdb;
-		$wpdb->query($wpdb->prepare(
-			"UPDATE {$this->table} SET hits = hits + 1, last_accessed = %s WHERE id = %d",
-			current_time('mysql', true),
-			$id
-		));
+		if ($id <= 0) {
+			return;
+		}
+
+		if (!isset($this->hit_buffer[$id])) {
+			$this->hit_buffer[$id] = 0;
+		}
+
+		$this->hit_buffer[$id]++;
+
+		if (!$this->hit_buffer_hooked) {
+			$this->hit_buffer_hooked = true;
+			add_action('shutdown', [$this, 'persist_hit_buffer'], 0);
+		}
 	}
 
 	/**
-	 * Get all enabled redirects for the frontend processor.
-	 * Results are cached in a transient for performance.
+	 * Merge the in-memory hits of this request into the shared buffer.
+	 *
+	 * Hooked to `shutdown` and safe to call directly.
+	 */
+	public function persist_hit_buffer(): void
+	{
+		if (empty($this->hit_buffer)) {
+			return;
+		}
+
+		$buffer = get_option(self::HITS_BUFFER_OPTION, []);
+		$buffer = is_array($buffer) ? $buffer : [];
+
+		foreach ($this->hit_buffer as $id => $count) {
+			$buffer[$id] = (int) ($buffer[$id] ?? 0) + (int) $count;
+		}
+
+		$this->hit_buffer = [];
+
+		update_option(self::HITS_BUFFER_OPTION, $buffer, false);
+
+		if (count($buffer) >= self::HITS_FLUSH_THRESHOLD) {
+			$this->flush_hit_buffer();
+		}
+	}
+
+	/**
+	 * Write the buffered hit counts to the database.
+	 *
+	 * Hooked to the hourly cron event.
+	 */
+	public function flush_hit_buffer(): void
+	{
+		global $wpdb;
+
+		$buffer = get_option(self::HITS_BUFFER_OPTION, []);
+
+		if (!is_array($buffer) || empty($buffer)) {
+			return;
+		}
+
+		// Clear first: a failure must not replay the same counts forever.
+		delete_option(self::HITS_BUFFER_OPTION);
+
+		$now = current_time('mysql', true);
+
+		foreach ($buffer as $id => $count) {
+			$id    = (int) $id;
+			$count = (int) $count;
+
+			if ($id <= 0 || $count <= 0) {
+				continue;
+			}
+
+			$wpdb->query($wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$this->table} SET hits = hits + %d, last_accessed = %s WHERE id = %d",
+				$count,
+				$now,
+				$id
+			));
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Frontend rule set
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Get every enabled redirect grouped for fast frontend matching.
+	 *
+	 * The returned structure is cached in a transient:
+	 *
+	 *   [
+	 *     'exact' => [ 'old-page' => [ row, … ], … ],  // keyed fast path
+	 *     'rules' => [ row, … ],                       // regex / partial rules
+	 *     'total' => int,
+	 *   ]
+	 *
+	 * The `exact` map lets the processor resolve a plain path with a single
+	 * array lookup, so regex rules are only evaluated when it misses.
+	 *
+	 * @return array
+	 */
+	public function get_enabled_grouped(): array
+	{
+		$cached = get_transient(self::CACHE_KEY);
+
+		if (is_array($cached) && isset($cached['exact'], $cached['rules'])) {
+			return $cached;
+		}
+
+		$rows    = $this->fetch_all_enabled();
+		$grouped = ['exact' => [], 'rules' => [], 'total' => count($rows)];
+
+		foreach ($rows as $row) {
+			$key = $this->exact_lookup_key($row);
+
+			if ($key === null) {
+				$grouped['rules'][] = $row;
+				continue;
+			}
+
+			$grouped['exact'][$key][] = $row;
+		}
+
+		set_transient(self::CACHE_KEY, $grouped, self::CACHE_EXPIRY);
+
+		return $grouped;
+	}
+
+	/**
+	 * Get all enabled redirects as a flat, priority-ordered list.
 	 *
 	 * @return object[]
 	 */
 	public function get_enabled(): array
 	{
-		$cached = get_transient(self::CACHE_KEY);
+		$grouped = $this->get_enabled_grouped();
+		$rows    = $grouped['rules'];
 
-		if ($cached !== false) {
-			return $cached;
+		foreach ($grouped['exact'] as $bucket) {
+			foreach ($bucket as $row) {
+				$rows[] = $row;
+			}
 		}
 
-		$rows = $this->get_all([
-			'status'   => 'active',
-			'per_page' => 5000,
-			'page'     => 1,
-			'orderby'  => 'id',
-			'order'    => 'ASC',
-		]);
+		usort($rows, function ($a, $b) {
+			$pa = (int) ($a->priority ?? self::DEFAULT_PRIORITY);
+			$pb = (int) ($b->priority ?? self::DEFAULT_PRIORITY);
 
-		set_transient(self::CACHE_KEY, $rows, self::CACHE_EXPIRY);
+			return $pa === $pb ? ((int) $a->id <=> (int) $b->id) : ($pa <=> $pb);
+		});
 
 		return $rows;
+	}
+
+	/**
+	 * Fetch every enabled rule, in batches, with no silent cap.
+	 *
+	 * @return object[]
+	 */
+	private function fetch_all_enabled(): array
+	{
+		global $wpdb;
+
+		$order_sql = 'priority ASC, id ASC';
+
+		$rows   = [];
+		$offset = 0;
+
+		do {
+			$batch = $wpdb->get_results($wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT * FROM {$this->table} WHERE enabled = 1 ORDER BY {$order_sql} LIMIT %d OFFSET %d",
+				self::FETCH_BATCH,
+				$offset
+			));
+
+			if (empty($batch)) {
+				break;
+			}
+
+			$rows = array_merge($rows, $batch);
+			$offset += self::FETCH_BATCH;
+		} while (count($batch) === self::FETCH_BATCH);
+
+		return $rows;
+	}
+
+	/**
+	 * Build the hashmap key for a rule that can use the exact fast path.
+	 *
+	 * Only plain, query-less "exact" rules qualify; everything else (regex,
+	 * partial matches, query-bearing or foreign-host from_urls) is evaluated
+	 * by the slow path so existing behaviour is preserved.
+	 *
+	 * @param object $row DB row.
+	 * @return string|null Lookup key, or null when the rule is not eligible.
+	 */
+	private function exact_lookup_key(object $row): ?string
+	{
+		$match_type = (string) ($row->match_type ?? 'exact');
+
+		if ($match_type !== '' && $match_type !== 'exact') {
+			return null;
+		}
+
+		$from = (string) ($row->from_url ?? '');
+
+		if ($from === '' || strpos($from, '?') !== false) {
+			return null;
+		}
+
+		if (strncasecmp($from, 'http://', 7) === 0 || strncasecmp($from, 'https://', 8) === 0) {
+			$host      = (string) wp_parse_url($from, PHP_URL_HOST);
+			$home_host = (string) wp_parse_url(home_url(), PHP_URL_HOST);
+
+			if ($host === '' || strcasecmp($host, $home_host) !== 0) {
+				return null;
+			}
+		}
+
+		$key = $this->path_match_key($from);
+
+		return $key === '' ? null : $key;
 	}
 
 	/**
@@ -235,22 +516,100 @@ class RedirectsManager
 	}
 
 	/**
+	 * Disable a rule that failed at runtime (e.g. a regex that blew the PCRE
+	 * backtrack limit) and log the reason for the admin.
+	 *
+	 * @param int    $id      Row ID.
+	 * @param string $reason  Human readable reason.
+	 * @param string $pattern Offending pattern, when relevant.
+	 */
+	public function disable_rule_for_error(int $id, string $reason, string $pattern = ''): void
+	{
+		if ($id <= 0) {
+			return;
+		}
+
+		global $wpdb;
+
+		$wpdb->update($this->table, ['enabled' => 0], ['id' => $id], ['%d'], ['%d']);
+		$this->flush_cache();
+
+		$log = get_option(self::REGEX_ERRORS_OPTION, []);
+		$log = is_array($log) ? $log : [];
+
+		$log[$id] = [
+			'reason'  => $reason,
+			'pattern' => $pattern,
+			'time'    => current_time('mysql', true),
+		];
+
+		// Keep the log small — it is diagnostic only.
+		if (count($log) > 50) {
+			$log = array_slice($log, -50, null, true);
+		}
+
+		update_option(self::REGEX_ERRORS_OPTION, $log, false);
+
+		/**
+		 * Fires when a redirect rule is automatically disabled at runtime.
+		 *
+		 * @param int    $id      Rule ID.
+		 * @param string $reason  Reason the rule was disabled.
+		 * @param string $pattern Offending pattern, when relevant.
+		 */
+		do_action('crawlwp_redirect_rule_auto_disabled', $id, $reason, $pattern);
+
+		if (defined('WP_DEBUG') && WP_DEBUG) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			error_log(sprintf('CrawlWP: redirect rule #%d disabled — %s', $id, $reason));
+		}
+	}
+
+	/**
+	 * Runtime errors logged by disable_rule_for_error().
+	 *
+	 * @return array
+	 */
+	public function get_runtime_errors(): array
+	{
+		$log = get_option(self::REGEX_ERRORS_OPTION, []);
+
+		return is_array($log) ? $log : [];
+	}
+
+	// -------------------------------------------------------------------------
+	// Lookups
+	// -------------------------------------------------------------------------
+
+	/**
 	 * Check whether a redirect from a given URL already exists.
 	 *
-	 * @param string $from_url From URL to check.
+	 * @param string $from_url   From URL to check.
+	 * @param int    $exclude_id Row ID to ignore (the row being updated).
+	 * @param string $match_type Match type of the rule being saved; regex
+	 *                           patterns are compared verbatim because they
+	 *                           are not URL-normalised on storage.
 	 * @return bool
 	 */
-	public function exists_from_url(string $from_url): bool
+	public function exists_from_url(string $from_url, int $exclude_id = 0, string $match_type = 'exact'): bool
 	{
 		global $wpdb;
 
 		// Normalise the same way it would be stored, so callers can pass a
 		// raw path (with or without slashes) and still get a correct check.
-		$from_url = $this->strip_home_url($from_url);
+		$from_url = $match_type === 'regex'
+			? sanitize_text_field(trim($from_url))
+			: $this->normalize_home_relative($from_url);
+
+		if ($from_url === '') {
+			return false;
+		}
 
 		$count = $wpdb->get_var($wpdb->prepare(
-			"SELECT COUNT(*) FROM {$this->table} WHERE from_url = %s",
-			$from_url
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT COUNT(*) FROM {$this->table} WHERE from_url = %s AND id <> %d",
+			$from_url,
+			$exclude_id
 		));
 
 		return (int) $count > 0;
@@ -266,7 +625,7 @@ class RedirectsManager
 	{
 		global $wpdb;
 
-		$from_url = $this->strip_home_url($from_url);
+		$from_url = $this->normalize_home_relative($from_url);
 
 		if ($from_url === '') {
 			return null;
@@ -275,6 +634,39 @@ class RedirectsManager
 		return $wpdb->get_row($wpdb->prepare(
 			"SELECT * FROM {$this->table} WHERE from_url = %s AND match_type = 'exact' ORDER BY id ASC LIMIT 1",
 			$from_url
+		));
+	}
+
+	/**
+	 * Find an enabled exact rule whose from_url matches a home-relative key.
+	 *
+	 * Used by the chain/loop detector. Stored values are bare path segments,
+	 * but slash variants are matched too for legacy rows. MySQL collations are
+	 * case-insensitive by default, matching the runtime comparison.
+	 *
+	 * @param string $key        Home-relative match key (no leading slash).
+	 * @param int    $exclude_id Row ID to ignore.
+	 * @return object|null
+	 */
+	private function find_enabled_exact_rule(string $key, int $exclude_id = 0)
+	{
+		global $wpdb;
+
+		if ($key === '') {
+			return null;
+		}
+
+		return $wpdb->get_row($wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT * FROM {$this->table}
+			 WHERE enabled = 1 AND match_type = 'exact' AND id <> %d
+			   AND from_url IN (%s, %s, %s, %s)
+			 ORDER BY id ASC LIMIT 1",
+			$exclude_id,
+			$key,
+			'/' . $key,
+			$key . '/',
+			'/' . $key . '/'
 		));
 	}
 
@@ -295,8 +687,8 @@ class RedirectsManager
 	{
 		$clean = $this->sanitize($data);
 
-		// Regex source patterns: bounded length and must compile with the
-		// fixed "#" delimiter used by the frontend processor.
+		// Regex source patterns: bounded length, bounded complexity, and must
+		// compile with the fixed "#" delimiter used by the frontend processor.
 		if (isset($clean['from_url'], $clean['match_type']) && $clean['match_type'] === 'regex') {
 			$pattern = $clean['from_url'];
 
@@ -312,11 +704,17 @@ class RedirectsManager
 				);
 			}
 
-			$regex = '#' . str_replace('#', '\#', $pattern) . '#';
+			$regex = '#' . str_replace('#', '\#', $pattern) . '#i';
 
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			if (@preg_match($regex, '') === false) {
 				return new \WP_Error('crawlwp_redirect_invalid_regex', __('Regex pattern is invalid and could not be compiled.', 'mihdan-index-now'));
+			}
+
+			$risk = self::describe_regex_risk($pattern);
+
+			if ($risk !== '') {
+				return new \WP_Error('crawlwp_redirect_regex_too_complex', $risk);
 			}
 		}
 
@@ -339,6 +737,156 @@ class RedirectsManager
 		}
 
 		return true;
+	}
+
+	/**
+	 * Detect catastrophic-backtracking constructs in a user-supplied pattern.
+	 *
+	 * A length limit does nothing against "(a+)+$", so quantified groups whose
+	 * body itself repeats or alternates are refused outright, together with
+	 * absurd repetition counts and patterns stuffed with quantifiers.
+	 *
+	 * @param string $pattern Raw pattern body (no delimiters).
+	 * @return string Empty string when the pattern is acceptable, otherwise an
+	 *                admin-facing error message.
+	 */
+	public static function describe_regex_risk(string $pattern): string
+	{
+		// Drop escaped characters so "\(" / "\+" are not mistaken for syntax.
+		$stripped = preg_replace('/\\\\./', 'x', $pattern);
+		$stripped = is_string($stripped) ? $stripped : $pattern;
+
+		// Character classes cannot nest quantifiers — flatten them as atoms.
+		$flat = preg_replace('/\[[^\]]*\]/', 'c', $stripped);
+		$flat = is_string($flat) ? $flat : $stripped;
+
+		if (preg_match('/\{\s*\d*\s*,\s*\}/', $flat) && preg_match_all('/[*+]/', $flat) > 0) {
+			return __('Regex pattern is too complex: unbounded repetition combined with other quantifiers can hang the site.', 'mihdan-index-now');
+		}
+
+		// Absurd repetition counts.
+		if (preg_match('/\{\s*(\d+)\s*(?:,\s*(\d+)?\s*)?\}/', $flat, $m)) {
+			$low  = (int) $m[1];
+			$high = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : $low;
+
+			if ($low > 100 || $high > 100) {
+				return __('Regex pattern is too complex: repetition counts above 100 are not allowed.', 'mihdan-index-now');
+			}
+		}
+
+		if (preg_match_all('/[*+?]|\{\s*\d/', $flat) > 12) {
+			return __('Regex pattern is too complex: it uses too many quantifiers.', 'mihdan-index-now');
+		}
+
+		$length = strlen($flat);
+
+		for ($i = 0; $i < $length; $i++) {
+			if ($flat[$i] !== '(') {
+				continue;
+			}
+
+			$depth = 0;
+			$close = -1;
+
+			for ($j = $i; $j < $length; $j++) {
+				if ($flat[$j] === '(') {
+					$depth++;
+				} elseif ($flat[$j] === ')') {
+					$depth--;
+
+					if ($depth === 0) {
+						$close = $j;
+						break;
+					}
+				}
+			}
+
+			if ($close === -1) {
+				break;
+			}
+
+			$next = $flat[$close + 1] ?? '';
+
+			// The group is not repeated — harmless on its own.
+			if ($next !== '*' && $next !== '+' && $next !== '{') {
+				continue;
+			}
+
+			$body = substr($flat, $i + 1, $close - $i - 1);
+
+			// A repeated group whose body can itself match a variable number of
+			// characters (nested quantifier) or overlapping alternatives is the
+			// classic catastrophic-backtracking shape.
+			if (preg_match('/[*+{]/', $body) || strpos($body, '|') !== false) {
+				return __('Regex pattern is too complex: nested or repeated quantifiers (for example "(a+)+") can hang the site and are not allowed.', 'mihdan-index-now');
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Refuse redirect chains and multi-hop loops (A→B, B→A, …).
+	 *
+	 * Resolves the destination against the stored exact rules for up to
+	 * MAX_CHAIN_HOPS hops. Regex / partial rules cannot be resolved statically
+	 * and are therefore not followed.
+	 *
+	 * @param string $from_url   Proposed source.
+	 * @param string $to_url     Proposed destination.
+	 * @param int    $exclude_id Row being edited (ignored while walking).
+	 * @return true|\WP_Error
+	 */
+	public function check_redirect_chain(string $from_url, string $to_url, int $exclude_id = 0)
+	{
+		$from_key = $this->path_match_key($from_url);
+		$to_key   = $this->path_match_key($to_url);
+
+		// An external (or empty) destination cannot be resolved locally.
+		if ($to_key === '') {
+			return true;
+		}
+
+		if ($from_key !== '' && $from_key === $to_key) {
+			return new \WP_Error(
+				'crawlwp_redirect_self_loop',
+				__('The From and To URLs resolve to the same location, which would create a redirect loop.', 'mihdan-index-now')
+			);
+		}
+
+		$seen = [$from_key => true, $to_key => true];
+		$key  = $to_key;
+
+		for ($hop = 0; $hop < self::MAX_CHAIN_HOPS; $hop++) {
+			$rule = $this->find_enabled_exact_rule($key, $exclude_id);
+
+			if (!$rule) {
+				return true;
+			}
+
+			$next = $this->path_match_key((string) $rule->to_url);
+
+			if ($next === '') {
+				return true;
+			}
+
+			if ($next === $from_key || isset($seen[$next])) {
+				return new \WP_Error(
+					'crawlwp_redirect_loop',
+					/* translators: %s: URL that closes the redirect loop. */
+					sprintf(__('This redirect would create a loop: the destination is already redirected back to "%s".', 'mihdan-index-now'), '/' . $next)
+				);
+			}
+
+			$seen[$next] = true;
+			$key         = $next;
+		}
+
+		return new \WP_Error(
+			'crawlwp_redirect_chain_too_long',
+			/* translators: %d: maximum number of hops. */
+			sprintf(__('This redirect would create a chain longer than %d hops. Point it at the final destination instead.', 'mihdan-index-now'), self::MAX_CHAIN_HOPS)
+		);
 	}
 
 	/**
@@ -370,6 +918,23 @@ class RedirectsManager
 		return in_array(strtolower($parsed['scheme']), ['http', 'https'], true);
 	}
 
+	/**
+	 * Whether a destination points at a host other than this site.
+	 *
+	 * @param string $url Destination URL.
+	 * @return bool
+	 */
+	public function is_external_destination(string $url): bool
+	{
+		$host = (string) wp_parse_url($url, PHP_URL_HOST);
+
+		if ($host === '') {
+			return false;
+		}
+
+		return strcasecmp($host, (string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 0;
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
@@ -395,7 +960,7 @@ class RedirectsManager
 			if ($match_type_hint === 'regex') {
 				$clean['from_url'] = sanitize_text_field(trim($data['from_url']));
 			} else {
-				$clean['from_url'] = $this->strip_home_url(trim($data['from_url']));
+				$clean['from_url'] = $this->normalize_home_relative(trim($data['from_url']));
 			}
 		}
 
@@ -426,43 +991,133 @@ class RedirectsManager
 			$clean['enabled'] = (int) (bool) $data['enabled'];
 		}
 
+		if (isset($data['priority'])) {
+			$clean['priority'] = max(0, min(999, (int) $data['priority']));
+		}
+
+		if (isset($data['allow_external'])) {
+			$clean['allow_external'] = (int) (bool) $data['allow_external'];
+		}
+
 		return $clean;
 	}
 
 	/**
-	 * Strip the site's home URL origin from a "from" URL, keeping only the path/query/fragment.
-	 * If the value is already a relative path it is returned unchanged (after sanitizing).
+	 * The site origin (scheme + host, no trailing slash).
 	 *
-	 * The leading slash is always stripped, whether or not a query string is
-	 * present (e.g. "old-page" or "old-page/?foo=bar"). When there is no query
-	 * string, the trailing slash is stripped too, so the stored value is a bare
-	 * path segment (e.g. "old-page" instead of "/old-page/").
-	 *
-	 * @param string $url Raw user input (full URL or relative path).
-	 * @return string Path-only value, e.g. "old-page" or "old-page/?foo=bar".
+	 * @return string
 	 */
-	private function strip_home_url(string $url): string
+	private function home_origin(): string
 	{
+		$parsed = wp_parse_url(untrailingslashit(home_url()));
+
+		return isset($parsed['scheme'], $parsed['host'])
+			? $parsed['scheme'] . '://' . $parsed['host']
+			: '';
+	}
+
+	/**
+	 * The path home_url() is rooted at, without trailing slash ("" or "/blog").
+	 *
+	 * @return string
+	 */
+	private function home_path(): string
+	{
+		return untrailingslashit((string) wp_parse_url(home_url(), PHP_URL_PATH));
+	}
+
+	/**
+	 * Reduce a URL to a home-relative value: strips the site origin *and* the
+	 * path home_url() is rooted at, so subdirectory installs behave like
+	 * root installs.
+	 *
+	 * @param string $url Full URL or path.
+	 * @return string Value starting with "/" (or "" when nothing is left).
+	 */
+	private function home_relative_path(string $url): string
+	{
+		$url = trim($url);
+
 		if ($url === '') {
 			return '';
 		}
 
-		// Build the home origin (scheme + host, no trailing slash) for comparison.
-		$home   = untrailingslashit(home_url());
-		$parsed = wp_parse_url($home);
-		$origin = isset($parsed['scheme'], $parsed['host'])
-			? $parsed['scheme'] . '://' . $parsed['host']
-			: '';
+		$origin = $this->home_origin();
 
-		// If the user pasted a full URL whose host matches ours, strip the origin prefix.
 		if ($origin !== '' && stripos($url, $origin) === 0) {
 			$url = substr($url, strlen($origin));
 		}
 
-		// Ensure the path starts with a slash so it is treated as site-relative.
-		if ($url !== '' && $url[0] !== '/') {
+		if ($url === '') {
+			return '/';
+		}
+
+		if ($url[0] !== '/') {
 			$url = '/' . $url;
 		}
+
+		// Subdirectory installs: "/blog/old-page" is stored/compared as
+		// "/old-page" so a rule written by the admin matches the request.
+		$home_path = $this->home_path();
+
+		if ($home_path !== '' && $home_path !== '/') {
+			if (stripos($url, $home_path . '/') === 0) {
+				$url = substr($url, strlen($home_path));
+			} elseif (strcasecmp($url, $home_path) === 0) {
+				$url = '/';
+			}
+		}
+
+		if ($url === '' || $url[0] !== '/') {
+			$url = '/' . $url;
+		}
+
+		return $url;
+	}
+
+	/**
+	 * The single normalisation used for matching.
+	 *
+	 * Applied to both the stored from_url and the incoming request so the two
+	 * sides can never disagree (previously the stored value kept the
+	 * subdirectory path while the request key had it stripped, and no rule on
+	 * a site installed at /blog ever matched).
+	 *
+	 * @param string $url Full URL or path (may include a query string).
+	 * @return string Lower-cased, decoded, slash-trimmed key.
+	 */
+	public function path_match_key(string $url): string
+	{
+		$url = $this->home_relative_path($url);
+
+		if ($url === '') {
+			return '';
+		}
+
+		// Foreign hosts have no home-relative representation.
+		if (strncasecmp($url, '/http://', 8) === 0 || strncasecmp($url, '/https://', 9) === 0) {
+			return '';
+		}
+
+		$url = urldecode($url);
+
+		return strtolower(trim($url, '/'));
+	}
+
+	/**
+	 * Normalise a "from" URL for storage: home-relative, sanitised, and
+	 * reduced to a bare path segment (e.g. "old-page" or "old-page/?foo=bar").
+	 *
+	 * @param string $url Raw user input (full URL or relative path).
+	 * @return string
+	 */
+	private function normalize_home_relative(string $url): string
+	{
+		if (trim($url) === '') {
+			return '';
+		}
+
+		$url = $this->home_relative_path($url);
 
 		// Sanitize while the leading slash is still in place — esc_url_raw()
 		// (via esc_url()) only treats a value as a relative path when it starts
@@ -533,8 +1188,7 @@ class RedirectsManager
 		}
 
 		// Strip home subfolder path if WordPress is installed in a subdirectory.
-		$home_path = (string) wp_parse_url(home_url(), PHP_URL_PATH);
-		$home_path = untrailingslashit($home_path);
+		$home_path = $this->home_path();
 		if ($home_path !== '') {
 			if (stripos($path, $home_path) === 0) {
 				$path = substr($path, strlen($home_path));
@@ -613,7 +1267,7 @@ class RedirectsManager
 	 */
 	private function get_formats(array $data): array
 	{
-		$int_fields = ['redirect_type', 'ignore_query_string', 'enabled', 'hits'];
+		$int_fields = ['redirect_type', 'ignore_query_string', 'enabled', 'hits', 'priority', 'allow_external'];
 		$formats    = [];
 
 		foreach (array_keys($data) as $key) {

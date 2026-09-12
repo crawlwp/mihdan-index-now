@@ -226,7 +226,7 @@
 		var $btn = $('#cwp-redirect-modal-save');
 		$btn.prop('disabled', true).text(i18n.saving || 'Saving…');
 
-		$.post(cfg.ajaxUrl, {
+		var payload = {
 			action:               'crawlwp_redirect_save',
 			nonce:                cfg.nonce,
 			id:                   id || 0,
@@ -237,7 +237,19 @@
 			note:                 $('#cwp-redirect-note').val(),
 			ignore_query_string:  $('#cwp-redirect-ignore-qs').is(':checked') ? 1 : 0,
 			enabled:              $('#cwp-redirect-enabled').is(':checked') ? 1 : 0
-		}, function (resp) {
+		};
+
+		// Priority / external flag only exist once the DB columns are present.
+		if ($('#cwp-redirect-priority').length) {
+			payload.priority       = parseInt($('#cwp-redirect-priority').val(), 10);
+			payload.allow_external = $('#cwp-redirect-allow-external').is(':checked') ? 1 : 0;
+
+			if (isNaN(payload.priority)) {
+				payload.priority = 10;
+			}
+		}
+
+		$.post(cfg.ajaxUrl, payload, function (resp) {
 			$btn.prop('disabled', false).text(id ? (i18n.updateBtn || 'Update Redirect') : (i18n.addBtn || 'Add Redirect'));
 
 			if (!resp.success) {
@@ -326,6 +338,11 @@
 		$('#cwp-redirect-note').val(isEdit ? redirect.note : '');
 		$('#cwp-redirect-ignore-qs').prop('checked', isEdit ? !!parseInt(redirect.ignore_query_string, 10) : true);
 		$('#cwp-redirect-enabled').prop('checked', isEdit ? !!parseInt(redirect.enabled, 10) : true);
+
+		if ($('#cwp-redirect-priority').length) {
+			$('#cwp-redirect-priority').val(isEdit && redirect.priority !== undefined ? redirect.priority : 10);
+			$('#cwp-redirect-allow-external').prop('checked', isEdit ? !!parseInt(redirect.allow_external, 10) : false);
+		}
 
 		// Set modal title and button label.
 		$('#cwp-redirect-modal-title').text(isEdit ? (i18n.editTitle || 'Edit Redirect') : (i18n.addTitle || 'Add Redirect'));

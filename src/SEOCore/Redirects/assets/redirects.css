@@ -439,6 +439,48 @@
 .cwp-redirect-field--toggle {
 	flex-direction: row;
 	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.cwp-redirect-field .description {
+	margin: 0;
+	font-size: 12px;
+	font-weight: 400;
+	color: #646970;
+}
+
+.cwp-redirect-field--toggle .description {
+	flex-basis: 100%;
+}
+
+/* Priority is a short numeric field — no need for the full width. */
+#cwp-redirect-priority {
+	max-width: 110px;
+}
+
+/* ---- 404 monitor toolbar / pagination ---- */
+.cwp-404-toolbar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.cwp-404-search {
+	min-width: 200px;
+}
+
+.cwp-404-pagination {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: #646970;
+	font-size: 12px;
+}
+
+.cwp-404-page-info {
+	padding: 0 4px;
 }
 
 /* From URL row: match type select + URL input side by side */
