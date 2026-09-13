@@ -11,6 +11,19 @@ use Mihdan\IndexNow\Utils;
  */
 class Assets
 {
+	/**
+	 * Transient prefix for the per-entity preview samples.
+	 *
+	 * Building them queries one post per post type and one term per taxonomy,
+	 * which is far too much work to repeat on every settings page load.
+	 */
+	private const SAMPLES_TRANSIENT_PREFIX = 'crawlwp_tm_samples_';
+
+	/**
+	 * Default lifetime of the cached samples.
+	 */
+	private const SAMPLES_TTL = 10 * MINUTE_IN_SECONDS;
+
 	public function __construct()
 	{
 		add_action('admin_enqueue_scripts', [$this, 'enqueue']);
@@ -42,11 +55,15 @@ class Assets
 			true
 		);
 
+		// The live preview only exists on the Title & Meta screens, so the
+		// per-entity data is not worth building anywhere else.
+		$is_title_meta = $this->is_title_meta_screen();
+
 		wp_localize_script('crawlwp-title-meta', 'crawlwpTitleMeta', [
 			'separator'       => Variables::separator(),
 			'variables'       => $this->variables(),
-			'entityVariables' => $this->entity_variables(),
-			'samples'         => $this->samples(),
+			'entityVariables' => $is_title_meta ? $this->entity_variables() : [],
+			'samples'         => $is_title_meta ? $this->samples() : [],
 			'i18n'            => [
 				'previewLabel'    => __('Preview:', 'mihdan-index-now'),
 				'insertVariable'  => __('Insert variable', 'mihdan-index-now'),
@@ -55,6 +72,23 @@ class Assets
 				'emptyPreview'    => __('Nothing will be output.', 'mihdan-index-now'),
 			],
 		]);
+	}
+
+	/**
+	 * Whether the Title & Meta tab — the only screen with preview fields — is
+	 * the one being rendered.
+	 */
+	private function is_title_meta_screen(): bool
+	{
+		$menu = Utils::_GET_var('wposa-menu', '');
+		$menu = is_string($menu) ? sanitize_text_field($menu) : '';
+
+		// Title & Meta is the first header menu, so an absent parameter means it.
+		if ($menu === '') {
+			return true;
+		}
+
+		return $menu === Utils::get_plugin_prefix() . '_title_meta';
 	}
 
 	/**
@@ -171,21 +205,49 @@ class Assets
 	 */
 	private function samples(): array
 	{
-		$samples = [
-			'global' => [
-				'sep'                  => Variables::separator(),
-				'page'                 => '',
-				'site.title'           => get_bloginfo('name'),
-				'site.description'     => get_bloginfo('description'),
-				'site.url'             => home_url('/'),
-				'current.year'         => gmdate('Y'),
-				'current.month'        => gmdate('F'),
-				'current.date'         => wp_date((string) get_option('date_format')) ?: gmdate('Y-m-d'),
-				'date.archive_title'   => gmdate('F Y'),
-				'search.query'         => __('example search', 'mihdan-index-now'),
-				'search.results_count' => '12',
-			],
+		/* The global block is option-only, so it is always built fresh. */
+		return ['global' => $this->global_samples()] + $this->entity_samples();
+	}
+
+	/**
+	 * Site-level sample values. No database queries beyond options.
+	 */
+	private function global_samples(): array
+	{
+		return [
+			'sep'                  => Variables::separator(),
+			'page'                 => '',
+			'site.title'           => get_bloginfo('name'),
+			'site.description'     => get_bloginfo('description'),
+			'site.url'             => home_url('/'),
+			'current.year'         => gmdate('Y'),
+			'current.month'        => gmdate('F'),
+			'current.date'         => wp_date((string) get_option('date_format')) ?: gmdate('Y-m-d'),
+			'date.archive_title'   => gmdate('F Y'),
+			'search.query'         => __('example search', 'mihdan-index-now'),
+			'search.results_count' => '12',
 		];
+	}
+
+	/**
+	 * Per-post-type, per-taxonomy and author samples.
+	 *
+	 * These hit the database, so the result is cached briefly. The author
+	 * block is user-specific and the labels are translated, hence the user id
+	 * and locale in the cache key.
+	 *
+	 * @return array<string, array>
+	 */
+	private function entity_samples(): array
+	{
+		$cache_key = self::SAMPLES_TRANSIENT_PREFIX . get_current_user_id() . '_' . md5(get_locale());
+		$cached    = get_transient($cache_key);
+
+		if (is_array($cached)) {
+			return $cached;
+		}
+
+		$samples = [];
 
 		foreach (Entities::post_types() as $post_type) {
 			$samples[Entities::post_type_key($post_type->name)] = $this->post_type_samples($post_type);
@@ -196,6 +258,17 @@ class Assets
 		}
 
 		$samples['author'] = $this->author_samples();
+
+		/**
+		 * Filter how long the preview samples stay cached.
+		 *
+		 * @param int $ttl Lifetime in seconds. 0 disables caching.
+		 */
+		$ttl = (int) apply_filters('crawlwp_tm_samples_cache_ttl', self::SAMPLES_TTL);
+
+		if ($ttl > 0) {
+			set_transient($cache_key, $samples, $ttl);
+		}
 
 		return $samples;
 	}

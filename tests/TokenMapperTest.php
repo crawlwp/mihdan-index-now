@@ -9,9 +9,10 @@
 namespace {
 
 	$base = dirname(__DIR__);
-	require $base . '/src/SEOCore/Importer/TokenMapper.php';
-	require $base . '/src/SEOCore/Schema/Graph.php';
-	require $base . '/src/SEOCore/InternalLinks/AutoLinker.php';
+	require_once $base . '/tests/bootstrap.php';
+	require_once $base . '/src/SEOCore/Importer/TokenMapper.php';
+	require_once $base . '/src/SEOCore/Schema/Graph.php';
+	require_once $base . '/src/SEOCore/InternalLinks/AutoLinker.php';
 
 	use Mihdan\IndexNow\SEOCore\Importer\TokenMapper;
 	use Mihdan\IndexNow\SEOCore\Schema\Graph;

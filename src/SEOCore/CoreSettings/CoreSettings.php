@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\CoreSettings;
 
+use Mihdan\IndexNow\SEOCore\SettingsFieldsTrait;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Options;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Variables;
@@ -10,6 +11,7 @@ use Mihdan\IndexNow\Views\WPOSA;
 
 class CoreSettings
 {
+	use SettingsFieldsTrait;
 
 	public function __construct()
 	{
@@ -382,26 +384,6 @@ class CoreSettings
 	}
 
 	/**
-	 * A full-width sub-heading inside a settings screen.
-	 */
-	private function add_heading(WPOSA $wposa, string $section, string $id, string $title, string $desc = ''): void
-	{
-		$html = sprintf('<h3 class="cwp-tm-subheading">%s</h3>', esc_html($title));
-
-		if ($desc !== '') {
-			$html .= sprintf('<p class="description">%s</p>', esc_html($desc));
-		}
-
-		$wposa->add_field($section, [
-			'id' => $id,
-			'type' => 'html',
-			'name' => '',
-			'desc' => $html,
-			'class' => 'wposa-form-table__row cwp-tm-heading-row',
-		]);
-	}
-
-	/**
 	 * Data attributes consumed by the live preview script.
 	 *
 	 * @param string $entity_key Entity key (e.g. `pt_post`).
@@ -417,41 +399,19 @@ class CoreSettings
 	}
 
 	/**
-	 * Wrap helper copy so it renders below a switch instead of beside it.
-	 */
-	private function description(string $text): string
-	{
-		return sprintf('<p class="description">%s</p>', esc_html($text));
-	}
-
-	/**
 	 * Context-aware copy for the "Hide from search results" toggle.
 	 */
 	private function noindex_description(array $entity): string
 	{
-		switch ($entity['type']) {
-			case Entities::TYPE_HOME:
-				return __('This setting will apply the noindex robots tag to the homepage.', 'mihdan-index-now');
-
-			case Entities::TYPE_POST_TYPE:
-				return __('This setting will apply the noindex robots tag to all posts of this post type and exclude the post type from the sitemap.', 'mihdan-index-now');
-
-			case Entities::TYPE_TAXONOMY:
-				return __('This setting will apply the noindex robots tag to every term archive of this taxonomy.', 'mihdan-index-now');
-
-			case Entities::TYPE_AUTHOR:
-				return __('This setting will apply the noindex robots tag to author pages.', 'mihdan-index-now');
-
-			case Entities::TYPE_DATE:
-				return __('This setting will apply the noindex robots tag to date based archives.', 'mihdan-index-now');
-
-			case Entities::TYPE_SEARCH:
-				return __('This setting will apply the noindex robots tag to search results pages. Keeping this enabled is recommended.', 'mihdan-index-now');
-
-			case Entities::TYPE_NOT_FOUND:
-				return __('This setting will apply the noindex robots tag to the 404 page. Keeping this enabled is recommended.', 'mihdan-index-now');
-		}
-
-		return __('This setting will apply the noindex robots tag to these pages.', 'mihdan-index-now');
+		return match ($entity['type']) {
+			Entities::TYPE_HOME      => __('This setting will apply the noindex robots tag to the homepage.', 'mihdan-index-now'),
+			Entities::TYPE_POST_TYPE => __('This setting will apply the noindex robots tag to all posts of this post type and exclude the post type from the sitemap.', 'mihdan-index-now'),
+			Entities::TYPE_TAXONOMY  => __('This setting will apply the noindex robots tag to every term archive of this taxonomy.', 'mihdan-index-now'),
+			Entities::TYPE_AUTHOR    => __('This setting will apply the noindex robots tag to author pages.', 'mihdan-index-now'),
+			Entities::TYPE_DATE      => __('This setting will apply the noindex robots tag to date based archives.', 'mihdan-index-now'),
+			Entities::TYPE_SEARCH    => __('This setting will apply the noindex robots tag to search results pages. Keeping this enabled is recommended.', 'mihdan-index-now'),
+			Entities::TYPE_NOT_FOUND => __('This setting will apply the noindex robots tag to the 404 page. Keeping this enabled is recommended.', 'mihdan-index-now'),
+			default                  => __('This setting will apply the noindex robots tag to these pages.', 'mihdan-index-now'),
+		};
 	}
 }
