@@ -3,6 +3,7 @@
 namespace Mihdan\IndexNow\SEOCore\BulkEditor;
 
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+use Mihdan\IndexNow\SEOCore\MetaBox\SeoSignals;
 use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\Views\WPOSA;
@@ -104,6 +105,8 @@ class BulkEditorSettings
 				'saving'          => __('Saving…', 'mihdan-index-now'),
 				'saved'           => __('All changes saved.', 'mihdan-index-now'),
 				'saveError'       => __('Some changes could not be saved. Please try again.', 'mihdan-index-now'),
+				/* translators: %d: number of rows that could not be saved. */
+				'rowsFailed'      => __('%d row(s) could not be saved — they are highlighted in the table.', 'mihdan-index-now'),
 				'noItems'         => __('No posts found.', 'mihdan-index-now'),
 				'confirmLeave'    => __('You have unsaved changes. Leave anyway?', 'mihdan-index-now'),
 				'saveChanges'     => __('Save Table Changes', 'mihdan-index-now'),
@@ -177,17 +180,9 @@ class BulkEditorSettings
 		}
 
 		if ($filter === 'missing_title') {
-			$args['meta_query'] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'relation' => 'OR',
-				['key' => MetaFields::SEO_TITLE, 'compare' => 'NOT EXISTS'],
-				['key' => MetaFields::SEO_TITLE, 'value' => '', 'compare' => '='],
-			];
+			$args['meta_query'] = $this->missing_meta_query(MetaFields::SEO_TITLE); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		} elseif ($filter === 'missing_description') {
-			$args['meta_query'] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'relation' => 'OR',
-				['key' => MetaFields::SEO_DESCRIPTION, 'compare' => 'NOT EXISTS'],
-				['key' => MetaFields::SEO_DESCRIPTION, 'value' => '', 'compare' => '='],
-			];
+			$args['meta_query'] = $this->missing_meta_query(MetaFields::SEO_DESCRIPTION); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		}
 
 		$query = new \WP_Query($args);
@@ -223,7 +218,7 @@ class BulkEditorSettings
 		foreach ($rows as $row) {
 			$id = isset($row['id']) ? (int) $row['id'] : 0;
 
-			if (! $id || ! current_user_can('edit_post', $id)) {
+			if (! $id || ! get_post($id) || ! current_user_can('edit_post', $id)) {
 				$failed[] = $id;
 				continue;
 			}
@@ -231,34 +226,85 @@ class BulkEditorSettings
 			$title = isset($row['seo_title']) ? sanitize_text_field(wp_unslash($row['seo_title'])) : '';
 			$desc  = isset($row['seo_description']) ? sanitize_textarea_field(wp_unslash($row['seo_description'])) : '';
 
-			if ($title !== '') {
-				update_post_meta($id, MetaFields::SEO_TITLE, $title);
-			} else {
-				delete_post_meta($id, MetaFields::SEO_TITLE);
-			}
+			/* Empty values keep an empty meta row so the "missing" filters above
+			   can use an indexed comparison. */
+			MetaFields::save_optional($id, MetaFields::SEO_TITLE, $title);
+			MetaFields::save_optional($id, MetaFields::SEO_DESCRIPTION, $desc);
 
-			if ($desc !== '') {
-				update_post_meta($id, MetaFields::SEO_DESCRIPTION, $desc);
-			} else {
-				delete_post_meta($id, MetaFields::SEO_DESCRIPTION);
-			}
+			/* The title/description feed the post list SEO signals. */
+			SeoSignals::flush($id);
 
 			$saved[] = $id;
 		}
 
 		if (empty($saved)) {
-			wp_send_json_error(['message' => __('Failed to save changes.', 'mihdan-index-now')]);
+			wp_send_json_error([
+				'message' => __('Failed to save changes.', 'mihdan-index-now'),
+				'failed'  => $failed,
+			]);
+		}
+
+		$message = sprintf(
+			/* translators: %d: number of posts updated. */
+			_n('%d post updated.', '%d posts updated.', count($saved), 'mihdan-index-now'),
+			count($saved)
+		);
+
+		if (! empty($failed)) {
+			$message .= ' ' . sprintf(
+				/* translators: %d: number of rows that could not be saved. */
+				_n(
+					'%d row could not be saved — you may not be allowed to edit it.',
+					'%d rows could not be saved — you may not be allowed to edit them.',
+					count($failed),
+					'mihdan-index-now'
+				),
+				count($failed)
+			);
 		}
 
 		wp_send_json_success([
-			/* translators: %d: number of posts updated. */
-			'message' => sprintf(
-				_n('%d post updated.', '%d posts updated.', count($saved), 'mihdan-index-now'),
-				count($saved)
-			),
-			'saved'  => $saved,
-			'failed' => $failed,
+			'message' => $message,
+			'saved'   => $saved,
+			'failed'  => $failed,
 		]);
+	}
+
+	/**
+	 * Meta query matching posts with no SEO title / meta description.
+	 *
+	 * Every save through this plugin stores an empty string for these keys
+	 * (see MetaFields::ALWAYS_STORED), so the common case is an indexed
+	 * `meta_value = ''` comparison. The NOT EXISTS clause is only needed for
+	 * legacy posts that were never saved since and can be switched off on
+	 * sites that have backfilled their meta.
+	 *
+	 * @return array<mixed>
+	 */
+	private function missing_meta_query(string $key): array
+	{
+		$clauses = [
+			['key' => $key, 'value' => '', 'compare' => '='],
+		];
+
+		/**
+		 * Filters whether the "missing title/description" filters also match
+		 * legacy posts that have no meta row at all.
+		 *
+		 * Disabling this drops the slow NOT EXISTS sub-query.
+		 *
+		 * @param bool   $enabled Defaults to true.
+		 * @param string $key     The meta key being filtered on.
+		 */
+		if (apply_filters('crawlwp_bulk_editor_legacy_missing_fallback', true, $key)) {
+			$clauses[] = ['key' => $key, 'compare' => 'NOT EXISTS'];
+		}
+
+		if (count($clauses) === 1) {
+			return $clauses;
+		}
+
+		return array_merge(['relation' => 'OR'], $clauses);
 	}
 
 	// -------------------------------------------------------------------------
