@@ -5,6 +5,8 @@ namespace Mihdan\IndexNow\SEOCore\Importer\Sources;
 use Mihdan\IndexNow\SEOCore\Importer\Source;
 use Mihdan\IndexNow\SEOCore\Importer\Writer;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Variables;
 
 class RankMath extends Source
 {
@@ -27,24 +29,17 @@ class RankMath extends Source
 
 	public function counts(): array
 	{
-		global $wpdb;
-
-		$redirects = 0;
-
-		if ($this->table_exists($wpdb->prefix . 'rank_math_redirections')) {
-			$redirects = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}rank_math_redirections");
-		}
-
 		return [
 			'posts'     => $this->count_meta('rank_math_title') + $this->count_meta('rank_math_description'),
 			'terms'     => $this->count_term_meta('rank_math_title'),
-			'redirects' => $redirects,
+			'users'     => $this->count_user_meta('rank_math_title') + $this->count_user_meta('rank_math_description'),
+			'redirects' => $this->count_table($this->redirects_table()),
 		];
 	}
 
 	public function import_posts(int $offset, int $limit, bool $overwrite): array
 	{
-		$ids = $this->post_ids($offset, $limit);
+		$ids      = $this->post_ids($offset, $limit);
 		$imported = 0;
 		$skipped  = 0;
 
@@ -58,17 +53,12 @@ class RankMath extends Source
 			Writer::write_post($post_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($ids) < $limit,
-			'next_offset' => $offset + count($ids),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
 	}
 
 	public function import_terms(int $offset, int $limit, bool $overwrite): array
 	{
-		$terms = $this->terms($offset, $limit);
+		$terms    = $this->terms($offset, $limit);
 		$imported = 0;
 		$skipped  = 0;
 
@@ -82,37 +72,56 @@ class RankMath extends Source
 			Writer::write_term((int) $term->term_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($terms) < $limit,
-			'next_offset' => $offset + count($terms),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($terms), $limit);
 	}
 
-	public function import_redirects(): int
+	public function import_users(int $offset, int $limit, bool $overwrite): array
+	{
+		$ids      = $this->user_ids($offset, $limit);
+		$imported = 0;
+		$skipped  = 0;
+
+		foreach ($ids as $user_id) {
+			$data = $this->object_payload('user', $user_id);
+
+			if ($data === []) {
+				continue;
+			}
+
+			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
+		}
+
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
+	}
+
+	public function import_redirects(int $offset, int $limit): array
 	{
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'rank_math_redirections';
+		$table = $this->redirects_table();
 
 		if (! $this->table_exists($table)) {
-			return 0;
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$rows = $wpdb->get_results("SELECT * FROM {$table}", ARRAY_A);
+		$rows = $wpdb->get_results(
+			$this->table_query('SELECT * FROM %i ORDER BY id ASC LIMIT %d OFFSET %d', $table, $limit, $offset),
+			ARRAY_A
+		);
 
 		if (! is_array($rows) || $rows === []) {
-			return 0;
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$manager = new RedirectsManager();
-		$count   = 0;
+		$manager  = new RedirectsManager();
+		$imported = 0;
+		$skipped  = 0;
 
 		foreach ($rows as $row) {
 			$sources = maybe_unserialize($row['sources'] ?? '');
 
 			if (! is_array($sources)) {
+				$skipped++;
 				continue;
 			}
 
@@ -120,6 +129,7 @@ class RankMath extends Source
 				$from = is_array($source) ? (string) ($source['pattern'] ?? '') : (string) $source;
 
 				if ($from === '' || $manager->exists_from_url($from)) {
+					$skipped++;
 					continue;
 				}
 
@@ -138,13 +148,222 @@ class RankMath extends Source
 					'enabled'             => $enabled,
 				]);
 
-				if ($ok) {
-					$count++;
-				}
+				$ok ? $imported++ : $skipped++;
 			}
 		}
 
-		return $count;
+		return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	protected function settings_payload(): array
+	{
+		$titles = get_option('rank-math-options-titles');
+
+		if (! is_array($titles) || $titles === []) {
+			return [];
+		}
+
+		$entities = [];
+
+		$entities['home'] = $this->entity_fields($titles, 'homepage_title', 'homepage_description', 'homepage');
+
+		foreach (Entities::post_types() as $post_type) {
+			$prefix = 'pt_' . $post_type->name;
+			$fields = $this->entity_fields($titles, $prefix . '_title', $prefix . '_description', $prefix);
+
+			$archive_title = (string) ($titles[ $prefix . '_archive_title' ] ?? '');
+			$archive_desc  = (string) ($titles[ $prefix . '_archive_description' ] ?? '');
+
+			if ($archive_title !== '') {
+				$fields['archive_title'] = $this->convert($archive_title);
+			}
+
+			if ($archive_desc !== '') {
+				$fields['archive_description'] = $this->convert($archive_desc);
+			}
+
+			$entities[ Entities::post_type_key($post_type->name) ] = $fields;
+		}
+
+		foreach (Entities::taxonomies() as $taxonomy) {
+			$prefix = 'tax_' . $taxonomy->name;
+
+			$entities[ Entities::taxonomy_key($taxonomy->name) ] = $this->entity_fields(
+				$titles,
+				$prefix . '_title',
+				$prefix . '_description',
+				$prefix
+			);
+		}
+
+		$entities['author'] = $this->entity_fields($titles, 'author_archive_title', 'author_archive_description', 'author');
+
+		if (($titles['disable_author_archives'] ?? '') === 'on') {
+			$entities['author']['noindex'] = 'on';
+		}
+
+		$entities['date'] = $this->entity_fields($titles, 'date_archive_title', 'date_archive_description', 'date');
+
+		if (($titles['disable_date_archives'] ?? '') === 'on') {
+			$entities['date']['noindex'] = 'on';
+		}
+
+		$entities['search']    = $this->entity_fields($titles, 'search_title', '', '');
+		$entities['not_found'] = $this->entity_fields($titles, '404_title', '', '');
+
+		return array_filter([
+			'separator' => $this->separator((string) ($titles['title_separator'] ?? '')),
+			'entities'  => array_filter($entities),
+			'site_info' => $this->site_info($titles),
+			'social'    => $this->social($titles),
+			'sitemap'   => $this->sitemap(),
+		]);
+	}
+
+	/**
+	 * Title/description/robots trio for one entity screen.
+	 *
+	 * Rank Math only honours its `*_robots` array when the matching
+	 * `*_custom_robots` switch is on.
+	 *
+	 * @param array<string,mixed> $titles
+	 *
+	 * @return array<string,string>
+	 */
+	private function entity_fields(array $titles, string $title_key, string $description_key, string $robots_prefix): array
+	{
+		$fields = [];
+
+		$title = (string) ($titles[$title_key] ?? '');
+
+		if ($title !== '') {
+			$fields['title'] = $this->convert($title);
+		}
+
+		if ($description_key !== '') {
+			$description = (string) ($titles[$description_key] ?? '');
+
+			if ($description !== '') {
+				$fields['description'] = $this->convert($description);
+			}
+		}
+
+		if ($robots_prefix === '' || ($titles[ $robots_prefix . '_custom_robots' ] ?? '') !== 'on') {
+			return $fields;
+		}
+
+		$robots = $titles[ $robots_prefix . '_robots' ] ?? [];
+
+		if (! is_array($robots)) {
+			return $fields;
+		}
+
+		$fields['noindex']   = in_array('noindex', $robots, true) ? 'on' : 'off';
+		$fields['nofollow']  = in_array('nofollow', $robots, true) ? 'on' : 'off';
+		$fields['noarchive'] = in_array('noarchive', $robots, true) ? 'on' : 'off';
+
+		return $fields;
+	}
+
+	/**
+	 * @param array<string,mixed> $titles
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function site_info(array $titles): array
+	{
+		$type = (string) ($titles['knowledgegraph_type'] ?? '');
+
+		$info = [
+			'site_type' => $type === 'person' ? 'person' : 'organization',
+			'site_name' => (string) ($titles['knowledgegraph_name'] ?? ''),
+		];
+
+		$logo = absint($titles['knowledgegraph_logo_id'] ?? 0);
+
+		if ($logo > 0) {
+			$info['logo'] = $logo;
+		}
+
+		return array_filter($info, static function ($v) {
+			return $v !== '' && $v !== 0;
+		});
+	}
+
+	/**
+	 * @param array<string,mixed> $titles
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function social(array $titles): array
+	{
+		$handles = (string) ($titles['twitter_author_names'] ?? '');
+		$handle  = trim(explode(',', $handles)[0]);
+
+		$fields = [
+			'facebook_author' => (string) ($titles['social_url_facebook'] ?? ''),
+			'twitter_creator' => $handle === '' ? '' : '@' . ltrim($handle, '@'),
+			'fb_app_id'       => (string) ($titles['facebook_app_id'] ?? ''),
+		];
+
+		$card = (string) ($titles['twitter_card_type'] ?? '');
+
+		if (in_array($card, ['summary', 'summary_large_image'], true)) {
+			$fields['twitter_card'] = $card;
+		}
+
+		$image = absint($titles['open_graph_image_id'] ?? 0);
+
+		if ($image > 0) {
+			$fields['social_image_fallback'] = $image;
+		}
+
+		return array_filter($fields, static function ($v) {
+			return $v !== '' && $v !== 0;
+		});
+	}
+
+	/**
+	 * Rank Math ships the news and video sitemaps as optional modules.
+	 *
+	 * @return array<string,string>
+	 */
+	private function sitemap(): array
+	{
+		$modules = get_option('rank_math_modules');
+
+		if (! is_array($modules)) {
+			return [];
+		}
+
+		$fields = [];
+
+		if (in_array('news-sitemap', $modules, true)) {
+			$fields['news_enabled'] = 'on';
+		}
+
+		if (in_array('video-sitemap', $modules, true)) {
+			$fields['video_enabled'] = 'on';
+		}
+
+		return $fields;
+	}
+
+	private function separator(string $stored): string
+	{
+		$stored = trim($stored);
+
+		return array_key_exists($stored, Variables::separator_choices()) ? $stored : '';
+	}
+
+	private function redirects_table(): string
+	{
+		global $wpdb;
+
+		return $wpdb->prefix . 'rank_math_redirections';
 	}
 
 	/**
@@ -152,7 +371,13 @@ class RankMath extends Source
 	 */
 	private function object_payload(string $type, int $id): array
 	{
-		$get = $type === 'term' ? 'get_term_meta' : 'get_post_meta';
+		if ($type === 'term') {
+			$get = 'get_term_meta';
+		} elseif ($type === 'user') {
+			$get = 'get_user_meta';
+		} else {
+			$get = 'get_post_meta';
+		}
 
 		$title = $this->convert((string) $get($id, 'rank_math_title', true));
 		$desc  = $this->convert((string) $get($id, 'rank_math_description', true));

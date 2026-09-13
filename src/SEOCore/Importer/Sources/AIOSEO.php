@@ -5,6 +5,8 @@ namespace Mihdan\IndexNow\SEOCore\Importer\Sources;
 use Mihdan\IndexNow\SEOCore\Importer\Source;
 use Mihdan\IndexNow\SEOCore\Importer\Writer;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Variables;
 
 class AIOSEO extends Source
 {
@@ -20,40 +22,25 @@ class AIOSEO extends Source
 
 	public function is_available(): bool
 	{
-		global $wpdb;
-
 		return defined('AIOSEO_VERSION')
 			|| get_option('aioseo_options') !== false
-			|| $this->table_exists($wpdb->prefix . 'aioseo_posts')
+			|| $this->table_exists($this->table('posts'))
 			|| $this->has_meta('_aioseop_title');
 	}
 
 	public function counts(): array
 	{
-		global $wpdb;
+		$posts = $this->count_table($this->table('posts'));
 
-		$posts = 0;
-		$terms = 0;
-		$redirects = 0;
-
-		if ($this->table_exists($wpdb->prefix . 'aioseo_posts')) {
-			$posts = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}aioseo_posts");
-		} else {
+		if ($posts === 0) {
 			$posts = $this->count_meta('_aioseop_title');
-		}
-
-		if ($this->table_exists($wpdb->prefix . 'aioseo_terms')) {
-			$terms = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}aioseo_terms");
-		}
-
-		if ($this->table_exists($wpdb->prefix . 'aioseo_redirects')) {
-			$redirects = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}aioseo_redirects");
 		}
 
 		return [
 			'posts'     => $posts,
-			'terms'     => $terms,
-			'redirects' => $redirects,
+			'terms'     => $this->count_table($this->table('terms')),
+			'users'     => $this->count_user_meta('_aioseo_title') + $this->count_user_meta('_aioseop_title'),
+			'redirects' => $this->count_table($this->table('redirects')),
 		];
 	}
 
@@ -61,19 +48,23 @@ class AIOSEO extends Source
 	{
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'aioseo_posts';
+		$table = $this->table('posts');
 
 		if ($this->table_exists($table)) {
-			$rows = $wpdb->get_results($wpdb->prepare(
-				"SELECT * FROM {$table} ORDER BY id ASC LIMIT %d OFFSET %d",
-				$limit,
-				$offset
-			), ARRAY_A);
+			$rows = $wpdb->get_results(
+				$this->table_query('SELECT * FROM %i ORDER BY id ASC LIMIT %d OFFSET %d', $table, $limit, $offset),
+				ARRAY_A
+			);
 
+			$rows     = (array) $rows;
 			$imported = 0;
 			$skipped  = 0;
 
-			foreach ((array) $rows as $row) {
+			$this->prime_meta('post', array_map(static function ($row) {
+				return (int) ($row['post_id'] ?? 0);
+			}, $rows));
+
+			foreach ($rows as $row) {
 				$data = $this->row_payload($row);
 
 				if ($data === []) {
@@ -83,15 +74,10 @@ class AIOSEO extends Source
 				Writer::write_post((int) $row['post_id'], $data, $overwrite) ? $imported++ : $skipped++;
 			}
 
-			return [
-				'imported'    => $imported,
-				'skipped'     => $skipped,
-				'done'        => count((array) $rows) < $limit,
-				'next_offset' => $offset + count((array) $rows),
-			];
+			return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
 		}
 
-		$ids = $this->post_ids($offset, $limit);
+		$ids      = $this->post_ids($offset, $limit);
 		$imported = 0;
 		$skipped  = 0;
 
@@ -105,34 +91,32 @@ class AIOSEO extends Source
 			Writer::write_post($post_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($ids) < $limit,
-			'next_offset' => $offset + count($ids),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
 	}
 
 	public function import_terms(int $offset, int $limit, bool $overwrite): array
 	{
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'aioseo_terms';
+		$table = $this->table('terms');
 
 		if (! $this->table_exists($table)) {
-			return ['imported' => 0, 'skipped' => 0, 'done' => true, 'next_offset' => $offset];
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$rows = $wpdb->get_results($wpdb->prepare(
-			"SELECT * FROM {$table} ORDER BY id ASC LIMIT %d OFFSET %d",
-			$limit,
-			$offset
-		), ARRAY_A);
+		$rows = (array) $wpdb->get_results(
+			$this->table_query('SELECT * FROM %i ORDER BY id ASC LIMIT %d OFFSET %d', $table, $limit, $offset),
+			ARRAY_A
+		);
 
 		$imported = 0;
 		$skipped  = 0;
 
-		foreach ((array) $rows as $row) {
+		$this->prime_meta('term', array_map(static function ($row) {
+			return (int) ($row['term_id'] ?? 0);
+		}, $rows));
+
+		foreach ($rows as $row) {
 			$data = $this->row_payload($row);
 
 			if ($data === []) {
@@ -144,37 +128,72 @@ class AIOSEO extends Source
 			Writer::write_term($term_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count((array) $rows) < $limit,
-			'next_offset' => $offset + count((array) $rows),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
 	}
 
-	public function import_redirects(): int
+	public function import_users(int $offset, int $limit, bool $overwrite): array
+	{
+		$ids      = $this->user_ids($offset, $limit);
+		$imported = 0;
+		$skipped  = 0;
+
+		foreach ($ids as $user_id) {
+			$title = (string) get_user_meta($user_id, '_aioseo_title', true);
+			$desc  = (string) get_user_meta($user_id, '_aioseo_description', true);
+
+			if ($title === '') {
+				$title = (string) get_user_meta($user_id, '_aioseop_title', true);
+			}
+
+			if ($desc === '') {
+				$desc = (string) get_user_meta($user_id, '_aioseop_description', true);
+			}
+
+			$data = array_filter([
+				'title'       => $this->convert($title),
+				'description' => $this->convert($desc),
+			], static function ($v) {
+				return $v !== '' && $v !== null;
+			});
+
+			if ($data === []) {
+				continue;
+			}
+
+			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
+		}
+
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
+	}
+
+	public function import_redirects(int $offset, int $limit): array
 	{
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'aioseo_redirects';
+		$table = $this->table('redirects');
 
 		if (! $this->table_exists($table)) {
-			return 0;
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$rows = $wpdb->get_results("SELECT * FROM {$table}", ARRAY_A);
+		$rows = $wpdb->get_results(
+			$this->table_query('SELECT * FROM %i ORDER BY id ASC LIMIT %d OFFSET %d', $table, $limit, $offset),
+			ARRAY_A
+		);
 
-		if (! is_array($rows)) {
-			return 0;
+		if (! is_array($rows) || $rows === []) {
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$manager = new RedirectsManager();
-		$count   = 0;
+		$manager  = new RedirectsManager();
+		$imported = 0;
+		$skipped  = 0;
 
 		foreach ($rows as $row) {
 			$from = (string) ($row['source_url'] ?? $row['from_url'] ?? '');
 
 			if ($from === '' || $manager->exists_from_url($from)) {
+				$skipped++;
 				continue;
 			}
 
@@ -189,12 +208,229 @@ class AIOSEO extends Source
 				'enabled'             => empty($row['enabled']) ? 1 : (int) (bool) $row['enabled'],
 			]);
 
-			if ($ok) {
-				$count++;
-			}
+			$ok ? $imported++ : $skipped++;
 		}
 
-		return $count;
+		return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	protected function settings_payload(): array
+	{
+		$options = $this->decode_option('aioseo_options');
+		$dynamic = $this->decode_option('aioseo_options_dynamic');
+
+		if ($options === [] && $dynamic === []) {
+			return [];
+		}
+
+		$global = $this->dig($options, 'searchAppearance', 'global');
+
+		$entities = [];
+
+		$entities['home'] = $this->entity_fields([
+			'title'       => $global['siteTitle'] ?? '',
+			'description' => $global['metaDescription'] ?? '',
+		]);
+
+		foreach (Entities::post_types() as $post_type) {
+			$node = $this->dig($dynamic, 'searchAppearance', 'postTypes', $post_type->name);
+
+			$entities[ Entities::post_type_key($post_type->name) ] = $this->entity_fields($node);
+		}
+
+		foreach (Entities::taxonomies() as $taxonomy) {
+			$node = $this->dig($dynamic, 'searchAppearance', 'taxonomies', $taxonomy->name);
+
+			$entities[ Entities::taxonomy_key($taxonomy->name) ] = $this->entity_fields($node);
+		}
+
+		$entities['author']    = $this->entity_fields($this->dig($dynamic, 'searchAppearance', 'archives', 'author'));
+		$entities['date']      = $this->entity_fields($this->dig($dynamic, 'searchAppearance', 'archives', 'date'));
+		$entities['search']    = $this->entity_fields($this->dig($dynamic, 'searchAppearance', 'archives', 'search'));
+		$entities['not_found'] = $this->entity_fields($this->dig($dynamic, 'searchAppearance', 'archives', 'notFound'));
+
+		return array_filter([
+			'separator' => $this->separator((string) ($global['separator'] ?? '')),
+			'entities'  => array_filter($entities),
+			'site_info' => $this->site_info($this->dig($options, 'searchAppearance', 'global', 'schema')),
+			'social'    => $this->social($options),
+			'sitemap'   => $this->sitemap($options),
+		]);
+	}
+
+	/**
+	 * Title/description/robots for one AIOSEO search-appearance node.
+	 *
+	 * @param array<string,mixed> $node
+	 *
+	 * @return array<string,string>
+	 */
+	private function entity_fields(array $node): array
+	{
+		$fields = [];
+
+		$title = (string) ($node['title'] ?? '');
+		$desc  = (string) ($node['metaDescription'] ?? $node['description'] ?? '');
+
+		if ($title !== '') {
+			$fields['title'] = $this->convert($title);
+		}
+
+		if ($desc !== '') {
+			$fields['description'] = $this->convert($desc);
+		}
+
+		$robots = $this->dig($node, 'advanced', 'robotsMeta');
+
+		if ($robots === [] || ! empty($robots['default'])) {
+			return $fields;
+		}
+
+		$fields['noindex']   = ! empty($robots['noindex']) ? 'on' : 'off';
+		$fields['nofollow']  = ! empty($robots['nofollow']) ? 'on' : 'off';
+		$fields['noarchive'] = ! empty($robots['noarchive']) ? 'on' : 'off';
+
+		return $fields;
+	}
+
+	/**
+	 * @param array<string,mixed> $schema
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function site_info(array $schema): array
+	{
+		$represents = (string) ($schema['siteRepresents'] ?? '');
+		$is_person  = $represents === 'person';
+
+		$info = [
+			'site_type' => $is_person ? 'person' : 'organization',
+			'site_name' => (string) ($schema['organizationName'] ?? ''),
+		];
+
+		$logo = absint($schema['organizationLogo'] ?? 0);
+
+		if ($logo > 0) {
+			$info['logo'] = $logo;
+		}
+
+		return array_filter($info, static function ($v) {
+			return $v !== '' && $v !== 0;
+		});
+	}
+
+	/**
+	 * @param array<string,mixed> $options
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function social(array $options): array
+	{
+		$urls   = $this->dig($options, 'social', 'profiles', 'urls');
+		$handle = (string) ($urls['twitterUrl'] ?? '');
+
+		if ($handle !== '' && strpos($handle, 'http') === 0) {
+			$handle = (string) preg_replace('#^https?://(?:www\.)?(?:twitter|x)\.com/#', '', $handle);
+		}
+
+		$handle = trim($handle, '/');
+
+		$fields = [
+			'facebook_author' => (string) ($urls['facebookPageUrl'] ?? ''),
+			'twitter_creator' => $handle === '' ? '' : '@' . ltrim($handle, '@'),
+			'fb_app_id'       => (string) ($this->dig($options, 'social', 'facebook', 'advanced')['appId'] ?? ''),
+		];
+
+		$card = (string) ($this->dig($options, 'social', 'twitter', 'general')['defaultCardType'] ?? '');
+
+		if (in_array($card, ['summary', 'summary_large_image'], true)) {
+			$fields['twitter_card'] = $card;
+		}
+
+		return array_filter($fields, static function ($v) {
+			return $v !== '';
+		});
+	}
+
+	/**
+	 * @param array<string,mixed> $options
+	 *
+	 * @return array<string,string>
+	 */
+	private function sitemap(array $options): array
+	{
+		$fields = [];
+
+		if (! empty($this->dig($options, 'sitemap', 'news')['enable'])) {
+			$fields['news_enabled'] = 'on';
+		}
+
+		if (! empty($this->dig($options, 'sitemap', 'video')['enable'])) {
+			$fields['video_enabled'] = 'on';
+		}
+
+		return $fields;
+	}
+
+	private function separator(string $stored): string
+	{
+		$stored = trim($stored);
+
+		return array_key_exists($stored, Variables::separator_choices()) ? $stored : '';
+	}
+
+	/**
+	 * AIOSEO stores its settings as a JSON string.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function decode_option(string $name): array
+	{
+		$raw = get_option($name);
+
+		if (is_array($raw)) {
+			return $raw;
+		}
+
+		if (! is_string($raw) || $raw === '') {
+			return [];
+		}
+
+		$decoded = json_decode($raw, true);
+
+		return is_array($decoded) ? $decoded : [];
+	}
+
+	/**
+	 * Safely walk a nested array.
+	 *
+	 * @param array<string,mixed> $source
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function dig(array $source, string ...$keys): array
+	{
+		$node = $source;
+
+		foreach ($keys as $key) {
+			if (! is_array($node) || ! isset($node[$key])) {
+				return [];
+			}
+
+			$node = $node[$key];
+		}
+
+		return is_array($node) ? $node : [];
+	}
+
+	private function table(string $suffix): string
+	{
+		global $wpdb;
+
+		return $wpdb->prefix . 'aioseo_' . $suffix;
 	}
 
 	/**

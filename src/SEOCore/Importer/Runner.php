@@ -14,6 +14,13 @@ class Runner
 	public const BATCH_SIZE = 50;
 
 	/**
+	 * Stages in execution order. Every stage is batched and reports its own
+	 * next offset, so the browser keeps requesting the same stage until it
+	 * reports done and only then moves on to the next one.
+	 */
+	public const STAGES = ['settings', 'posts', 'terms', 'users', 'redirects'];
+
+	/**
 	 * @return Source[]
 	 */
 	public static function sources(): array
@@ -39,16 +46,36 @@ class Runner
 		return null;
 	}
 
+	public static function first_stage(): string
+	{
+		return self::STAGES[0];
+	}
+
 	/**
-	 * @return array<int,array{id:string,label:string,available:bool,posts:int,terms:int,redirects:int}>
+	 * The stage that follows $stage, or `done` when it was the last one.
+	 */
+	public static function next_stage(string $stage): string
+	{
+		$position = array_search($stage, self::STAGES, true);
+
+		if ($position === false) {
+			return 'done';
+		}
+
+		return self::STAGES[$position + 1] ?? 'done';
+	}
+
+	/**
+	 * @return array<int,array{id:string,label:string,available:bool,posts:int,terms:int,users:int,redirects:int}>
 	 */
 	public static function inventory(): array
 	{
-		$out = [];
+		$out   = [];
+		$empty = ['posts' => 0, 'terms' => 0, 'users' => 0, 'redirects' => 0];
 
 		foreach (self::sources() as $source) {
 			$available = $source->is_available();
-			$counts    = $available ? $source->counts() : ['posts' => 0, 'terms' => 0, 'redirects' => 0];
+			$counts    = $available ? array_merge($empty, $source->counts()) : $empty;
 
 			$out[] = [
 				'id'        => $source->id(),
@@ -56,6 +83,7 @@ class Runner
 				'available' => $available,
 				'posts'     => (int) $counts['posts'],
 				'terms'     => (int) $counts['terms'],
+				'users'     => (int) $counts['users'],
 				'redirects' => (int) $counts['redirects'],
 			];
 		}
@@ -77,24 +105,15 @@ class Runner
 			];
 		}
 
-		if ($stage === 'posts') {
-			$result = $source->import_posts($offset, self::BATCH_SIZE, $overwrite);
-			$next   = ! empty($result['done']) ? 'terms' : 'posts';
-			$next_offset = ! empty($result['done']) ? 0 : (int) $result['next_offset'];
-		} elseif ($stage === 'terms') {
-			$result = $source->import_terms($offset, self::BATCH_SIZE, $overwrite);
-			$next   = ! empty($result['done']) ? 'redirects' : 'terms';
-			$next_offset = ! empty($result['done']) ? 0 : (int) $result['next_offset'];
-		} else {
-			$imported = $source->import_redirects();
-			$result   = [
-				'imported' => $imported,
-				'skipped'  => 0,
-				'done'     => true,
-			];
-			$next        = 'done';
-			$next_offset = 0;
+		if (! in_array($stage, self::STAGES, true)) {
+			$stage = self::first_stage();
 		}
+
+		$result = self::run_stage($source, $stage, $offset, $overwrite);
+		$done   = ! empty($result['done']);
+
+		$next        = $done ? self::next_stage($stage) : $stage;
+		$next_offset = $done ? 0 : (int) ($result['next_offset'] ?? 0);
 
 		return [
 			'ok'          => true,
@@ -105,5 +124,29 @@ class Runner
 			'skipped'     => (int) ($result['skipped'] ?? 0),
 			'done'        => $next === 'done',
 		];
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	private static function run_stage(Source $source, string $stage, int $offset, bool $overwrite): array
+	{
+		switch ($stage) {
+			case 'settings':
+				return $source->import_settings($offset, self::BATCH_SIZE, $overwrite);
+
+			case 'terms':
+				return $source->import_terms($offset, self::BATCH_SIZE, $overwrite);
+
+			case 'users':
+				return $source->import_users($offset, self::BATCH_SIZE, $overwrite);
+
+			case 'redirects':
+				return $source->import_redirects($offset, self::BATCH_SIZE);
+
+			case 'posts':
+			default:
+				return $source->import_posts($offset, self::BATCH_SIZE, $overwrite);
+		}
 	}
 }

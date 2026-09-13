@@ -5,9 +5,18 @@ namespace Mihdan\IndexNow\SEOCore\Importer\Sources;
 use Mihdan\IndexNow\SEOCore\Importer\Source;
 use Mihdan\IndexNow\SEOCore\Importer\Writer;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 
 class Yoast extends Source
 {
+	/**
+	 * Flattened `wpseo_taxonomy_meta` option, parsed once per request instead
+	 * of on every 50-term batch.
+	 *
+	 * @var array<int,array>|null
+	 */
+	private static ?array $terms_cache = null;
+
 	public function id(): string
 	{
 		return 'yoast';
@@ -32,13 +41,14 @@ class Yoast extends Source
 		return [
 			'posts'     => $this->count_meta('_yoast_wpseo_title') + $this->count_meta('_yoast_wpseo_metadesc'),
 			'terms'     => $this->count_yoast_terms(),
+			'users'     => $this->count_user_meta('wpseo_title') + $this->count_user_meta('wpseo_metadesc'),
 			'redirects' => is_array($redirects) ? count($redirects) : 0,
 		];
 	}
 
 	public function import_posts(int $offset, int $limit, bool $overwrite): array
 	{
-		$ids = $this->post_ids($offset, $limit);
+		$ids      = $this->post_ids($offset, $limit);
 		$imported = 0;
 		$skipped  = 0;
 
@@ -52,20 +62,17 @@ class Yoast extends Source
 			Writer::write_post($post_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($ids) < $limit,
-			'next_offset' => $offset + count($ids),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
 	}
 
 	public function import_terms(int $offset, int $limit, bool $overwrite): array
 	{
-		$all = $this->yoast_terms();
-		$slice = array_slice($all, $offset, $limit, true);
+		$all      = $this->yoast_terms();
+		$slice    = array_slice($all, $offset, $limit, true);
 		$imported = 0;
 		$skipped  = 0;
+
+		$this->prime_meta('term', array_keys($slice));
 
 		foreach ($slice as $term_id => $meta) {
 			if (! is_array($meta)) {
@@ -92,33 +99,67 @@ class Yoast extends Source
 			Writer::write_term((int) $term_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($slice) < $limit,
-			'next_offset' => $offset + count($slice),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($slice), $limit);
 	}
 
-	public function import_redirects(): int
+	public function import_users(int $offset, int $limit, bool $overwrite): array
+	{
+		$ids      = $this->user_ids($offset, $limit);
+		$imported = 0;
+		$skipped  = 0;
+
+		foreach ($ids as $user_id) {
+			$data = [
+				'title'       => $this->convert((string) get_user_meta($user_id, 'wpseo_title', true)),
+				'description' => $this->convert((string) get_user_meta($user_id, 'wpseo_metadesc', true)),
+			];
+
+			if ((string) get_user_meta($user_id, 'wpseo_noindex_author', true) === 'on') {
+				$data['robots_index'] = 'noindex';
+			}
+
+			$data = array_filter($data, static function ($v) {
+				return $v !== '' && $v !== null;
+			});
+
+			if ($data === []) {
+				continue;
+			}
+
+			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
+		}
+
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
+	}
+
+	public function import_redirects(int $offset, int $limit): array
 	{
 		$results = get_option('wpseo-premium-redirects-base', []);
 
 		if (! is_array($results) || $results === []) {
-			return 0;
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$manager = new RedirectsManager();
-		$count   = 0;
+		$batch = array_slice(array_values($results), $offset, $limit);
 
-		foreach ($results as $row) {
+		if ($batch === []) {
+			return $this->batch_result(0, 0, $offset, 0, $limit);
+		}
+
+		$manager  = new RedirectsManager();
+		$imported = 0;
+		$skipped  = 0;
+
+		foreach ($batch as $row) {
 			if (! is_array($row) || empty($row['origin'])) {
+				$skipped++;
 				continue;
 			}
 
 			$from = (string) $row['origin'];
 
 			if ($manager->exists_from_url($from)) {
+				$skipped++;
 				continue;
 			}
 
@@ -133,12 +174,214 @@ class Yoast extends Source
 				'enabled'              => 1,
 			]);
 
-			if ($ok) {
-				$count++;
-			}
+			$ok ? $imported++ : $skipped++;
 		}
 
-		return $count;
+		return $this->batch_result($imported, $skipped, $offset, count($batch), $limit);
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	protected function settings_payload(): array
+	{
+		$titles = get_option('wpseo_titles');
+		$social = get_option('wpseo_social');
+
+		if (! is_array($titles)) {
+			$titles = [];
+		}
+
+		if (! is_array($social)) {
+			$social = [];
+		}
+
+		if ($titles === [] && $social === []) {
+			return [];
+		}
+
+		$entities = [];
+
+		$entities['home'] = $this->entity_fields(
+			$titles['title-home-wpseo'] ?? '',
+			$titles['metadesc-home-wpseo'] ?? '',
+			null
+		);
+
+		foreach (Entities::post_types() as $post_type) {
+			$name   = $post_type->name;
+			$fields = $this->entity_fields(
+				$titles[ 'title-' . $name ] ?? '',
+				$titles[ 'metadesc-' . $name ] ?? '',
+				$titles[ 'noindex-' . $name ] ?? null
+			);
+
+			$archive_title = (string) ($titles[ 'title-ptarchive-' . $name ] ?? '');
+			$archive_desc  = (string) ($titles[ 'metadesc-ptarchive-' . $name ] ?? '');
+
+			if ($archive_title !== '') {
+				$fields['archive_title'] = $this->convert($archive_title);
+			}
+
+			if ($archive_desc !== '') {
+				$fields['archive_description'] = $this->convert($archive_desc);
+			}
+
+			if (isset($titles[ 'noindex-ptarchive-' . $name ])) {
+				$fields['archive_noindex'] = $this->switch_value($titles[ 'noindex-ptarchive-' . $name ]);
+			}
+
+			$entities[ Entities::post_type_key($name) ] = $fields;
+		}
+
+		foreach (Entities::taxonomies() as $taxonomy) {
+			$name = $taxonomy->name;
+
+			$entities[ Entities::taxonomy_key($name) ] = $this->entity_fields(
+				$titles[ 'title-tax-' . $name ] ?? '',
+				$titles[ 'metadesc-tax-' . $name ] ?? '',
+				$titles[ 'noindex-tax-' . $name ] ?? null
+			);
+		}
+
+		$entities['author'] = $this->entity_fields(
+			$titles['title-author-wpseo'] ?? '',
+			$titles['metadesc-author-wpseo'] ?? '',
+			$titles['noindex-author-wpseo'] ?? null
+		);
+
+		$entities['date'] = $this->entity_fields(
+			$titles['title-archive-wpseo'] ?? '',
+			$titles['metadesc-archive-wpseo'] ?? '',
+			$titles['noindex-archive-wpseo'] ?? null
+		);
+
+		$entities['search'] = $this->entity_fields($titles['title-search-wpseo'] ?? '', '', null);
+		$entities['not_found'] = $this->entity_fields($titles['title-404-wpseo'] ?? '', '', null);
+
+		/*
+		 * Yoast's `enable_xml_sitemap` is deliberately not mapped: CrawlWP relies
+		 * on the WordPress core sitemap, which has no equivalent master switch.
+		 */
+		return array_filter([
+			'separator' => $this->separator((string) ($titles['separator'] ?? '')),
+			'entities'  => array_filter($entities),
+			'site_info' => $this->site_info($titles),
+			'social'    => $this->social($social),
+		]);
+	}
+
+	/**
+	 * Title/description/noindex trio for one entity screen.
+	 *
+	 * @param mixed $noindex
+	 *
+	 * @return array<string,string>
+	 */
+	private function entity_fields($title, $description, $noindex): array
+	{
+		$fields = [];
+
+		if (is_string($title) && $title !== '') {
+			$fields['title'] = $this->convert($title);
+		}
+
+		if (is_string($description) && $description !== '') {
+			$fields['description'] = $this->convert($description);
+		}
+
+		if ($noindex !== null) {
+			$fields['noindex'] = $this->switch_value($noindex);
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * @param array<string,mixed> $titles
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function site_info(array $titles): array
+	{
+		$is_person = ($titles['company_or_person'] ?? '') === 'person';
+
+		$info = [
+			'site_type' => $is_person ? 'person' : 'organization',
+			'site_name' => (string) ($is_person ? ($titles['person_name'] ?? '') : ($titles['company_name'] ?? '')),
+		];
+
+		$logo = absint($titles['company_logo_id'] ?? 0);
+
+		if ($logo > 0) {
+			$info['logo'] = $logo;
+		}
+
+		return array_filter($info, static function ($v) {
+			return $v !== '' && $v !== 0;
+		});
+	}
+
+	/**
+	 * @param array<string,mixed> $social
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function social(array $social): array
+	{
+		$handle = (string) ($social['twitter_site'] ?? '');
+
+		$fields = [
+			'facebook_author' => (string) ($social['facebook_site'] ?? ''),
+			'twitter_creator' => $handle === '' ? '' : '@' . ltrim($handle, '@'),
+			'fb_app_id'       => (string) ($social['fbadminapp'] ?? ''),
+		];
+
+		$card = (string) ($social['twitter_card_type'] ?? '');
+
+		if (in_array($card, ['summary', 'summary_large_image'], true)) {
+			$fields['twitter_card'] = $card;
+		}
+
+		$image = absint($social['og_default_image_id'] ?? 0);
+
+		if ($image > 0) {
+			$fields['social_image_fallback'] = $image;
+		}
+
+		return array_filter($fields, static function ($v) {
+			return $v !== '' && $v !== 0;
+		});
+	}
+
+	/**
+	 * Yoast stores the separator as a `sep-*` key.
+	 */
+	private function separator(string $stored): string
+	{
+		$map = [
+			'sep-dash'    => '-',
+			'sep-ndash'   => '–',
+			'sep-mdash'   => '—',
+			'sep-middot'  => '·',
+			'sep-bull'    => '•',
+			'sep-pipe'    => '|',
+			'sep-tilde'   => '~',
+			'sep-laquo'   => '«',
+			'sep-raquo'   => '»',
+			'sep-lt'      => '<',
+			'sep-gt'      => '>',
+		];
+
+		return $map[$stored] ?? '';
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	private function switch_value($value): string
+	{
+		return ($value === true || $value === 1 || $value === '1' || $value === 'on') ? 'on' : 'off';
 	}
 
 	/**
@@ -211,14 +454,22 @@ class Yoast extends Source
 	}
 
 	/**
+	 * Flattened `term_id => meta` map, parsed once per request.
+	 *
 	 * @return array<int,array>
 	 */
 	private function yoast_terms(): array
 	{
+		if (self::$terms_cache !== null) {
+			return self::$terms_cache;
+		}
+
 		$option = get_option('wpseo_taxonomy_meta');
 
 		if (! is_array($option)) {
-			return [];
+			self::$terms_cache = [];
+
+			return self::$terms_cache;
 		}
 
 		$flat = [];
@@ -233,6 +484,8 @@ class Yoast extends Source
 			}
 		}
 
-		return $flat;
+		self::$terms_cache = $flat;
+
+		return self::$terms_cache;
 	}
 }

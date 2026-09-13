@@ -47,7 +47,7 @@ class TokenMapper
 			case 'slimseo':
 				return self::slim_seo_map();
 			case 'tsf':
-				return [];
+				return self::tsf_map();
 			default:
 				return [];
 		}
@@ -208,6 +208,67 @@ class TokenMapper
 			'%%cpt_plural%%'         => '{{ post_type.plural }}',
 			'%%archive_title%%'      => '{{ post_type.plural }}',
 			'%%target_keyword%%'     => '',
+		];
+	}
+
+	/**
+	 * The SEO Framework stores its post/term meta under the legacy Genesis keys
+	 * and understands both the Genesis `[shortcode]` tokens and the `%%token%%`
+	 * replacement tags it gained in 5.1.
+	 *
+	 * @return array<string,string>
+	 */
+	private static function tsf_map(): array
+	{
+		return [
+			/* Genesis shortcode-style tokens. */
+			'[post_title]'            => '{{ post.title }}',
+			'[post_content]'          => '{{ post.content }}',
+			'[post_excerpt]'          => '{{ post.excerpt }}',
+			'[post_date]'             => '{{ post.date }}',
+			'[post_modified_date]'    => '{{ post.modified }}',
+			'[post_author]'           => '{{ post.author }}',
+			'[post_author_nicename]'  => '{{ post.author }}',
+			'[post_author_firstname]' => '{{ author.first_name }}',
+			'[post_author_lastname]'  => '{{ author.last_name }}',
+			'[site_title]'            => '{{ site.title }}',
+			'[site_description]'      => '{{ site.description }}',
+			'[term_title]'            => '{{ term.name }}',
+			'[term_description]'      => '{{ term.description }}',
+			'[category_title]'        => '{{ post.category }}',
+			'[archive_title]'         => '{{ post_type.plural }}',
+			'[archive_description]'   => '{{ term.description }}',
+			'[page]'                  => '{{ page }}',
+			'[sep]'                   => '{{ sep }}',
+
+			/* TSF replacement tags. */
+			'%%title%%'               => '{{ post.title }}',
+			'%%post_title%%'          => '{{ post.title }}',
+			'%%excerpt%%'             => '{{ post.auto_description }}',
+			'%%date%%'                => '{{ post.date }}',
+			'%%modified%%'            => '{{ post.modified }}',
+			'%%permalink%%'           => '{{ post.url }}',
+			'%%id%%'                  => '{{ post.id }}',
+			'%%name%%'                => '{{ post.author }}',
+			'%%author_name%%'         => '{{ post.author }}',
+			'%%sitename%%'            => '{{ site.title }}',
+			'%%sitetitle%%'           => '{{ site.title }}',
+			'%%sitedesc%%'            => '{{ site.description }}',
+			'%%tagline%%'             => '{{ site.description }}',
+			'%%sep%%'                 => '{{ sep }}',
+			'%%page%%'                => '{{ page }}',
+			'%%pagenumber%%'          => '{{ page }}',
+			'%%pagetotal%%'           => '{{ page }}',
+			'%%currentyear%%'         => '{{ current.year }}',
+			'%%currentmonth%%'        => '{{ current.month }}',
+			'%%currentday%%'          => '{{ current.day }}',
+			'%%currentdate%%'         => '{{ current.date }}',
+			'%%term_title%%'          => '{{ term.name }}',
+			'%%term_description%%'    => '{{ term.description }}',
+			'%%pt_single%%'           => '{{ post_type.singular }}',
+			'%%pt_plural%%'           => '{{ post_type.plural }}',
+			'%%archive_title%%'       => '{{ post_type.plural }}',
+			'%%search_query%%'        => '{{ search.query }}',
 		];
 	}
 

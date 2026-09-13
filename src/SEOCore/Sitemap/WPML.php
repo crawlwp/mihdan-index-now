@@ -9,11 +9,14 @@ namespace Mihdan\IndexNow\SEOCore\Sitemap;
  * core sitemap, and outputs hreflang <link rel="alternate"> tags in <head>
  * for the current page.
  *
+ * Translated URLs are also cross-linked inside the sitemap XML through
+ * AlternateLinks (xhtml:link rel="alternate"), which Google requires.
+ *
  * Fires two actions that third-party code may hook:
  *   crawlwp_sitemap_post  ($post)  — when a post entry is rendered.
  *   crawlwp_sitemap_term  ($term)  — when a term entry is rendered.
  */
-class WPML
+class WPML extends Integration
 {
 	public function setup()
 	{
@@ -30,10 +33,10 @@ class WPML
 		add_action('wp_head', [$this, 'output_hreflang'], 2);
 
 		/*
-		 * Fire our own actions on each sitemap entry.
+		 * Fire our own actions on each sitemap entry, collect the alternate URLs
+		 * for the sitemap XML, and let the News Sitemap use WPML's language.
 		 */
-		add_filter('wp_sitemaps_posts_entry', [$this, 'fire_post_action'], 10, 3);
-		add_filter('wp_sitemaps_taxonomies_entry', [$this, 'fire_term_action'], 10, 3);
+		$this->register_common_hooks();
 	}
 
 	/**
@@ -118,49 +121,84 @@ class WPML
 	}
 
 	/**
-	 * Fire the crawlwp_sitemap_post action for each post sitemap entry.
+	 * Translated post URLs keyed by WPML language code.
 	 *
-	 * @param array    $entry     Sitemap entry data.
-	 * @param \WP_Post $post      Post object.
-	 * @param string   $post_type Post type name.
+	 * @param \WP_Post $post Post object.
+	 * @param string   $loc  The entry URL.
 	 *
-	 * @return array Unmodified entry.
+	 * @return array<string,string>
 	 */
-	public function fire_post_action($entry, $post, $post_type)
+	protected function get_post_alternates(\WP_Post $post, string $loc): array
 	{
-		if ($post instanceof \WP_Post) {
-			/**
-			 * Fires when a post entry is about to be included in the CrawlWP sitemap.
-			 *
-			 * @param \WP_Post $post Post object.
-			 */
-			do_action('crawlwp_sitemap_post', $post);
+		$alternates = [];
+
+		foreach ($this->get_active_languages() as $code) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			$translated_id = apply_filters('wpml_object_id', $post->ID, $post->post_type, false, $code);
+
+			if (! $translated_id) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			$url = apply_filters('wpml_permalink', get_permalink((int) $translated_id), $code, true);
+
+			if (is_string($url) && $url !== '') {
+				$alternates[(string) $code] = $url;
+			}
 		}
 
-		return $entry;
+		return $alternates;
 	}
 
 	/**
-	 * Fire the crawlwp_sitemap_term action for each taxonomy sitemap entry.
+	 * Translated term URLs keyed by WPML language code.
 	 *
-	 * @param array    $entry    Sitemap entry data.
-	 * @param \WP_Term $term     Term object.
-	 * @param string   $taxonomy Taxonomy name.
+	 * @param \WP_Term $term Term object.
+	 * @param string   $loc  The entry URL.
 	 *
-	 * @return array Unmodified entry.
+	 * @return array<string,string>
 	 */
-	public function fire_term_action($entry, $term, $taxonomy)
+	protected function get_term_alternates(\WP_Term $term, string $loc): array
 	{
-		if ($term instanceof \WP_Term) {
-			/**
-			 * Fires when a term entry is about to be included in the CrawlWP sitemap.
-			 *
-			 * @param \WP_Term $term Term object.
-			 */
-			do_action('crawlwp_sitemap_term', $term);
+		$alternates = [];
+
+		foreach ($this->get_active_languages() as $code) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			$translated_id = apply_filters('wpml_object_id', $term->term_id, $term->taxonomy, false, $code);
+
+			if (! $translated_id) {
+				continue;
+			}
+
+			$url = get_term_link((int) $translated_id, $term->taxonomy);
+
+			if (is_wp_error($url)) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			$url = apply_filters('wpml_permalink', $url, $code, true);
+
+			if (is_string($url) && $url !== '') {
+				$alternates[(string) $code] = $url;
+			}
 		}
 
-		return $entry;
+		return $alternates;
+	}
+
+	/**
+	 * WPML's current language code.
+	 *
+	 * @return string
+	 */
+	protected function get_current_language(): string
+	{
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$code = apply_filters('wpml_current_language', null);
+
+		return is_string($code) ? $code : '';
 	}
 
 	/**

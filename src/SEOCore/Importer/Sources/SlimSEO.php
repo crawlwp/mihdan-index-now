@@ -5,6 +5,7 @@ namespace Mihdan\IndexNow\SEOCore\Importer\Sources;
 use Mihdan\IndexNow\SEOCore\Importer\Source;
 use Mihdan\IndexNow\SEOCore\Importer\Writer;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
+use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 
 class SlimSEO extends Source
 {
@@ -20,34 +21,25 @@ class SlimSEO extends Source
 
 	public function is_available(): bool
 	{
-		global $wpdb;
-
 		return defined('SLIM_SEO_VER')
 			|| get_option('slim_seo') !== false
 			|| $this->has_meta('slim_seo')
-			|| $this->table_exists($wpdb->prefix . 'slim_seo_redirects');
+			|| $this->table_exists($this->redirects_table());
 	}
 
 	public function counts(): array
 	{
-		global $wpdb;
-
-		$redirects = 0;
-
-		if ($this->table_exists($wpdb->prefix . 'slim_seo_redirects')) {
-			$redirects = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}slim_seo_redirects");
-		}
-
 		return [
 			'posts'     => $this->count_meta('slim_seo'),
 			'terms'     => $this->count_term_meta('slim_seo'),
-			'redirects' => $redirects,
+			'users'     => $this->count_user_meta('slim_seo'),
+			'redirects' => $this->count_table($this->redirects_table()),
 		];
 	}
 
 	public function import_posts(int $offset, int $limit, bool $overwrite): array
 	{
-		$ids = $this->post_ids($offset, $limit);
+		$ids      = $this->post_ids($offset, $limit);
 		$imported = 0;
 		$skipped  = 0;
 
@@ -61,17 +53,12 @@ class SlimSEO extends Source
 			Writer::write_post($post_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($ids) < $limit,
-			'next_offset' => $offset + count($ids),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
 	}
 
 	public function import_terms(int $offset, int $limit, bool $overwrite): array
 	{
-		$terms = $this->terms($offset, $limit);
+		$terms    = $this->terms($offset, $limit);
 		$imported = 0;
 		$skipped  = 0;
 
@@ -85,43 +72,62 @@ class SlimSEO extends Source
 			Writer::write_term((int) $term->term_id, $data, $overwrite) ? $imported++ : $skipped++;
 		}
 
-		return [
-			'imported'    => $imported,
-			'skipped'     => $skipped,
-			'done'        => count($terms) < $limit,
-			'next_offset' => $offset + count($terms),
-		];
+		return $this->batch_result($imported, $skipped, $offset, count($terms), $limit);
 	}
 
-	public function import_redirects(): int
+	public function import_users(int $offset, int $limit, bool $overwrite): array
+	{
+		$ids      = $this->user_ids($offset, $limit);
+		$imported = 0;
+		$skipped  = 0;
+
+		foreach ($ids as $user_id) {
+			$data = $this->from_bundle(get_user_meta($user_id, 'slim_seo', true));
+
+			if ($data === []) {
+				continue;
+			}
+
+			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
+		}
+
+		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
+	}
+
+	public function import_redirects(int $offset, int $limit): array
 	{
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'slim_seo_redirects';
+		$table = $this->redirects_table();
 
 		if (! $this->table_exists($table)) {
-			return 0;
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$rows = $wpdb->get_results("SELECT * FROM {$table}", ARRAY_A);
+		$rows = $wpdb->get_results(
+			$this->table_query('SELECT * FROM %i ORDER BY id ASC LIMIT %d OFFSET %d', $table, $limit, $offset),
+			ARRAY_A
+		);
 
-		if (! is_array($rows)) {
-			return 0;
+		if (! is_array($rows) || $rows === []) {
+			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$manager = new RedirectsManager();
-		$count   = 0;
+		$manager  = new RedirectsManager();
+		$imported = 0;
+		$skipped  = 0;
 
 		foreach ($rows as $row) {
 			$from = (string) ($row['from'] ?? $row['from_url'] ?? '');
 
 			if ($from === '' || $manager->exists_from_url($from)) {
+				$skipped++;
 				continue;
 			}
 
-			$type = (int) ($row['type'] ?? $row['redirect_type'] ?? 301);
-			$cond = (string) ($row['condition'] ?? $row['match_type'] ?? 'exact');
-			$match = in_array($cond, ['regex', 'exact-match', 'exact'], true) && $cond === 'regex' ? 'regex' : 'exact';
+			$type  = (int) ($row['type'] ?? $row['redirect_type'] ?? 301);
+			$cond  = (string) ($row['condition'] ?? $row['match_type'] ?? 'exact');
+			$match = $cond === 'regex' ? 'regex' : 'exact';
 
 			$ok = $manager->insert([
 				'from_url'            => $from,
@@ -133,12 +139,92 @@ class SlimSEO extends Source
 				'enabled'             => isset($row['enable']) ? (int) (bool) $row['enable'] : 1,
 			]);
 
-			if ($ok) {
-				$count++;
-			}
+			$ok ? $imported++ : $skipped++;
 		}
 
-		return $count;
+		return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
+	}
+
+	/**
+	 * Slim SEO keeps its global defaults in a single nested `slim_seo` option.
+	 *
+	 * It has no separator, robots-default or organization settings, so only
+	 * the template fields are mapped.
+	 *
+	 * @return array<string,mixed>
+	 */
+	protected function settings_payload(): array
+	{
+		$option = get_option('slim_seo');
+
+		if (! is_array($option) || $option === []) {
+			return [];
+		}
+
+		$entities = [];
+
+		$entities['home'] = $this->entity_fields($option['home'] ?? []);
+
+		$post_types = is_array($option['post_types'] ?? null) ? $option['post_types'] : [];
+		$taxonomies = is_array($option['taxonomies'] ?? null) ? $option['taxonomies'] : [];
+
+		foreach (Entities::post_types() as $post_type) {
+			$entities[ Entities::post_type_key($post_type->name) ] = $this->entity_fields($post_types[ $post_type->name ] ?? []);
+		}
+
+		foreach (Entities::taxonomies() as $taxonomy) {
+			$entities[ Entities::taxonomy_key($taxonomy->name) ] = $this->entity_fields($taxonomies[ $taxonomy->name ] ?? []);
+		}
+
+		$entities['author'] = $this->entity_fields($option['author'] ?? []);
+		$entities['date']   = $this->entity_fields($option['date'] ?? []);
+		$entities['search'] = $this->entity_fields($option['search'] ?? []);
+
+		$entities = array_filter($entities);
+
+		if ($entities === []) {
+			return [];
+		}
+
+		return ['entities' => $entities];
+	}
+
+	/**
+	 * @param mixed $node
+	 *
+	 * @return array<string,string>
+	 */
+	private function entity_fields($node): array
+	{
+		if (! is_array($node)) {
+			return [];
+		}
+
+		$fields = [];
+
+		$title = (string) ($node['title'] ?? '');
+		$desc  = (string) ($node['description'] ?? '');
+
+		if ($title !== '') {
+			$fields['title'] = $this->convert($title);
+		}
+
+		if ($desc !== '') {
+			$fields['description'] = $this->convert($desc);
+		}
+
+		if (isset($node['noindex'])) {
+			$fields['noindex'] = ! empty($node['noindex']) ? 'on' : 'off';
+		}
+
+		return $fields;
+	}
+
+	private function redirects_table(): string
+	{
+		global $wpdb;
+
+		return $wpdb->prefix . 'slim_seo_redirects';
 	}
 
 	/**

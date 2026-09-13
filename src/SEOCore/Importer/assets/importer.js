@@ -27,7 +27,12 @@
 
 		sources.forEach(function (src) {
 			var $row = $('<div class="cwp-importer-row"/>');
-			var meta = src.posts + ' posts · ' + src.terms + ' terms · ' + src.redirects + ' redirects';
+			var meta = [
+				src.posts + ' ' + crawlwpImporter.i18n.posts,
+				src.terms + ' ' + crawlwpImporter.i18n.terms,
+				(src.users || 0) + ' ' + crawlwpImporter.i18n.users,
+				src.redirects + ' ' + crawlwpImporter.i18n.redirects
+			].join(' · ');
 			var $btn = $('<button type="button" class="button button-primary"/>')
 				.text(src.available ? 'Import' : 'No data')
 				.prop('disabled', !src.available)
@@ -57,6 +62,12 @@
 		$log.append($('<div/>').text(msg));
 	}
 
+	function stageLabel(stage) {
+		var labels = crawlwpImporter.stageLabels || {};
+
+		return labels[stage] || stage;
+	}
+
 	function pump(source, stage, offset) {
 		run(source, stage, offset).done(function (res) {
 			if (!res || !res.success) {
@@ -69,7 +80,7 @@
 			totals.imported += parseInt(d.imported, 10) || 0;
 			totals.skipped += parseInt(d.skipped, 10) || 0;
 
-			log(d.stage + ': +' + d.imported + ' ' + crawlwpImporter.i18n.imported + ', ' + d.skipped + ' ' + crawlwpImporter.i18n.skipped);
+			log(stageLabel(d.stage) + ': +' + d.imported + ' ' + crawlwpImporter.i18n.imported + ', ' + d.skipped + ' ' + crawlwpImporter.i18n.skipped);
 
 			if (d.done) {
 				log(crawlwpImporter.i18n.done + ' (' + totals.imported + ' / ' + totals.skipped + ')');
@@ -100,7 +111,7 @@
 			$('#cwpImporterLog').empty().show();
 			$('#cwpImporter').addClass('is-running');
 			log(crawlwpImporter.i18n.running);
-			pump(source, 'posts', 0);
+			pump(source, crawlwpImporter.firstStage || 'posts', 0);
 		});
 	});
 }(jQuery));

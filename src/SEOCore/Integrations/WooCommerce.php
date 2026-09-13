@@ -45,7 +45,14 @@ class WooCommerce
 			return;
 		}
 
-		add_action('wp_footer', [$this, 'remove_woocommerce_schema'], 0);
+		/* WooCommerce prints on wp_footer:10, so run as late as possible
+		 * before that — a priority of 0 is easily undone by a theme or
+		 * plugin re-adding the action later on the same hook. */
+		add_action('wp_footer', [$this, 'remove_woocommerce_schema'], 9);
+		/* Belt and braces: even if the action is re-added after us (or was
+		 * never registered through it), emptying the generated product data
+		 * keeps WooCommerce from printing a competing Product node. */
+		add_filter('woocommerce_structured_data_product', [$this, 'suppress_woocommerce_product_schema']);
 		add_filter('crawlwp_breadcrumbs_args', [$this, 'change_breadcrumbs_taxonomy']);
 		add_filter('crawlwp_schema_data', [$this, 'add_product_schema'], 10, 2);
 		add_filter('crawlwp_robots_directives', [$this, 'noindex_checkout_pages']);
@@ -83,6 +90,23 @@ class WooCommerce
 		if (function_exists('WC') && isset(WC()->structured_data)) {
 			remove_action('wp_footer', [WC()->structured_data, 'output_structured_data'], 10);
 		}
+	}
+
+	/**
+	 * Drop WooCommerce's generated Product structured data on single product
+	 * pages, where CrawlWP emits its own Product node. Other contexts (order
+	 * confirmation emails/pages, etc.) are left untouched.
+	 *
+	 * @param array $data
+	 * @return array
+	 */
+	public function suppress_woocommerce_product_schema($data)
+	{
+		if (! $this->is_schema_enabled() || ! is_singular('product')) {
+			return $data;
+		}
+
+		return [];
 	}
 
 	/**
@@ -177,17 +201,13 @@ class WooCommerce
 			$schema['gtin'] = $gtin;
 		}
 
-		/* Only take the product's own image when no OG image is already configured. */
-		if (empty($schema['image'])) {
-			$image_id = $product->get_image_id();
+		/* Google Merchant Center rejects a Product without a product-specific
+		 * image, so the featured image and gallery always win over whatever
+		 * generic OG/fallback image the page-level schema carried. */
+		$images = $this->get_images($product);
 
-			if ($image_id) {
-				$image_url = wp_get_attachment_image_url($image_id, 'full');
-
-				if ($image_url) {
-					$schema['image'] = $image_url;
-				}
-			}
+		if ($images !== []) {
+			$schema['image'] = count($images) === 1 ? $images[0] : $images;
 		}
 
 		$schema['offers'] = $this->get_offers($product, $post);
@@ -210,6 +230,36 @@ class WooCommerce
 		}
 
 		return $schema;
+	}
+
+	/**
+	 * The product's own images: featured image first, then the gallery, at
+	 * full size and de-duplicated.
+	 *
+	 * @param \WC_Product $product
+	 * @return string[]
+	 */
+	private function get_images($product): array
+	{
+		$ids = array_merge([$product->get_image_id()], (array) $product->get_gallery_image_ids());
+
+		$urls = [];
+
+		foreach ($ids as $id) {
+			$id = (int) $id;
+
+			if ($id <= 0) {
+				continue;
+			}
+
+			$url = wp_get_attachment_image_url($id, 'full');
+
+			if (is_string($url) && $url !== '') {
+				$urls[] = $url;
+			}
+		}
+
+		return array_values(array_unique($urls));
 	}
 
 	/**

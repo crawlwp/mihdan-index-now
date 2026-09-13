@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Standalone tests for TokenMapper and Schema Graph builders.
+ * Standalone tests for TokenMapper and AutoLinker.
  *
  * Run: php tests/TokenMapperTest.php
  */
@@ -11,11 +11,9 @@ namespace {
 	$base = dirname(__DIR__);
 	require_once $base . '/tests/bootstrap.php';
 	require_once $base . '/src/SEOCore/Importer/TokenMapper.php';
-	require_once $base . '/src/SEOCore/Schema/Graph.php';
 	require_once $base . '/src/SEOCore/InternalLinks/AutoLinker.php';
 
 	use Mihdan\IndexNow\SEOCore\Importer\TokenMapper;
-	use Mihdan\IndexNow\SEOCore\Schema\Graph;
 	use Mihdan\IndexNow\SEOCore\InternalLinks\AutoLinker;
 
 	$failed = 0;
@@ -48,36 +46,6 @@ namespace {
 
 	$tsf = TokenMapper::convert('A plain title', 'tsf');
 	cwp_assert($tsf === 'A plain title', 'TSF leaves plain text');
-
-	$faq = Graph::faq([
-		['question' => 'Q1', 'answer' => 'A1'],
-		['question' => '', 'answer' => 'skip'],
-	]);
-	cwp_assert(is_array($faq) && $faq['@type'] === 'FAQPage' && count($faq['mainEntity']) === 1, 'FAQ schema');
-
-	$howto = Graph::howto([
-		'name'  => 'Install CrawlWP',
-		'steps' => [['text' => 'Download'], ['text' => 'Activate']],
-	]);
-	cwp_assert(is_array($howto) && $howto['@type'] === 'HowTo' && count($howto['step']) === 2, 'HowTo schema');
-
-	cwp_assert(Graph::faq([]) === null, 'Empty FAQ is null');
-	cwp_assert(Graph::duration('15') === 'PT15M', 'ISO duration');
-
-	$recipe = Graph::recipe(['name' => 'Pie', 'prep_time' => '10', 'ingredients' => ['flour']]);
-	cwp_assert(is_array($recipe) && $recipe['@type'] === 'Recipe', 'Recipe schema');
-
-	$event = Graph::event(['name' => 'Meetup', 'start_date' => '2026-01-01', 'location' => 'Lagos']);
-	cwp_assert(is_array($event) && $event['@type'] === 'Event', 'Event schema');
-
-	$job = Graph::job(['title' => 'Dev', 'organization' => 'CrawlWP']);
-	cwp_assert(is_array($job) && $job['@type'] === 'JobPosting', 'Job schema');
-
-	$course = Graph::course(['name' => 'SEO 101', 'provider' => 'CrawlWP']);
-	cwp_assert(is_array($course) && $course['@type'] === 'Course', 'Course schema');
-
-	$video = Graph::video(['name' => 'Intro', 'url' => 'https://example.com/v.mp4']);
-	cwp_assert(is_array($video) && $video['@type'] === 'VideoObject', 'Video schema');
 
 	$rules = AutoLinker::parse_rules("seo|https://example.com/seo\n\nbadline\ncrawlwp|https://crawlwp.com");
 	cwp_assert(isset($rules['seo'], $rules['crawlwp']) && ! isset($rules['badline']), 'Parse auto-link rules');

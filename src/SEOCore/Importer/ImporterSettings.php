@@ -30,7 +30,7 @@ class ImporterSettings
 			'header_menu_id' => 'advanced_settings',
 			'id'             => self::SECTION,
 			'title'          => __('Import SEO Data', 'mihdan-index-now'),
-			'desc'           => __('Copy titles, descriptions, robots, canonicals, social images and redirects from another SEO plugin into CrawlWP. Existing CrawlWP values are kept unless you tick overwrite.', 'mihdan-index-now'),
+			'desc'           => __('Copy global settings, titles, descriptions, robots, canonicals, social images, author meta and redirects from another SEO plugin into CrawlWP. Existing CrawlWP values are kept unless you tick overwrite.', 'mihdan-index-now'),
 		]);
 
 		$wposa->add_field(self::SECTION, [
@@ -55,9 +55,11 @@ class ImporterSettings
 		wp_enqueue_script('crawlwp-importer', $assets_url . 'importer.js', ['jquery'], '1.0.0', true);
 
 		wp_localize_script('crawlwp-importer', 'crawlwpImporter', [
-			'ajaxUrl' => admin_url('admin-ajax.php'),
-			'nonce'   => wp_create_nonce('crawlwp_importer_nonce'),
-			'i18n'    => [
+			'ajaxUrl'    => admin_url('admin-ajax.php'),
+			'nonce'      => wp_create_nonce('crawlwp_importer_nonce'),
+			'firstStage' => Runner::first_stage(),
+			'stages'     => Runner::STAGES,
+			'i18n'       => [
 				'running'   => __('Importing…', 'mihdan-index-now'),
 				'done'      => __('Import complete.', 'mihdan-index-now'),
 				'error'     => __('Import failed. Please try again.', 'mihdan-index-now'),
@@ -65,6 +67,17 @@ class ImporterSettings
 				'confirm'   => __('Start importing SEO data from this plugin?', 'mihdan-index-now'),
 				'imported'  => __('Imported', 'mihdan-index-now'),
 				'skipped'   => __('Skipped', 'mihdan-index-now'),
+				'posts'     => __('posts', 'mihdan-index-now'),
+				'terms'     => __('terms', 'mihdan-index-now'),
+				'users'     => __('authors', 'mihdan-index-now'),
+				'redirects' => __('redirects', 'mihdan-index-now'),
+			],
+			'stageLabels' => [
+				'settings'  => __('Global settings', 'mihdan-index-now'),
+				'posts'     => __('Posts', 'mihdan-index-now'),
+				'terms'     => __('Terms', 'mihdan-index-now'),
+				'users'     => __('Authors', 'mihdan-index-now'),
+				'redirects' => __('Redirects', 'mihdan-index-now'),
 			],
 		]);
 	}
@@ -80,12 +93,12 @@ class ImporterSettings
 		$this->guard();
 
 		$source    = isset($_POST['source']) ? sanitize_key(wp_unslash($_POST['source'])) : '';
-		$stage     = isset($_POST['stage']) ? sanitize_key(wp_unslash($_POST['stage'])) : 'posts';
+		$stage     = isset($_POST['stage']) ? sanitize_key(wp_unslash($_POST['stage'])) : Runner::first_stage();
 		$offset    = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
 		$overwrite = ! empty($_POST['overwrite']);
 
-		if (! in_array($stage, ['posts', 'terms', 'redirects'], true)) {
-			$stage = 'posts';
+		if (! in_array($stage, Runner::STAGES, true)) {
+			$stage = Runner::first_stage();
 		}
 
 		$result = Runner::run_step($source, $stage, $offset, $overwrite);
@@ -116,7 +129,7 @@ class ImporterSettings
 			</p>
 			<label class="cwp-importer-overwrite">
 				<input type="checkbox" id="cwpImporterOverwrite" value="1">
-				<?php esc_html_e('Overwrite existing CrawlWP titles and descriptions', 'mihdan-index-now'); ?>
+				<?php esc_html_e('Overwrite existing CrawlWP values', 'mihdan-index-now'); ?>
 			</label>
 			<div class="cwp-importer-list" id="cwpImporterList">
 				<p><?php esc_html_e('Loading sources…', 'mihdan-index-now'); ?></p>

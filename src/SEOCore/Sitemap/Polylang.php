@@ -10,11 +10,14 @@ namespace Mihdan\IndexNow\SEOCore\Sitemap;
  * included in the WordPress core sitemap by disabling Polylang's per-language
  * query filtering during sitemap generation.
  *
+ * Translated URLs are also cross-linked inside the sitemap XML through
+ * AlternateLinks (xhtml:link rel="alternate"), which Google requires.
+ *
  * Fires two actions that third-party code may hook:
  *   crawlwp_sitemap_post  ($post)  — when a post entry is rendered.
  *   crawlwp_sitemap_term  ($term)  — when a term entry is rendered.
  */
-class Polylang
+class Polylang extends Integration
 {
 	public function setup()
 	{
@@ -34,10 +37,10 @@ class Polylang
 
 		/*
 		 * Fire our own actions on each sitemap entry so that third-party code
-		 * can react (e.g. to inject extra sitemap XML in a custom sitemap).
+		 * can react, collect the alternate URLs for the sitemap XML, and let the
+		 * News Sitemap use Polylang's current language.
 		 */
-		add_filter('wp_sitemaps_posts_entry', [$this, 'fire_post_action'], 10, 3);
-		add_filter('wp_sitemaps_taxonomies_entry', [$this, 'fire_term_action'], 10, 3);
+		$this->register_common_hooks();
 	}
 
 	/**
@@ -99,48 +102,72 @@ class Polylang
 	}
 
 	/**
-	 * Fire the crawlwp_sitemap_post action for each post sitemap entry.
+	 * Translated post URLs keyed by Polylang language slug.
 	 *
-	 * @param array    $entry     Sitemap entry data.
-	 * @param \WP_Post $post      Post object.
-	 * @param string   $post_type Post type name.
+	 * @param \WP_Post $post Post object.
+	 * @param string   $loc  The entry URL.
 	 *
-	 * @return array Unmodified entry.
+	 * @return array<string,string>
 	 */
-	public function fire_post_action($entry, $post, $post_type)
+	protected function get_post_alternates(\WP_Post $post, string $loc): array
 	{
-		if ($post instanceof \WP_Post) {
-			/**
-			 * Fires when a post entry is about to be included in the CrawlWP sitemap.
-			 *
-			 * @param \WP_Post $post Post object.
-			 */
-			do_action('crawlwp_sitemap_post', $post);
+		if (! function_exists('pll_get_post_translations')) {
+			return [];
 		}
 
-		return $entry;
+		$alternates = [];
+
+		foreach ((array) pll_get_post_translations($post->ID) as $code => $post_id) {
+			$url = get_permalink((int) $post_id);
+
+			if (is_string($url) && $url !== '') {
+				$alternates[(string) $code] = $url;
+			}
+		}
+
+		return $alternates;
 	}
 
 	/**
-	 * Fire the crawlwp_sitemap_term action for each taxonomy sitemap entry.
+	 * Translated term URLs keyed by Polylang language slug.
 	 *
-	 * @param array    $entry    Sitemap entry data.
-	 * @param \WP_Term $term     Term object.
-	 * @param string   $taxonomy Taxonomy name.
+	 * @param \WP_Term $term Term object.
+	 * @param string   $loc  The entry URL.
 	 *
-	 * @return array Unmodified entry.
+	 * @return array<string,string>
 	 */
-	public function fire_term_action($entry, $term, $taxonomy)
+	protected function get_term_alternates(\WP_Term $term, string $loc): array
 	{
-		if ($term instanceof \WP_Term) {
-			/**
-			 * Fires when a term entry is about to be included in the CrawlWP sitemap.
-			 *
-			 * @param \WP_Term $term Term object.
-			 */
-			do_action('crawlwp_sitemap_term', $term);
+		if (! function_exists('pll_get_term_translations')) {
+			return [];
 		}
 
-		return $entry;
+		$alternates = [];
+
+		foreach ((array) pll_get_term_translations($term->term_id) as $code => $term_id) {
+			$url = get_term_link((int) $term_id);
+
+			if (! is_wp_error($url) && is_string($url) && $url !== '') {
+				$alternates[(string) $code] = $url;
+			}
+		}
+
+		return $alternates;
+	}
+
+	/**
+	 * Polylang's current language slug.
+	 *
+	 * @return string
+	 */
+	protected function get_current_language(): string
+	{
+		if (! function_exists('pll_current_language')) {
+			return '';
+		}
+
+		$code = pll_current_language('slug');
+
+		return is_string($code) ? $code : '';
 	}
 }

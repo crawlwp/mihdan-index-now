@@ -10,11 +10,14 @@ namespace Mihdan\IndexNow\SEOCore\Sitemap;
  * entries to the WordPress core sitemap itself; TranslatePress serves
  * translated URLs from the same post/term entries via its URL converter.
  *
+ * The translated URLs are cross-linked inside the sitemap XML through
+ * AlternateLinks (xhtml:link rel="alternate"), which Google requires.
+ *
  * Fires two actions that third-party code may hook:
  *   crawlwp_sitemap_post  ($post)  — when a post entry is rendered.
  *   crawlwp_sitemap_term  ($term)  — when a term entry is rendered.
  */
-class TranslatePress
+class TranslatePress extends Integration
 {
 	/** @var object|null TRP main instance. */
 	private $trp;
@@ -33,10 +36,11 @@ class TranslatePress
 		add_action('wp_head', [$this, 'output_hreflang'], 2);
 
 		/*
-		 * Fire our own actions on each sitemap entry so third-party code can react.
+		 * Fire our own actions on each sitemap entry so third-party code can react,
+		 * collect the alternate URLs for the sitemap XML, and let the News Sitemap
+		 * use TranslatePress's language.
 		 */
-		add_filter('wp_sitemaps_posts_entry', [$this, 'fire_post_action'], 10, 3);
-		add_filter('wp_sitemaps_taxonomies_entry', [$this, 'fire_term_action'], 10, 3);
+		$this->register_common_hooks();
 	}
 
 	/**
@@ -67,57 +71,107 @@ class TranslatePress
 	}
 
 	/**
-	 * Fire the crawlwp_sitemap_post action for each post sitemap entry.
+	 * Translated post URLs keyed by TranslatePress language code.
 	 *
-	 * @param array    $entry     Sitemap entry data.
-	 * @param \WP_Post $post      Post object.
-	 * @param string   $post_type Post type name.
+	 * @param \WP_Post $post Post object.
+	 * @param string   $loc  The entry URL.
 	 *
-	 * @return array Unmodified entry.
+	 * @return array<string,string>
 	 */
-	public function fire_post_action($entry, $post, $post_type)
+	protected function get_post_alternates(\WP_Post $post, string $loc): array
 	{
-		if ($post instanceof \WP_Post) {
-			/**
-			 * Fires when a post entry is about to be included in the CrawlWP sitemap.
-			 *
-			 * @param \WP_Post $post Post object.
-			 */
-			do_action('crawlwp_sitemap_post', $post);
-		}
-
-		return $entry;
+		return $this->get_url_alternates($loc);
 	}
 
 	/**
-	 * Fire the crawlwp_sitemap_term action for each taxonomy sitemap entry.
+	 * Translated term URLs keyed by TranslatePress language code.
 	 *
-	 * @param array    $entry    Sitemap entry data.
-	 * @param \WP_Term $term     Term object.
-	 * @param string   $taxonomy Taxonomy name.
+	 * @param \WP_Term $term Term object.
+	 * @param string   $loc  The entry URL.
 	 *
-	 * @return array Unmodified entry.
+	 * @return array<string,string>
 	 */
-	public function fire_term_action($entry, $term, $taxonomy)
+	protected function get_term_alternates(\WP_Term $term, string $loc): array
 	{
-		if ($term instanceof \WP_Term) {
-			/**
-			 * Fires when a term entry is about to be included in the CrawlWP sitemap.
-			 *
-			 * @param \WP_Term $term Term object.
-			 */
-			do_action('crawlwp_sitemap_term', $term);
-		}
-
-		return $entry;
+		return $this->get_url_alternates($loc);
 	}
 
 	/**
-	 * Return secondary (non-default) publish languages from TranslatePress settings.
+	 * TranslatePress's current language code.
+	 *
+	 * @return string
+	 */
+	protected function get_current_language(): string
+	{
+		if (defined('TRP_LANGUAGE') && is_string(TRP_LANGUAGE)) {
+			return TRP_LANGUAGE;
+		}
+
+		return $this->get_default_language();
+	}
+
+	/**
+	 * Build the per-language variants of a single URL via the URL converter.
+	 *
+	 * @param string $url The canonical (default-language) URL.
+	 *
+	 * @return array<string,string>
+	 */
+	private function get_url_alternates(string $url): array
+	{
+		$url_converter = $this->get_url_converter();
+
+		if ($url === '' || ! $url_converter) {
+			return [];
+		}
+
+		$alternates = [];
+
+		foreach ($this->get_publish_languages() as $code) {
+			$translated = $url_converter->get_url_for_language($code, $url, '');
+
+			if (is_string($translated) && $translated !== '') {
+				$alternates[(string) $code] = $translated;
+			}
+		}
+
+		return $alternates;
+	}
+
+	/**
+	 * Return every published language, including the default one.
 	 *
 	 * @return string[]
 	 */
-	private function get_secondary_languages()
+	private function get_publish_languages(): array
+	{
+		$settings = $this->get_settings();
+
+		if (empty($settings['publish-languages']) || ! is_array($settings['publish-languages'])) {
+			return [];
+		}
+
+		return array_values($settings['publish-languages']);
+	}
+
+	/**
+	 * The TranslatePress default language code.
+	 *
+	 * @return string
+	 */
+	private function get_default_language(): string
+	{
+		$settings = $this->get_settings();
+
+		return isset($settings['default-language']) ? (string) $settings['default-language'] : '';
+	}
+
+	/**
+	 * Read the TranslatePress settings array.
+	 *
+	 * @return array
+	 */
+	private function get_settings(): array
 	{
 		if (! $this->trp) {
 			return [];
@@ -130,6 +184,18 @@ class TranslatePress
 		}
 
 		$settings = $trp_settings->get_settings();
+
+		return is_array($settings) ? $settings : [];
+	}
+
+	/**
+	 * Return secondary (non-default) publish languages from TranslatePress settings.
+	 *
+	 * @return string[]
+	 */
+	private function get_secondary_languages()
+	{
+		$settings = $this->get_settings();
 
 		if (empty($settings['publish-languages']) || empty($settings['default-language'])) {
 			return [];
