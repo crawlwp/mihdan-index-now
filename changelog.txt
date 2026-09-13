@@ -3,8 +3,7 @@
 = 3.1.0 =
 * Added importer for Yoast, Rank Math, AIOSEO, SEOPress, The SEO Framework and Slim SEO (titles, descriptions, robots, canonicals, social images, redirects).
 * Added per-term SEO fields for categories, tags and custom taxonomies.
-* Added extra schema types: FAQ, HowTo, Recipe, Event, JobPosting, Course, VideoObject, plus custom JSON-LD.
-* Added Gutenberg FAQ, HowTo and Table of Contents blocks.
+* Added custom JSON-LD schema.
 * Added Local SEO (NAP + LocalBusiness schema) under Site Information.
 * Added 404 monitor with one-click redirect creation.
 * Added Video sitemap, HTML sitemap shortcode, llms.txt, image alt auto-fill and keyword auto-linking.
