@@ -14,6 +14,16 @@
 define('CRAWLWP_TESTS_DIR', __DIR__);
 define('CRAWLWP_TESTS_PLUGIN_DIR', dirname(__DIR__));
 
+if (!defined('MINUTE_IN_SECONDS')) {
+	define('MINUTE_IN_SECONDS', 60);
+}
+if (!defined('HOUR_IN_SECONDS')) {
+	define('HOUR_IN_SECONDS', 3600);
+}
+if (!defined('DAY_IN_SECONDS')) {
+	define('DAY_IN_SECONDS', 86400);
+}
+
 /**
  * Values the stubs return. Tests may overwrite entries directly.
  *
@@ -297,6 +307,56 @@ if (!function_exists('wp_scrub_utf8')) {
 	}
 }
 
+if (!function_exists('add_rewrite_rule')) {
+	function add_rewrite_rule($regex, $query, $after = 'bottom')
+	{
+		$GLOBALS['crawlwp_test_state']['rewrite_rules'][$regex] = $query;
+	}
+}
+
+if (!function_exists('sanitize_text_field')) {
+	function sanitize_text_field($str)
+	{
+		return trim(strip_tags((string)$str));
+	}
+}
+
+if (!function_exists('get_query_var')) {
+	function get_query_var($var, $default = '')
+	{
+		return $GLOBALS['crawlwp_test_state']['query_vars'][$var] ?? $default;
+	}
+}
+
+if (!function_exists('get_language_attributes')) {
+	function get_language_attributes($doctype = 'html')
+	{
+		return 'lang="en-US"';
+	}
+}
+
+if (!function_exists('is_rtl')) {
+	function is_rtl()
+	{
+		return false;
+	}
+}
+
+if (!function_exists('wp_sitemaps_get_max_urls')) {
+	function wp_sitemaps_get_max_urls($object_type)
+	{
+		return 2000;
+	}
+}
+
+if (!function_exists('wp_register_sitemap_provider')) {
+	function wp_register_sitemap_provider($name, $provider)
+	{
+		$GLOBALS['crawlwp_test_state']['sitemap_providers'][$name] = $provider;
+		return true;
+	}
+}
+
 // Load WordPress HTML API when this suite runs inside a WP checkout so
 // AutoLinker tests exercise WP_HTML_Processor instead of the DOM fallback.
 $wp_includes = dirname(CRAWLWP_TESTS_PLUGIN_DIR, 3) . '/wp-includes';
@@ -327,7 +387,200 @@ if (!class_exists('WP_HTML_Processor') && is_readable($html_api . '/class-wp-htm
 	}
 }
 
+if (!class_exists('WP_Sitemaps_Provider')) {
+	$sitemaps_provider = dirname(CRAWLWP_TESTS_PLUGIN_DIR, 3) . '/wp-includes/sitemaps/providers/class-wp-sitemaps-provider.php';
+	if (is_readable($sitemaps_provider)) {
+		require_once $sitemaps_provider;
+	} else {
+		abstract class WP_Sitemaps_Provider {
+			public $name;
+			public $object_type;
+			abstract public function get_url_list($page_num, $object_subtype = '');
+			abstract public function get_max_num_pages($object_subtype = '');
+		}
+	}
+}
+
+if (!class_exists('WP_Sitemaps_Stylesheet')) {
+	$sitemaps_stylesheet = dirname(CRAWLWP_TESTS_PLUGIN_DIR, 3) . '/wp-includes/sitemaps/class-wp-sitemaps-stylesheet.php';
+	if (is_readable($sitemaps_stylesheet)) {
+		require_once $sitemaps_stylesheet;
+	}
+}
+
+if (!function_exists('wp_trim_words')) {
+	function wp_trim_words($text, $num_words = 55, $more = null)
+	{
+		if ($more === null) {
+			$more = '&hellip;';
+		}
+		$words_array = preg_split("/[\n\r\t ]+/", (string)$text, $num_words + 1, PREG_SPLIT_NO_EMPTY);
+		if (is_array($words_array) && count($words_array) > $num_words) {
+			array_pop($words_array);
+			$text = implode(' ', $words_array);
+			$text = $text . $more;
+		} elseif (is_array($words_array)) {
+			$text = implode(' ', $words_array);
+		}
+		return (string)$text;
+	}
+}
+
+if (!function_exists('get_the_title')) {
+	function get_the_title($post = 0)
+	{
+		if (is_object($post) && isset($post->post_title)) {
+			return (string)$post->post_title;
+		}
+		return $GLOBALS['crawlwp_test_state']['title'] ?? '';
+	}
+}
+
+if (!function_exists('get_the_post_thumbnail_url')) {
+	function get_the_post_thumbnail_url($post = null, $size = 'post-thumbnail')
+	{
+		$post_id = is_object($post) && isset($post->ID) ? (int)$post->ID : (int)$post;
+		return $GLOBALS['crawlwp_test_state']['post_thumbnail_url'][$post_id] ?? '';
+	}
+}
+
+if (!function_exists('get_post_meta')) {
+	function get_post_meta($post_id, $key = '', $single = false)
+	{
+		$meta = $GLOBALS['crawlwp_test_state']['post_meta'][$post_id][$key] ?? null;
+		if ($single) {
+			return $meta ?? '';
+		}
+		return $meta !== null ? [$meta] : [];
+	}
+}
+
+if (!function_exists('update_post_meta')) {
+	function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '')
+	{
+		$GLOBALS['crawlwp_test_state']['post_meta'][$post_id][$meta_key] = $meta_value;
+		return true;
+	}
+}
+
+if (!function_exists('delete_post_meta')) {
+	function delete_post_meta($post_id, $meta_key, $meta_value = '')
+	{
+		unset($GLOBALS['crawlwp_test_state']['post_meta'][$post_id][$meta_key]);
+		return true;
+	}
+}
+
+if (!function_exists('get_post_types')) {
+	function get_post_types($args = [], $output = 'names', $operator = 'and')
+	{
+		return ['post' => 'post', 'page' => 'page'];
+	}
+}
+
+if (!function_exists('wp_is_post_revision')) {
+	function wp_is_post_revision($post)
+	{
+		return false;
+	}
+}
+
+if (!function_exists('wp_is_post_autosave')) {
+	function wp_is_post_autosave($post)
+	{
+		return false;
+	}
+}
+
+if (!function_exists('get_post')) {
+	function get_post($post = null)
+	{
+		if ($post instanceof WP_Post) {
+			return $post;
+		}
+		return $GLOBALS['crawlwp_test_state']['posts'][$post] ?? null;
+	}
+}
+
+if (!function_exists('get_transient')) {
+	function get_transient($transient)
+	{
+		return $GLOBALS['crawlwp_test_state']['transients'][$transient] ?? false;
+	}
+}
+
+if (!function_exists('set_transient')) {
+	function set_transient($transient, $value, $expiration = 0)
+	{
+		$GLOBALS['crawlwp_test_state']['transients'][$transient] = $value;
+		return true;
+	}
+}
+
+if (!function_exists('delete_transient')) {
+	function delete_transient($transient)
+	{
+		unset($GLOBALS['crawlwp_test_state']['transients'][$transient]);
+		return true;
+	}
+}
+
+if (!function_exists('wp_kses_post')) {
+	function wp_kses_post($data)
+	{
+		return (string)$data;
+	}
+}
+
+if (!function_exists('update_meta_cache')) {
+	function update_meta_cache($meta_type, $object_ids)
+	{
+		return true;
+	}
+}
+
+if (!class_exists('WP_Query')) {
+	class WP_Query
+	{
+		public $posts = [];
+
+		public function __construct(array $args = [])
+		{
+			$this->posts = $GLOBALS['crawlwp_test_state']['wp_query_posts'] ?? [];
+		}
+	}
+}
+
+if (!class_exists('WP_Post')) {
+	class WP_Post
+	{
+		public $ID = 0;
+		public $post_title = '';
+		public $post_content = '';
+		public $post_excerpt = '';
+		public $post_status = 'publish';
+		public $post_type = 'post';
+		public $post_password = '';
+
+		/**
+		 * @param array<string, mixed>|object $data
+		 */
+		public function __construct($data = [])
+		{
+			foreach ((array) $data as $k => $v) {
+				$this->$k = $v;
+			}
+		}
+	}
+}
+
 // Classes under test. Loaded explicitly so the suite never depends on vendor/.
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Importer/TokenMapper.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Schema/Graph.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/InternalLinks/AutoLinker.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/MetaFields.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SettingsFieldsTrait.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapSettings.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapStylesheet.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/CustomUrlsSitemapProvider.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/VideoSitemapProvider.php';
