@@ -440,20 +440,11 @@ class VideoSitemapProvider extends \WP_Sitemaps_Provider
 	 */
 	private function extract_video(\WP_Post $post): ?array
 	{
-		$extra = MetaFields::get($post->ID, MetaFields::SCHEMA_EXTRA, []);
-
-		if (is_string($extra)) {
-			$decoded = json_decode($extra, true);
-			$extra   = is_array($decoded) ? $decoded : [];
-		}
-
-		$video = is_array($extra) ? ($extra['video'] ?? []) : [];
-		$url   = is_array($video) ? (string) ($video['url'] ?? $video['content_url'] ?? '') : '';
-
 		$content = $post->post_content;
+		$url     = '';
 		$player  = '';
 
-		if ($url === '' && preg_match('#https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{6,})#', $content, $m)) {
+		if (preg_match('#https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{6,})#', $content, $m)) {
 			$player = 'https://www.youtube.com/embed/' . $m[1];
 			$url    = 'https://www.youtube.com/watch?v=' . $m[1];
 		}

@@ -44,6 +44,7 @@ class MetaBox
 		$site_name = get_bloginfo('name');
 		$site_url  = home_url('/');
 		$permalink = get_permalink($post->ID);
+		$post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
 
 		$og_image_url = '';
 		if (! empty($data['og_image'])) {

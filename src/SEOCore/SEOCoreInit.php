@@ -35,6 +35,7 @@ use Mihdan\IndexNow\SEOCore\TermSEO\TermMetaBox;
 use Mihdan\IndexNow\SEOCore\Schema\Graph;
 use Mihdan\IndexNow\SEOCore\Schema\Blocks;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\VideoSitemapProvider;
+use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapStylesheet;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\HtmlSitemap;
 use Mihdan\IndexNow\SEOCore\ImageSEO\ImageSEO;
 use Mihdan\IndexNow\SEOCore\LlmsTxt\LlmsTxt;
@@ -56,6 +57,7 @@ class SEOCoreInit
 		Blocks::class,
 		VideoSitemapProvider::class,
 		HtmlSitemap::class,
+		SitemapStylesheet::class,
 		ImageSEO::class,
 		LlmsTxt::class,
 		AutoLinker::class,

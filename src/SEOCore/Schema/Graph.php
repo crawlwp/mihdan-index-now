@@ -3,39 +3,175 @@
 namespace Mihdan\IndexNow\SEOCore\Schema;
 
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
-use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
 
 /**
- * Extra JSON-LD nodes (FAQ, HowTo, Recipe, Event, Job, Course, Video, custom).
+ * The JSON-LD graph of the current request.
+ *
+ * Every producer (title & meta output, breadcrumbs, integrations, the FAQ /
+ * HowTo / Recipe / Event / Job / Course / Video / custom nodes built here)
+ * pushes its nodes in with {@see self::add_node()}. They are printed once, in
+ * a single `<script type="application/ld+json">` holding one `@graph`, so the
+ * nodes can reference each other by `@id`.
  *
  * Builders that take arrays are pure and unit-testable.
  */
 class Graph
 {
+	/**
+	 * Encoding flags for every JSON-LD payload the plugin prints.
+	 *
+	 * The `JSON_HEX_*` flags keep `<`, `&`, `'` and `"` out of the script body so
+	 * no value can break out of the `<script>` element. Lives here, on the class
+	 * that owns the printing, so producers cannot drift from it.
+	 */
+	public const JSON_LD_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
+	/**
+	 * Nodes collected for the current request, keyed by `@id` when they have one.
+	 *
+	 * @var array<int|string, array<string,mixed>>
+	 */
+	private static array $nodes = [];
+
 	public function __construct()
 	{
 		add_action('wp_head', [$this, 'output'], 3);
 	}
 
+	/**
+	 * Add one node to the request graph.
+	 *
+	 * The `@context` of a standalone node is dropped — the printed graph carries
+	 * a single one. Nodes sharing an `@id` are merged, so a later producer can
+	 * extend a node another one already registered. Lists of nodes and payloads
+	 * wrapped in their own `@graph` are unwrapped.
+	 *
+	 * @param array<string,mixed> $node
+	 */
+	public static function add_node(array $node): void
+	{
+		unset($node['@context']);
+
+		if ($node === []) {
+			return;
+		}
+
+		if (isset($node['@graph']) && is_array($node['@graph'])) {
+			self::add_nodes($node['@graph']);
+
+			return;
+		}
+
+		if (array_is_list($node)) {
+			self::add_nodes($node);
+
+			return;
+		}
+
+		$id = isset($node['@id']) ? (string) $node['@id'] : '';
+
+		if ($id === '') {
+			self::$nodes[] = $node;
+
+			return;
+		}
+
+		self::$nodes[$id] = isset(self::$nodes[$id])
+			? array_merge(self::$nodes[$id], $node)
+			: $node;
+	}
+
+	/**
+	 * Add several nodes to the request graph.
+	 *
+	 * @param array<int,mixed> $nodes
+	 */
+	public static function add_nodes(array $nodes): void
+	{
+		foreach ($nodes as $node) {
+			if (is_array($node)) {
+				self::add_node($node);
+			}
+		}
+	}
+
+	/**
+	 * Every node collected so far.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function get_nodes(): array
+	{
+		return array_values(self::$nodes);
+	}
+
+	/**
+	 * Drop the collected nodes. Mainly useful for tests.
+	 */
+	public static function reset_nodes(): void
+	{
+		self::$nodes = [];
+	}
+
 	public function output(): void
 	{
-		if (is_admin() || is_feed() || ! is_singular()) {
+		if (is_admin() || is_feed() || is_trackback() || is_robots()) {
 			return;
 		}
 
-		$post = get_queried_object();
+		if (is_singular()) {
+			$post = get_queried_object();
 
-		if (! $post instanceof \WP_Post) {
+			if ($post instanceof \WP_Post) {
+				self::add_nodes($this->nodes_for_post($post));
+			}
+		}
+
+		self::print_graph();
+	}
+
+	/**
+	 * Print the collected nodes as one `@graph`.
+	 */
+	public static function print_graph(): void
+	{
+		/**
+		 * Filter every JSON-LD node collected for the current request.
+		 *
+		 * Each entry is one node of the printed `@graph`; nodes reference each
+		 * other through their `@id`. Return an empty array to print nothing.
+		 *
+		 * @param array<int,array<string,mixed>> $nodes The collected nodes.
+		 */
+		$nodes = (array) apply_filters('crawlwp_schema_graph', self::get_nodes());
+		$nodes = array_values(array_filter($nodes, 'is_array'));
+
+		if ($nodes === []) {
 			return;
 		}
 
-		$nodes = $this->nodes_for_post($post);
+		$flags = self::JSON_LD_FLAGS;
 
-		foreach ($nodes as $node) {
-			echo '<script type="application/ld+json">' . "\n";
-			echo wp_json_encode($node, FrontendOutput::JSON_LD_FLAGS);
-			echo "\n" . '</script>' . "\n";
+		/* Readable markup while debugging, compact <head> in production. */
+		if (defined('WP_DEBUG') && WP_DEBUG) {
+			$flags |= JSON_PRETTY_PRINT;
 		}
+
+		$json = wp_json_encode(
+			[
+				'@context' => 'https://schema.org',
+				'@graph'   => $nodes,
+			],
+			$flags
+		);
+
+		if (! is_string($json) || $json === '') {
+			return;
+		}
+
+		echo '<script type="application/ld+json">' . "\n";
+		echo $json;
+		echo "\n" . '</script>' . "\n";
 	}
 
 	/**
@@ -43,55 +179,9 @@ class Graph
 	 */
 	public function nodes_for_post(\WP_Post $post): array
 	{
-		$extra = MetaFields::get($post->ID, MetaFields::SCHEMA_EXTRA, []);
-
-		if (is_string($extra) && $extra !== '') {
-			$decoded = json_decode($extra, true);
-			$extra   = is_array($decoded) ? $decoded : [];
-		}
-
-		if (! is_array($extra)) {
-			$extra = [];
-		}
-
 		$nodes = [];
-		$type  = (string) ($extra['extra_type'] ?? '');
-
-		switch ($type) {
-			case 'FAQPage':
-				$node = self::faq($extra['faq'] ?? []);
-				break;
-			case 'HowTo':
-				$node = self::howto($extra['howto'] ?? []);
-				break;
-			case 'Recipe':
-				$node = self::recipe($extra['recipe'] ?? []);
-				break;
-			case 'Event':
-				$node = self::event($extra['event'] ?? []);
-				break;
-			case 'JobPosting':
-				$node = self::job($extra['job'] ?? []);
-				break;
-			case 'Course':
-				$node = self::course($extra['course'] ?? []);
-				break;
-			case 'VideoObject':
-				$node = self::video($extra['video'] ?? []);
-				break;
-			default:
-				$node = null;
-		}
-
-		if (is_array($node)) {
-			$nodes[] = $node;
-		}
 
 		$custom = (string) MetaFields::get($post->ID, MetaFields::SCHEMA_CUSTOM, '');
-
-		if ($custom === '' && ! empty($extra['custom'])) {
-			$custom = (string) $extra['custom'];
-		}
 
 		if ($custom !== '') {
 			$decoded = json_decode($custom, true);

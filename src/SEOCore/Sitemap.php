@@ -12,6 +12,18 @@ use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
  */
 class Sitemap
 {
+	/** Default value stored for the robots-index meta key. */
+	const ROBOTS_INDEX_DEFAULT = 'index';
+
+	/** Option flag set once every post carries the robots-index meta key. */
+	const ROBOTS_BACKFILL_OPTION = 'crawlwp_robots_index_backfilled';
+
+	/** Cron hook that backfills the robots-index meta key in batches. */
+	const ROBOTS_BACKFILL_HOOK = 'crawlwp_backfill_robots_index_meta';
+
+	/** Number of posts processed per backfill batch. */
+	const ROBOTS_BACKFILL_BATCH = 200;
+
 	public function __construct()
 	{
 		add_filter('wp_sitemaps_post_types', [$this, 'filter_post_types']);
@@ -25,6 +37,14 @@ class Sitemap
 
 		/* Inject additional CSS into the sitemap stylesheet. */
 		add_filter('wp_sitemaps_stylesheet_css', [$this, 'enhance_stylesheet_css']);
+
+		/*
+		 * Always store a value for the robots-index meta key so the sitemap
+		 * queries can use an indexed comparison instead of a NOT EXISTS scan.
+		 */
+		add_action('save_post', [$this, 'ensure_robots_index_meta'], 99, 2);
+		add_action('init', [$this, 'maybe_schedule_robots_backfill'], 30);
+		add_action(self::ROBOTS_BACKFILL_HOOK, [$this, 'run_robots_backfill_batch']);
 
 		/* Boot whichever multilingual integration is active. */
 		$this->setup_multilingual();
@@ -111,18 +131,7 @@ class Sitemap
 
 		$args['has_password'] = false;
 
-		$noindex_clause = [
-			'relation' => 'OR',
-			[
-				'key'     => MetaFields::ROBOTS_INDEX,
-				'compare' => 'NOT EXISTS',
-			],
-			[
-				'key'     => MetaFields::ROBOTS_INDEX,
-				'value'   => 'noindex',
-				'compare' => '!=',
-			],
-		];
+		$noindex_clause = $this->get_noindex_meta_clause();
 
 		if (! empty($args['meta_query']) && is_array($args['meta_query'])) {
 			/* Preserve any existing clauses and AND ours onto them. */
@@ -136,6 +145,144 @@ class Sitemap
 		}
 
 		return $args;
+	}
+
+	// -------------------------------------------------------------------------
+	// Robots-index meta key maintenance
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Build the meta_query clause that excludes noindexed posts.
+	 *
+	 * Once every post carries the robots-index meta key (see the backfill
+	 * below), a single indexed "!= noindex" comparison is enough. Until then we
+	 * keep the OR/NOT EXISTS fallback so legacy posts without the key are not
+	 * dropped from the sitemap.
+	 *
+	 * @return array
+	 */
+	private function get_noindex_meta_clause(): array
+	{
+		$indexed_clause = [
+			'key'     => MetaFields::ROBOTS_INDEX,
+			'value'   => 'noindex',
+			'compare' => '!=',
+		];
+
+		if (get_option(self::ROBOTS_BACKFILL_OPTION) === '1') {
+			return $indexed_clause;
+		}
+
+		return [
+			'relation' => 'OR',
+			[
+				'key'     => MetaFields::ROBOTS_INDEX,
+				'compare' => 'NOT EXISTS',
+			],
+			$indexed_clause,
+		];
+	}
+
+	/**
+	 * Store the default robots-index value whenever a post is saved without one.
+	 *
+	 * Hook: save_post
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 */
+	public function ensure_robots_index_meta($post_id, $post = null): void
+	{
+		$post_id = (int) $post_id;
+
+		if ($post_id <= 0 || wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+			return;
+		}
+
+		if ($post instanceof \WP_Post && $post->post_type === 'nav_menu_item') {
+			return;
+		}
+
+		$this->add_default_robots_index($post_id);
+	}
+
+	/**
+	 * Schedule the one-off batched backfill for posts saved before this release.
+	 *
+	 * Hook: init
+	 */
+	public function maybe_schedule_robots_backfill(): void
+	{
+		if (get_option(self::ROBOTS_BACKFILL_OPTION) === '1') {
+			return;
+		}
+
+		if (! wp_next_scheduled(self::ROBOTS_BACKFILL_HOOK)) {
+			wp_schedule_single_event(time() + MINUTE_IN_SECONDS, self::ROBOTS_BACKFILL_HOOK);
+		}
+	}
+
+	/**
+	 * Add the default robots-index value to one batch of legacy posts.
+	 *
+	 * Re-schedules itself until no post is left without the key, then records
+	 * the completion flag so get_noindex_meta_clause() can use the fast query.
+	 *
+	 * Hook: crawlwp_backfill_robots_index_meta
+	 */
+	public function run_robots_backfill_batch(): void
+	{
+		if (get_option(self::ROBOTS_BACKFILL_OPTION) === '1') {
+			return;
+		}
+
+		$query = new \WP_Query([
+			'post_type'              => 'any',
+			'post_status'            => 'any',
+			'posts_per_page'         => self::ROBOTS_BACKFILL_BATCH,
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
+			'ignore_sticky_posts'    => true,
+			'suppress_filters'       => true,
+			'update_post_term_cache' => false,
+			'update_post_meta_cache' => false,
+			'meta_query'             => [
+				[
+					'key'     => MetaFields::ROBOTS_INDEX,
+					'compare' => 'NOT EXISTS',
+				],
+			],
+		]);
+
+		$post_ids = array_map('intval', (array) $query->posts);
+
+		if ($post_ids === []) {
+			update_option(self::ROBOTS_BACKFILL_OPTION, '1', false);
+
+			return;
+		}
+
+		foreach ($post_ids as $post_id) {
+			$this->add_default_robots_index($post_id);
+		}
+
+		wp_schedule_single_event(time() + MINUTE_IN_SECONDS, self::ROBOTS_BACKFILL_HOOK);
+	}
+
+	/**
+	 * Write the default robots-index value when the key is absent.
+	 *
+	 * add_post_meta() with $unique = true never overwrites an editor's choice.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private function add_default_robots_index(int $post_id): void
+	{
+		if (metadata_exists('post', $post_id, MetaFields::ROBOTS_INDEX)) {
+			return;
+		}
+
+		add_post_meta($post_id, MetaFields::ROBOTS_INDEX, self::ROBOTS_INDEX_DEFAULT, true);
 	}
 
 	// -------------------------------------------------------------------------

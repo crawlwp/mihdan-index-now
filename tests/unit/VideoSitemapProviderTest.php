@@ -243,27 +243,6 @@ class VideoSitemapProviderTest extends TestCase
 		$this->assertSame('', $entry['content_loc']);
 	}
 
-	public function test_extract_video_schema_extra_video(): void
-	{
-		$GLOBALS['crawlwp_test_state']['post_meta'][112][MetaFields::SCHEMA_EXTRA] = [
-			'video' => [
-				'url' => 'https://example.test/schema-video.mp4',
-			],
-		];
-
-		$post = $this->makePost([
-			'ID'           => 112,
-			'post_title'   => 'Schema Video Post',
-			'post_content' => '<p>No video embed in content.</p>',
-		]);
-
-		$entry = $this->extractVideo($post);
-
-		$this->assertNotNull($entry);
-		$this->assertSame('https://example.test/schema-video.mp4', $entry['content_loc']);
-		$this->assertSame('', $entry['player_loc']);
-	}
-
 	public function test_extract_video_no_video_returns_null(): void
 	{
 		$post = $this->makePost([
