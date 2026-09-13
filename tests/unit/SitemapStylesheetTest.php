@@ -2,7 +2,6 @@
 
 namespace Mihdan\IndexNow\Tests\Unit;
 
-use Mihdan\IndexNow\SEOCore\SitemapSettings\CustomUrlsSitemapProvider;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapStylesheet;
 use PHPUnit\Framework\TestCase;
 
@@ -102,34 +101,5 @@ class SitemapStylesheetTest extends TestCase
 		$vars = $stylesheet->query_vars(['sitemap']);
 
 		$this->assertContains('sitemap-stylesheet', $vars);
-	}
-
-	public function test_custom_urls_sitemap_build_xml_includes_stylesheet(): void
-	{
-		$provider = new CustomUrlsSitemapProvider();
-		$xml = $provider->build_xml([
-			['loc' => 'https://example.test/custom-page', 'lastmod' => '2026-09-13T10:00:00+00:00'],
-		]);
-
-		$this->assertStringContainsString('<?xml-stylesheet type="text/xsl"', $xml);
-		$this->assertStringContainsString('sitemap-stylesheet=custom', $xml);
-		$this->assertStringContainsString('<loc>https://example.test/custom-page</loc>', $xml);
-	}
-
-	public function test_custom_urls_sitemap_filter_stylesheet_url(): void
-	{
-		$provider = new CustomUrlsSitemapProvider();
-		$GLOBALS['crawlwp_test_state']['query_vars']['sitemap'] = 'crawlwpcustom';
-
-		$filtered = $provider->filter_stylesheet_url('https://example.test/default.xsl');
-		$this->assertStringContainsString('sitemap-stylesheet=custom', $filtered);
-
-		// When URL is empty (e.g. disabled by another filter), it should return empty
-		$empty_filtered = $provider->filter_stylesheet_url('');
-		$this->assertSame('', $empty_filtered);
-
-		$GLOBALS['crawlwp_test_state']['query_vars']['sitemap'] = 'posts';
-		$unfiltered = $provider->filter_stylesheet_url('https://example.test/default.xsl');
-		$this->assertSame('https://example.test/default.xsl', $unfiltered);
 	}
 }

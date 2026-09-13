@@ -74,7 +74,7 @@ class WooCommerce
 		 *
 		 * @param bool $enabled Whether the feature is enabled. Default true.
 		 */
-		return (bool) apply_filters('crawlwp_woocommerce_schema_enabled', true);
+		return (bool) apply_filters('crawlwp_woocommerce_schema_enabled', false);
 	}
 
 	/**

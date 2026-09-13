@@ -17,7 +17,7 @@ class BreadcrumbSettings
 
 	public function __construct()
 	{
-		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 30, 2);
+		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 19, 2);
 	}
 
 	// -------------------------------------------------------------------------

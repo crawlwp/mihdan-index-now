@@ -48,15 +48,20 @@ class Breadcrumbs
 		];
 	}
 
+	public function is_enabled()
+	{
+		$enabled = BreadcrumbSettings::get('enabled', 'on') === 'on';
+
+		return apply_filters('crawlwp_breadcrumbs_enabled', $enabled);
+	}
+
 	// -------------------------------------------------------------------------
 	// Bootstrap
 	// -------------------------------------------------------------------------
 
 	public function setup(): void
 	{
-		if (BreadcrumbSettings::get('enabled', 'on') === 'off') {
-			return;
-		}
+		if (!$this->is_enabled()) return;
 
 		add_shortcode('crawlwp_breadcrumbs', [$this, 'render_shortcode']);
 		add_action('wp_enqueue_scripts', [$this, 'enqueue_styles']);

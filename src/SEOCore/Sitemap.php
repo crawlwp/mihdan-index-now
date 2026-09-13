@@ -7,8 +7,7 @@ use Mihdan\IndexNow\SEOCore\TitleMeta\Entities;
 use Mihdan\IndexNow\SEOCore\TitleMeta\FrontendOutput;
 
 /**
- * Keeps the WordPress core sitemap in sync with the "Hide from search results" toggles
- * and adds hreflang alternate-link support for Polylang, WPML, and TranslatePress.
+ * Keeps the WordPress core sitemap in sync with the "Hide from search results" toggles.
  */
 class Sitemap
 {
@@ -45,9 +44,6 @@ class Sitemap
 		add_action('save_post', [$this, 'ensure_robots_index_meta'], 99, 2);
 		add_action('init', [$this, 'maybe_schedule_robots_backfill'], 30);
 		add_action(self::ROBOTS_BACKFILL_HOOK, [$this, 'run_robots_backfill_batch']);
-
-		/* Boot whichever multilingual integration is active. */
-		$this->setup_multilingual();
 	}
 
 	// -------------------------------------------------------------------------
@@ -425,23 +421,5 @@ class Sitemap
 					}';
 
 		return $css . $extra;
-	}
-
-	// -------------------------------------------------------------------------
-	// Multilingual integration bootstrap
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Detect active multilingual plugin and boot the appropriate integration.
-	 */
-	private function setup_multilingual()
-	{
-		if (defined('POLYLANG_VERSION')) {
-			(new Sitemap\Polylang())->setup();
-		} elseif (defined('ICL_SITEPRESS_VERSION')) {
-			(new Sitemap\WPML())->setup();
-		} elseif (defined('TRP_PLUGIN_VERSION')) {
-			(new Sitemap\TranslatePress())->setup();
-		}
 	}
 }

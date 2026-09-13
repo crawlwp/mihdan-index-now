@@ -603,7 +603,7 @@ input.wposa-field--switch:hover:after {
 }
 
 .wposa-new-header .wposa-tab.wposa-tab-active {
-	border-color: #007cba;
+	border-color: var(--wp-admin-theme-color, #007cba);
 }
 
 .wposa-new-header .wposa-header-right {
@@ -889,6 +889,30 @@ body:not(.cwpWP7higher) .cwp-premium-sidebar-upsell-cta .button-primary {
 	left: 50%;
 	transform: translate(-50%, -50%);
 }
+
+.cwp-upsell-notice {
+	background:#fff;
+	border:1px solid #c3c4c7;
+	border-left:4px solid #2271b1;
+	padding:16px 20px;
+	border-radius:4px;
+	margin:5px 0 15px  !important;
+	max-width:800px;
+	box-shadow:0 1px 1px rgba(0,0,0,.04);
+}
+
+.cwp-upsell-notice.no-left-border {
+	border-left-color: #c3c4c7;
+	border-left-width: 1px;
+}
+
+.cwp-upsell-notice p {
+	margin:0 0 10px !important;
+	color:#50575e  !important;
+	font-size:13px  !important;
+	line-height:1.5  !important;
+}
+
 
 .crawlwp-upsell-top {
 	padding: 20px;

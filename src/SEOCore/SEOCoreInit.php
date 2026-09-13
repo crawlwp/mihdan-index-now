@@ -20,7 +20,6 @@ use Mihdan\IndexNow\SEOCore\Sitemap;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapSettings;
 use Mihdan\IndexNow\SEOCore\RobotsSettings\RobotsSettings;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\NewsSitemapProvider;
-use Mihdan\IndexNow\SEOCore\SitemapSettings\CustomUrlsSitemapProvider;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsManager;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsSettings;
 use Mihdan\IndexNow\SEOCore\Redirects\RedirectsProcessor;
@@ -33,12 +32,10 @@ use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 use Mihdan\IndexNow\SEOCore\Importer\ImporterSettings;
 use Mihdan\IndexNow\SEOCore\TermSEO\TermMetaBox;
 use Mihdan\IndexNow\SEOCore\Schema\Graph;
-use Mihdan\IndexNow\SEOCore\SitemapSettings\VideoSitemapProvider;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapStylesheet;
-use Mihdan\IndexNow\SEOCore\SitemapSettings\HtmlSitemap;
 use Mihdan\IndexNow\SEOCore\ImageSEO\ImageSEO;
 use Mihdan\IndexNow\SEOCore\LlmsTxt\LlmsTxt;
-use Mihdan\IndexNow\SEOCore\InternalLinks\AutoLinker;
+use Mihdan\IndexNow\SEOCore\InternalLinks\InternalLinksUpsell;
 use Mihdan\IndexNow\SEOCore\Code\CodeSettings;
 
 class SEOCoreInit
@@ -53,12 +50,10 @@ class SEOCoreInit
 	 */
 	private const MODULES_ALWAYS = [
 		Graph::class,
-		VideoSitemapProvider::class,
-		HtmlSitemap::class,
 		SitemapStylesheet::class,
 		ImageSEO::class,
 		LlmsTxt::class,
-		AutoLinker::class,
+		InternalLinksUpsell::class,
 		CodeSettings::class,
 		Elementor::class,
 		CoreSettings\CoreSettings::class,
@@ -69,7 +64,6 @@ class SEOCoreInit
 		RobotsSettings::class,
 		SitemapSettings::class,
 		NewsSitemapProvider::class,
-		CustomUrlsSitemapProvider::class,
 		MetaBox::class,
 		Assets::class,
 		PostListColumn::class,

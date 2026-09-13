@@ -62,8 +62,12 @@ class SitemapSettings
 
 		$this->add_sitemap_fields($wposa);
 		$this->add_news_sitemap_fields($wposa);
-		$this->add_video_html_fields($wposa);
-		$this->add_custom_urls_fields($wposa);
+
+		if (! defined('CRAWLWP_PRO_VERSION')) {
+			$this->add_video_html_upsell($wposa);
+			$this->add_custom_urls_upsell($wposa);
+			$this->add_multilingual_upsell($wposa);
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -138,90 +142,117 @@ class SitemapSettings
 		]);
 	}
 
-	private function add_video_html_fields(WPOSA $wposa): void
+	private function add_video_html_upsell(WPOSA $wposa): void
 	{
-		$video_url = function_exists('get_sitemap_url') ? get_sitemap_url(VideoSitemapProvider::PROVIDER_NAME) : '';
+		$upgrade_url = 'https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-sitemap-video-html-upsell';
+
+		$desc = sprintf(
+			'<div class="cwp-upsell-notice no-left-border">' .
+				'<h4 style="margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px;">' .
+					'<span>%1$s</span>' .
+					'<span style="background:#2271b1;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase;">%2$s</span>' .
+				'</h4>' .
+				'<p>%3$s</p>' .
+				'<p><strong>%4$s</strong> %5$s</p>' .
+				'<a href="%6$s" target="_blank" rel="noopener noreferrer" class="button button-primary">%7$s &rarr;</a>' .
+			'</div>',
+			esc_html__('Video & HTML XML Sitemaps', 'mihdan-index-now'),
+			esc_html__('PRO', 'mihdan-index-now'),
+			esc_html__('Expand your search engine reach with specialized sitemaps. Video Sitemaps help search engines index your video content to appear in Google Video search results, while HTML sitemaps provide human visitors and search spiders with a comprehensive overview of your site.', 'mihdan-index-now'),
+			esc_html__('Premium Features:', 'mihdan-index-now'),
+			esc_html__('Automatic video detection from embedded YouTube, Vimeo, and MP4 videos, background batch video scanner, and a clean [crawlwp_html_sitemap] shortcode to display an organized page index anywhere on your website.', 'mihdan-index-now'),
+			esc_url($upgrade_url),
+			esc_html__('Upgrade to CrawlWP SEO Premium', 'mihdan-index-now')
+		);
 
 		$this->add_heading(
 			$wposa,
 			self::SECTION,
 			'heading_video_html',
-			__('Video & HTML sitemaps', 'mihdan-index-now'),
-			__('A Video sitemap lists posts that embed YouTube/Vimeo/MP4 or have VideoObject schema. An HTML sitemap is a shortcode for visitors.', 'mihdan-index-now')
+			__('Video & HTML sitemaps', 'mihdan-index-now')
 		);
 
 		$wposa->add_field(self::SECTION, [
-			'id'      => 'video_enabled',
-			'type'    => 'switch',
-			'name'    => __('Enable Video Sitemap', 'mihdan-index-now'),
-			'default' => 'off',
-			'desc'    => $video_url
-				? sprintf(
-					/* translators: %s: video sitemap URL */
-					esc_html__('Available at %s', 'mihdan-index-now'),
-					'<a href="' . esc_url($video_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($video_url) . '</a>'
-				)
-				: '',
-		]);
-
-		$rescan_html = sprintf(
-			'<a href="%1$s" class="button button-secondary">%2$s</a><p class="description">%3$s</p>',
-			esc_url(VideoSitemapProvider::get_rescan_url()),
-			esc_html__('Rescan posts for videos', 'mihdan-index-now'),
-			esc_html__('Videos are detected when a post is saved. Use this to scan existing posts again in the background — useful after enabling the video sitemap or importing content.', 'mihdan-index-now')
-		);
-
-		if (isset($_GET['crawlwp_video_rescan'])) {
-			$rescan_html .= '<p class="description"><strong>' . esc_html__('The rescan has been scheduled and runs in the background.', 'mihdan-index-now') . '</strong></p>';
-		}
-
-		$wposa->add_field(self::SECTION, [
-			'id'   => 'video_rescan',
+			'id'   => 'video_html_upsell',
 			'type' => 'html',
-			'name' => __('Video detection', 'mihdan-index-now'),
-			'desc' => $rescan_html,
-		]);
-
-		$wposa->add_field(self::SECTION, [
-			'id'      => 'html_enabled',
-			'type'    => 'switch',
-			'name'    => __('Enable HTML sitemap shortcode', 'mihdan-index-now'),
-			'default' => 'on',
-			'desc'    => sprintf(
-				esc_html__('Use %s[crawlwp_html_sitemap]%s on any page.', 'mihdan-index-now'),
-				'<code>', '</code>'
-			),
+			'name' => __('Video & HTML Sitemaps', 'mihdan-index-now'),
+			'desc' => $desc,
 		]);
 	}
 
-	/**
-	 * Custom URLs fields — textarea for adding additional URLs to the sitemap.
-	 */
-	private function add_custom_urls_fields(WPOSA $wposa): void
+	private function add_custom_urls_upsell(WPOSA $wposa): void
 	{
-		$custom_sitemap_url = get_sitemap_url(CustomUrlsSitemapProvider::PROVIDER_NAME);
+		$upgrade_url = 'https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-sitemap-custom-urls-upsell';
+
+		$desc = sprintf(
+			'<div class="cwp-upsell-notice no-left-border">' .
+				'<h4 style="margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px;">' .
+					'<span>%1$s</span>' .
+					'<span style="background:#2271b1;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase;">%2$s</span>' .
+				'</h4>' .
+				'<p>%3$s</p>' .
+				'<p><strong>%4$s</strong> %5$s</p>' .
+				'<a href="%6$s" target="_blank" rel="noopener noreferrer" class="button button-primary">%7$s &rarr;</a>' .
+			'</div>',
+			esc_html__('Additional Custom URLs Sitemap', 'mihdan-index-now'),
+			esc_html__('PRO', 'mihdan-index-now'),
+			esc_html__('Add external or non-WordPress URLs to your XML sitemap index. Ideal for static landing pages, sub-directory applications, headless frontends, or custom checkout funnels.', 'mihdan-index-now'),
+			esc_html__('Premium Features:', 'mihdan-index-now'),
+			esc_html__('Dedicated XML sitemap generation (/wp-sitemap-crawlwpcustom-1.xml), automatic sitemap index integration, custom lastmod timestamps, and URL validation.', 'mihdan-index-now'),
+			esc_url($upgrade_url),
+			esc_html__('Upgrade to CrawlWP SEO Premium', 'mihdan-index-now')
+		);
 
 		$this->add_heading(
 			$wposa,
 			self::SECTION,
 			'heading_custom_urls',
-			__('Additional Custom URLs', 'mihdan-index-now'),
-			__('Add URLs to pages on your domain that are not managed by WordPress (e.g. a static landing page, a web app sub-path, or a custom checkout flow). One absolute URL per line. Invalid or duplicate entries are silently skipped. When at least one URL is saved, a dedicated sitemap is generated and linked from the sitemap index.', 'mihdan-index-now')
+			__('Additional Custom URLs', 'mihdan-index-now')
 		);
 
 		$wposa->add_field(self::SECTION, [
-			'id'          => 'custom_urls',
-			'type'        => 'textarea',
-			'name'        => __('Custom URLs', 'mihdan-index-now'),
-			'placeholder' => 'https://example.com/landing-page' . PHP_EOL . 'https://example.com/app/',
-			'rows'        => 10,
-			'desc'        => $custom_sitemap_url
-				? sprintf(
-					/* translators: %s: URL to the custom URLs sitemap. */
-					__('When URLs are saved, the custom sitemap will be available at: %s', 'mihdan-index-now'),
-					'<a href="' . esc_url($custom_sitemap_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($custom_sitemap_url) . '</a>'
-				)
-				: '',
+			'id'   => 'custom_urls_upsell',
+			'type' => 'html',
+			'name' => __('Custom URLs Sitemap', 'mihdan-index-now'),
+			'desc' => $desc,
+		]);
+	}
+
+	private function add_multilingual_upsell(WPOSA $wposa): void
+	{
+		$upgrade_url = 'https://crawlwp.com/pricing/?utm_source=wp_dashboard&utm_medium=upgrade&utm_campaign=crawlwp-sitemap-multilingual-upsell';
+
+		$desc = sprintf(
+			'<div class="cwp-upsell-notice no-left-border">' .
+				'<h4 style="margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px;">' .
+					'<span>%1$s</span>' .
+					'<span style="background:#2271b1;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase;">%2$s</span>' .
+				'</h4>' .
+				'<p>%3$s</p>' .
+				'<p><strong>%4$s</strong> %5$s</p>' .
+				'<a href="%6$s" target="_blank" rel="noopener noreferrer" class="button button-primary">%7$s &rarr;</a>' .
+			'</div>',
+			esc_html__('Multilingual Sitemaps (WPML, Polylang, TranslatePress)', 'mihdan-index-now'),
+			esc_html__('PRO', 'mihdan-index-now'),
+			esc_html__('Ensure all language versions of your content are properly discovered and indexed by global search engines. CrawlWP SEO Premium seamlessly bridges WPML, Polylang, and TranslatePress with your XML sitemaps.', 'mihdan-index-now'),
+			esc_html__('Premium Features:', 'mihdan-index-now'),
+			esc_html__('Automatic xhtml:link rel="alternate" hreflang cross-links in XML sitemaps, per-language sitemap index queries, and frontend <head> alternate link output.', 'mihdan-index-now'),
+			esc_url($upgrade_url),
+			esc_html__('Upgrade to CrawlWP SEO Premium', 'mihdan-index-now')
+		);
+
+		$this->add_heading(
+			$wposa,
+			self::SECTION,
+			'heading_multilingual',
+			__('Multilingual Sitemaps (WPML, Polylang, TranslatePress)', 'mihdan-index-now')
+		);
+
+		$wposa->add_field(self::SECTION, [
+			'id'   => 'multilingual_upsell',
+			'type' => 'html',
+			'name' => __('Multilingual Integrations', 'mihdan-index-now'),
+			'desc' => $desc,
 		]);
 	}
 

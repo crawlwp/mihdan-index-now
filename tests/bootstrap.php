@@ -14,6 +14,19 @@
 define('CRAWLWP_TESTS_DIR', __DIR__);
 define('CRAWLWP_TESTS_PLUGIN_DIR', dirname(__DIR__));
 
+if (!defined('CRAWLWP_PREFIX')) {
+	define('CRAWLWP_PREFIX', 'crawlwp');
+}
+if (!defined('CRAWLWP_SLUG')) {
+	define('CRAWLWP_SLUG', 'crawlwp');
+}
+if (!defined('CRAWLWP_NAME')) {
+	define('CRAWLWP_NAME', 'CrawlWP');
+}
+if (!defined('CRAWLWP_VERSION')) {
+	define('CRAWLWP_VERSION', '3.0.17');
+}
+
 if (!defined('MINUTE_IN_SECONDS')) {
 	define('MINUTE_IN_SECONDS', 60);
 }
@@ -102,6 +115,13 @@ if (!function_exists('get_queried_object')) {
 
 if (!function_exists('is_admin')) {
 	function is_admin()
+	{
+		return false;
+	}
+}
+
+if (!function_exists('wp_doing_ajax')) {
+	function wp_doing_ajax()
 	{
 		return false;
 	}
@@ -591,11 +611,9 @@ if (!class_exists('WP_Post')) {
 // Classes under test. Loaded explicitly so the suite never depends on vendor/.
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Importer/TokenMapper.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Schema/Graph.php';
-require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/InternalLinks/AutoLinker.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/InternalLinks/InternalLinksUpsell.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/MetaFields.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SettingsFieldsTrait.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapSettings.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapStylesheet.php';
-require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/CustomUrlsSitemapProvider.php';
-require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/VideoSitemapProvider.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Code/CodeSettings.php';

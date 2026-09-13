@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Standalone tests for TokenMapper and AutoLinker.
+ * Standalone tests for TokenMapper.
  *
  * Run: php tests/TokenMapperTest.php
  */
@@ -11,22 +11,16 @@ namespace {
 	$base = dirname(__DIR__);
 	require_once $base . '/tests/bootstrap.php';
 	require_once $base . '/src/SEOCore/Importer/TokenMapper.php';
-	require_once $base . '/src/SEOCore/InternalLinks/AutoLinker.php';
 
 	use Mihdan\IndexNow\SEOCore\Importer\TokenMapper;
-	use Mihdan\IndexNow\SEOCore\InternalLinks\AutoLinker;
-
-	$failed = 0;
 
 	function cwp_assert(bool $ok, string $msg): void
 	{
-		global $failed;
-		if ($ok) {
-			echo "OK  {$msg}\n";
-			return;
+		if (! $ok) {
+			echo "FAIL {$msg}\n";
+			exit(1);
 		}
-		$failed++;
-		echo "FAIL {$msg}\n";
+		echo "OK  {$msg}\n";
 	}
 
 	$yoast = TokenMapper::convert('%%title%% %%sep%% %%sitename%%', 'yoast');
@@ -46,20 +40,6 @@ namespace {
 
 	$tsf = TokenMapper::convert('A plain title', 'tsf');
 	cwp_assert($tsf === 'A plain title', 'TSF leaves plain text');
-
-	$rules = AutoLinker::parse_rules("seo|https://example.com/seo\n\nbadline\ncrawlwp|https://crawlwp.com");
-	cwp_assert(isset($rules['seo'], $rules['crawlwp']) && ! isset($rules['badline']), 'Parse auto-link rules');
-
-	$html = AutoLinker::apply_rules('<p>Learn seo today</p>', ['seo' => 'https://example.com/seo'], 1);
-	cwp_assert(strpos($html, 'href="https://example.com/seo"') !== false, 'Auto-link applies once');
-
-	$already = AutoLinker::apply_rules('<p><a href="/x">seo</a></p>', ['seo' => 'https://example.com/seo'], 1);
-	cwp_assert(strpos($already, 'https://example.com/seo') === false, 'Skip existing anchors');
-
-	if ($failed > 0) {
-		echo "\n{$failed} test(s) failed.\n";
-		exit(1);
-	}
 
 	echo "\nAll tests passed.\n";
 	exit(0);
