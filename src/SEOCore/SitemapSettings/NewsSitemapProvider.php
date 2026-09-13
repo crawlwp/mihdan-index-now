@@ -26,9 +26,15 @@ use WP_Site;
  *   news_publication_name – the <news:name> value (defaults to site title).
  *   news_post_types       – multicheck array of post types to include.
  *
+ * The rendered XML is cached in the crawlwp_news_sitemap_xml transient for an
+ * hour (and served with matching Cache-Control/Expires headers); the cache is
+ * invalidated whenever a post is saved or deleted, or the sitemap settings
+ * change.
+ *
  * Developer hooks:
  *   crawlwp_news_sitemap_query_args   – filter WP_Query args before fetching entries.
  *   crawlwp_news_sitemap_entry        – filter / exclude a single entry (return false to skip).
+ *   crawlwp_news_sitemap_language     – filter the <news:language> value.
  */
 class NewsSitemapProvider extends \WP_Sitemaps_Provider
 {
@@ -42,6 +48,12 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 	 * normal page render.
 	 */
 	const PROVIDER_NAME = 'crawlwpnews';
+
+	/** Transient holding the rendered sitemap XML. */
+	const XML_TRANSIENT = 'crawlwp_news_sitemap_xml';
+
+	/** How long the rendered XML is cached and advertised as cacheable. */
+	const CACHE_TTL = HOUR_IN_SECONDS;
 
 	public function __construct()
 	{
@@ -60,6 +72,24 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 		 * XML with the news: namespace, which WordPress's renderer cannot output.
 		 */
 		add_action('template_redirect', [$this, 'maybe_render'], 1);
+
+		/*
+		 * Keep the cached XML in sync with the content and the settings.
+		 */
+		add_action('save_post', [$this, 'flush_cache']);
+		add_action('deleted_post', [$this, 'flush_cache']);
+		add_action('update_option_crawlwp_' . SitemapSettings::SECTION, [$this, 'flush_cache']);
+		add_action('add_option_crawlwp_' . SitemapSettings::SECTION, [$this, 'flush_cache']);
+	}
+
+	/**
+	 * Drop the cached XML.
+	 *
+	 * Hooks: save_post, deleted_post, update_option_crawlwp_sitemap_settings.
+	 */
+	public function flush_cache(): void
+	{
+		delete_transient(self::XML_TRANSIENT);
 	}
 
 	// -------------------------------------------------------------------------
@@ -151,43 +181,95 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 		exit;
 	}
 
-	private function get_language()
+	/**
+	 * The <news:language> value.
+	 *
+	 * Derived from the site locale, but filterable so multilingual integrations
+	 * can report the language their own settings define.
+	 *
+	 * @return string
+	 */
+	private function get_language(): string
 	{
 		$locale = strtolower(str_replace('_', '-', get_locale()));
 
-		return in_array($locale, ['zh-cn', 'zh-tw'], true) ? $locale : explode('-', $locale)[0];
+		$language = in_array($locale, ['zh-cn', 'zh-tw'], true) ? $locale : explode('-', $locale)[0];
+
+		/**
+		 * Filter the language reported in the News Sitemap.
+		 *
+		 * Google News expects a 2-letter ISO 639-1 code (plus zh-cn / zh-tw).
+		 *
+		 * @param string $language Language code derived from the site locale.
+		 */
+		$language = (string) apply_filters('crawlwp_news_sitemap_language', $language);
+
+		$language = strtolower(str_replace('_', '-', trim($language)));
+		$language = (string) preg_replace('/[^a-z0-9-]/', '', $language);
+
+		return $language !== '' ? $language : 'en';
 	}
 
 	/**
 	 * Output a Google-News-compliant sitemap with the news: namespace.
+	 *
+	 * The document is generated once per hour and kept in a transient; the
+	 * response also carries Cache-Control/Expires headers so proxies and CDNs
+	 * do not re-request it on every crawl.
 	 */
 	private function render_xml(): void
 	{
-		header('Content-Type: application/xml; charset=UTF-8');
+		$xml = get_transient(self::XML_TRANSIENT);
 
-		$entries = $this->get_entries();
-		$publication_name = SitemapSettings::get('news_publication_name', '') ?: get_bloginfo('name');
+		if (! is_string($xml) || $xml === '') {
+			$xml = $this->build_xml();
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-		echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
-		echo '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">' . "\n";
-
-		foreach ($entries as $entry) {
-			echo "\t<url>\n";
-			echo "\t\t<loc>" . esc_url($entry['loc']) . "</loc>\n";
-			echo "\t\t<news:news>\n";
-			echo "\t\t\t<news:publication>\n";
-			echo "\t\t\t\t<news:name>" . esc_xml($publication_name) . "</news:name>\n";
-			echo "\t\t\t\t<news:language>" . esc_xml($this->get_language()) . "</news:language>\n";
-			echo "\t\t\t</news:publication>\n";
-			echo "\t\t\t<news:publication_date>" . esc_xml($entry['publication_date']) . "</news:publication_date>\n";
-			echo "\t\t\t<news:title>" . esc_xml($entry['title']) . "</news:title>\n";
-			echo "\t\t</news:news>\n";
-			echo "\t</url>\n";
+			set_transient(self::XML_TRANSIENT, $xml, self::CACHE_TTL);
 		}
 
-		echo '</urlset>';
+		header('Content-Type: application/xml; charset=UTF-8');
+		header('Cache-Control: public, max-age=' . self::CACHE_TTL);
+		header('Expires: ' . gmdate('D, d M Y H:i:s', time() + self::CACHE_TTL) . ' GMT');
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- every value is escaped in build_xml().
+		echo $xml;
+	}
+
+	/**
+	 * Build the complete, fully escaped sitemap XML document.
+	 */
+	private function build_xml(): string
+	{
+		$entries = $this->get_entries();
+		$publication_name = SitemapSettings::get('news_publication_name', '') ?: get_bloginfo('name');
+		$language = $this->get_language();
+
+		$stylesheet_url = SitemapStylesheet::get_stylesheet_url('news');
+
+		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		if ($stylesheet_url !== '') {
+			$xml .= '<?xml-stylesheet type="text/xsl" href="' . esc_url($stylesheet_url) . '" ?>' . "\n";
+		}
+		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
+		$xml .= '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">' . "\n";
+
+		foreach ($entries as $entry) {
+			$xml .= "\t<url>\n";
+			$xml .= "\t\t<loc>" . esc_url($entry['loc']) . "</loc>\n";
+			$xml .= "\t\t<news:news>\n";
+			$xml .= "\t\t\t<news:publication>\n";
+			$xml .= "\t\t\t\t<news:name>" . esc_xml($publication_name) . "</news:name>\n";
+			$xml .= "\t\t\t\t<news:language>" . esc_xml($language) . "</news:language>\n";
+			$xml .= "\t\t\t</news:publication>\n";
+			$xml .= "\t\t\t<news:publication_date>" . esc_xml($entry['publication_date']) . "</news:publication_date>\n";
+			$xml .= "\t\t\t<news:title>" . esc_xml($entry['title']) . "</news:title>\n";
+			$xml .= "\t\t</news:news>\n";
+			$xml .= "\t</url>\n";
+		}
+
+		$xml .= '</urlset>';
+
+		return $xml;
 	}
 
 	// -------------------------------------------------------------------------

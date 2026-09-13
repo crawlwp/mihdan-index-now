@@ -41,9 +41,113 @@ class CustomUrlsSitemapProvider extends \WP_Sitemaps_Provider
 		$this->name = self::PROVIDER_NAME;
 		$this->object_type = 'crawlwp_custom_url';
 
-		$this->per_page = wp_sitemaps_get_max_urls($this->object_type);
+		$this->per_page = function_exists('wp_sitemaps_get_max_urls') ? wp_sitemaps_get_max_urls($this->object_type) : 2000;
 
 		add_action('init', [$this, 'register_provider'], 20);
+		add_action('template_redirect', [$this, 'maybe_render'], 1);
+		add_filter('wp_sitemaps_stylesheet_url', [$this, 'filter_stylesheet_url']);
+	}
+
+	/**
+	 * Filter the stylesheet URL when rendering the custom sitemap.
+	 *
+	 * @param string $url Default sitemap stylesheet URL.
+	 * @return string
+	 */
+	public function filter_stylesheet_url(string $url): string
+	{
+		static $running = false;
+		if ($running) {
+			return $url;
+		}
+
+		if (empty($url)) {
+			return $url;
+		}
+
+		if (get_query_var('sitemap') === self::PROVIDER_NAME) {
+			$running = true;
+			$url = SitemapStylesheet::get_stylesheet_url('custom');
+			$running = false;
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Intercept the sitemap request for our custom URLs provider and render XML.
+	 */
+	public function maybe_render(): void
+	{
+		if (get_query_var('sitemap') !== self::PROVIDER_NAME) {
+			return;
+		}
+
+		$all_urls = $this->get_urls();
+		if (empty($all_urls)) {
+			global $wp_query;
+			if ($wp_query instanceof \WP_Query) {
+				$wp_query->set_404();
+			}
+			status_header(404);
+			return;
+		}
+
+		$paged = absint(get_query_var('paged'));
+		if ($paged <= 0) {
+			$paged = 1;
+		}
+
+		$entries = $this->get_url_list($paged);
+		if (empty($entries)) {
+			global $wp_query;
+			if ($wp_query instanceof \WP_Query) {
+				$wp_query->set_404();
+			}
+			status_header(404);
+			return;
+		}
+
+		$xml = $this->build_xml($entries);
+
+		if (!headers_sent()) {
+			header('Content-Type: application/xml; charset=UTF-8');
+			header('Cache-Control: public, max-age=' . HOUR_IN_SECONDS);
+			header('Expires: ' . gmdate('D, d M Y H:i:s', time() + HOUR_IN_SECONDS) . ' GMT');
+		}
+
+		echo $xml;
+		exit;
+	}
+
+	/**
+	 * Build the complete, fully escaped custom URLs sitemap XML document.
+	 *
+	 * @param array<int,array{loc:string,lastmod?:string}> $entries
+	 * @return string
+	 */
+	public function build_xml(array $entries): string
+	{
+		$stylesheet_url = SitemapStylesheet::get_stylesheet_url('custom');
+
+		$xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		if ($stylesheet_url !== '') {
+			$xml .= '<?xml-stylesheet type="text/xsl" href="' . esc_url($stylesheet_url) . '" ?>' . "\n";
+		}
+		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+
+		foreach ($entries as $entry) {
+			$xml .= "\t<url>\n";
+			$xml .= "\t\t<loc>" . esc_url($entry['loc']) . "</loc>\n";
+			if (!empty($entry['lastmod'])) {
+				$xml .= "\t\t<lastmod>" . esc_xml($entry['lastmod']) . "</lastmod>\n";
+			}
+			$xml .= "\t</url>\n";
+		}
+
+		$xml .= '</urlset>';
+
+		return $xml;
 	}
 
 	// -------------------------------------------------------------------------
@@ -160,6 +264,7 @@ class CustomUrlsSitemapProvider extends \WP_Sitemaps_Provider
 		$seen = [];
 
 		foreach ($lines as $line) {
+
 			$url = esc_url_raw($line);
 
 			/* Skip empty or non-http(s) lines. */

@@ -117,12 +117,42 @@ class VideoSitemapProviderTest extends TestCase
 		$post2 = $this->makePost([
 			'ID'           => 105,
 			'post_title'   => 'Shortcode src attr',
-			'post_content' => '[video src="https://example.test/uploads/src_shortcode.mp4"]',
+			'post_content' => '[video src="https://samplelib.com/mp4/sample-5s.mp4"]',
 		]);
 
 		$entry2 = $this->extractVideo($post2);
 		$this->assertNotNull($entry2);
-		$this->assertSame('https://example.test/uploads/src_shortcode.mp4', $entry2['content_loc']);
+		$this->assertSame('https://samplelib.com/mp4/sample-5s.mp4', $entry2['content_loc']);
+
+		$post3 = $this->makePost([
+			'ID'           => 1051,
+			'post_title'   => 'Embed shortcode mp4',
+			'post_content' => '[embed]https://samplelib.com/mp4/sample-5s.mp4[/embed]',
+		]);
+
+		$entry3 = $this->extractVideo($post3);
+		$this->assertNotNull($entry3);
+		$this->assertSame('https://samplelib.com/mp4/sample-5s.mp4', $entry3['content_loc']);
+
+		$post4 = $this->makePost([
+			'ID'           => 1052,
+			'post_title'   => 'Embed shortcode relative mp4',
+			'post_content' => '[embed]/wp-content/uploads/relative-video.mp4[/embed]',
+		]);
+
+		$entry4 = $this->extractVideo($post4);
+		$this->assertNotNull($entry4);
+		$this->assertSame('https://example.test/wp-content/uploads/relative-video.mp4', $entry4['content_loc']);
+
+		$post5 = $this->makePost([
+			'ID'           => 1053,
+			'post_title'   => 'Video enclosing shortcode',
+			'post_content' => '[video]https://samplelib.com/mp4/sample-5s.mp4[/video]',
+		]);
+
+		$entry5 = $this->extractVideo($post5);
+		$this->assertNotNull($entry5);
+		$this->assertSame('https://samplelib.com/mp4/sample-5s.mp4', $entry5['content_loc']);
 	}
 
 	public function test_extract_video_from_mp4_with_query_and_hash(): void

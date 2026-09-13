@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\SitemapSettings;
 
+use Mihdan\IndexNow\SEOCore\SettingsFieldsTrait;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\Views\WPOSA;
 
@@ -17,12 +18,14 @@ use Mihdan\IndexNow\Views\WPOSA;
  */
 class SitemapSettings
 {
+	use SettingsFieldsTrait;
+
 	/** Option/section id (without the crawlwp_ prefix). */
 	const SECTION = 'sitemap_settings';
 
 	public function __construct()
 	{
-		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 40, 2);
+		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 15, 2);
 
 		/*
 		 * Record a timestamp whenever the sitemap settings option is saved.
@@ -102,9 +105,11 @@ class SitemapSettings
 
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_news_sitemap',
 			__('Google News Sitemap', 'mihdan-index-now'),
-			$news_desc
+			$news_desc,
+			true
 		);
 
 		$wposa->add_field(self::SECTION, [
@@ -139,9 +144,10 @@ class SitemapSettings
 
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_video_html',
-			__('Video &amp; HTML sitemaps', 'mihdan-index-now'),
-			__('A Video sitemap lists posts that embed YouTube/Vimeo or have VideoObject schema. An HTML sitemap is a shortcode for visitors.')
+			__('Video & HTML sitemaps', 'mihdan-index-now'),
+			__('A Video sitemap lists posts that embed YouTube/Vimeo/MP4 or have VideoObject schema. An HTML sitemap is a shortcode for visitors.', 'mihdan-index-now')
 		);
 
 		$wposa->add_field(self::SECTION, [
@@ -158,12 +164,33 @@ class SitemapSettings
 				: '',
 		]);
 
+		$rescan_html = sprintf(
+			'<a href="%1$s" class="button button-secondary">%2$s</a><p class="description">%3$s</p>',
+			esc_url(VideoSitemapProvider::get_rescan_url()),
+			esc_html__('Rescan posts for videos', 'mihdan-index-now'),
+			esc_html__('Videos are detected when a post is saved. Use this to scan existing posts again in the background — useful after enabling the video sitemap or importing content.', 'mihdan-index-now')
+		);
+
+		if (isset($_GET['crawlwp_video_rescan'])) {
+			$rescan_html .= '<p class="description"><strong>' . esc_html__('The rescan has been scheduled and runs in the background.', 'mihdan-index-now') . '</strong></p>';
+		}
+
+		$wposa->add_field(self::SECTION, [
+			'id'   => 'video_rescan',
+			'type' => 'html',
+			'name' => __('Video detection', 'mihdan-index-now'),
+			'desc' => $rescan_html,
+		]);
+
 		$wposa->add_field(self::SECTION, [
 			'id'      => 'html_enabled',
 			'type'    => 'switch',
 			'name'    => __('Enable HTML sitemap shortcode', 'mihdan-index-now'),
 			'default' => 'on',
-			'desc'    => esc_html__('Use [crawlwp_html_sitemap] on any page.', 'mihdan-index-now'),
+			'desc'    => sprintf(
+				esc_html__('Use %s[crawlwp_html_sitemap]%s on any page.', 'mihdan-index-now'),
+				'<code>', '</code>'
+			),
 		]);
 	}
 
@@ -176,6 +203,7 @@ class SitemapSettings
 
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_custom_urls',
 			__('Additional Custom URLs', 'mihdan-index-now'),
 			__('Add URLs to pages on your domain that are not managed by WordPress (e.g. a static landing page, a web app sub-path, or a custom checkout flow). One absolute URL per line. Invalid or duplicate entries are silently skipped. When at least one URL is saved, a dedicated sitemap is generated and linked from the sitemap index.', 'mihdan-index-now')
@@ -221,25 +249,6 @@ class SitemapSettings
 		}
 
 		return $options;
-	}
-
-	/**
-	 * A full-width sub-heading inside the settings screen.
-	 */
-	private function add_heading(WPOSA $wposa, string $id, string $title, string $desc = ''): void
-	{
-		$html = sprintf('<h3 class="cwp-tm-subheading">%s</h3>', esc_html($title));
-
-		if ($desc !== '') {
-			$html .= sprintf('<p class="description">%s</p>', wp_kses_post($desc));
-		}
-
-		$wposa->add_field(self::SECTION, [
-			'id' => $id,
-			'type' => 'html',
-			'name' => '',
-			'desc' => $html,
-		]);
 	}
 
 	// -------------------------------------------------------------------------
