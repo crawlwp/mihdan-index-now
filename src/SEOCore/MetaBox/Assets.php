@@ -15,6 +15,8 @@ class Assets
 		add_action('wp_ajax_crawlwp_check_duplicate_keyword', [$this, 'ajax_check_duplicate_keyword']);
 		add_action('wp_ajax_crawlwp_suggested_links', [$this, 'ajax_suggested_links']);
 		add_action('crawlwp/index_pinged', [$this, 'store_last_pinged_time'], 10, 2);
+		add_action('save_post', [$this, 'flush_inbound_links_cache']);
+		add_action('deleted_post', [$this, 'flush_inbound_links_cache']);
 	}
 
 	public function enqueue(string $hook): void
@@ -49,13 +51,12 @@ class Assets
 		$excerpt    = '';
 
 		if ($post instanceof \WP_Post) {
-			$post_title = $post->post_title;
+			$post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
 			$excerpt    = $post->post_excerpt ?: wp_trim_words(wp_strip_all_tags($post->post_content), 30, '...');
 		}
 
 		$author      = '';
 		$categories  = [];
-		$content     = '';
 		$inbound     = [];
 
 		if ($post instanceof \WP_Post) {
@@ -65,7 +66,6 @@ class Assets
 			if (! empty($terms) && ! is_wp_error($terms)) {
 				$categories = wp_list_pluck($terms, 'name');
 			}
-			$content = $post->post_content;
 			$inbound = $this->get_inbound_links($post->ID);
 			$suggested = $this->get_suggested_links($post->ID);
 		}
@@ -80,7 +80,10 @@ class Assets
 			'author'      => $author,
 			'category'    => ! empty($categories) ? $categories[0] : '',
 			'permalink'   => $post instanceof \WP_Post ? get_permalink($post->ID) : '',
-			'postContent' => $content,
+			/* The post content is deliberately NOT localized here — it can be
+			   hundreds of kilobytes on every editor load. The JS reads the live
+			   content from the block editor store (or the Classic editor) via
+			   getEditorContent(). */
 			'inboundLinks' => $inbound,
 			'suggestedLinks' => $suggested ?? [],
 			'kwCheckNonce'  => wp_create_nonce('crawlwp_check_keyword'),
@@ -213,17 +216,66 @@ class Assets
 		]);
 	}
 
+	/**
+	 * Transient name holding the inbound links of a post.
+	 */
+	private function inbound_links_cache_key(int $post_id): string
+	{
+		return 'crawlwp_inbound_links_' . $post_id;
+	}
+
+	/**
+	 * Drop the cached inbound links of a post.
+	 *
+	 * Editing a post changes both its own outgoing links and — for the post it
+	 * links to — that post's inbound list, so the cache also carries a short
+	 * expiry to cover the second case.
+	 */
+	public function flush_inbound_links_cache(int $post_id): void
+	{
+		delete_transient($this->inbound_links_cache_key($post_id));
+	}
+
+	/**
+	 * Published posts/pages that link to this post.
+	 *
+	 * The lookup is an unindexed LIKE over post_content, so the result is
+	 * cached in a transient and only the columns actually needed are selected:
+	 * the anchor text comes from a bounded substring around the first match
+	 * instead of the whole content column.
+	 */
 	private function get_inbound_links(int $post_id): array
 	{
 		$permalink = get_permalink($post_id);
 
 		if (! $permalink) return [];
 
+		$cache_key = $this->inbound_links_cache_key($post_id);
+		$cached    = get_transient($cache_key);
+
+		if (is_array($cached)) {
+			return $cached;
+		}
+
 		global $wpdb;
+
+		/* Characters kept before/after the match so the anchor tag fits in the excerpt. */
+		$before = 300;
+		$length = 900;
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT ID, post_title, post_content, post_date FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ('post','page') AND post_content LIKE %s AND ID != %d LIMIT 20",
+				"SELECT ID, post_title, post_date,
+					SUBSTRING(post_content, GREATEST(1, LOCATE(%s, post_content) - %d), %d) AS content_excerpt
+				 FROM {$wpdb->posts}
+				 WHERE post_status = 'publish'
+				   AND post_type IN ('post','page')
+				   AND post_content LIKE %s
+				   AND ID != %d
+				 LIMIT 20",
+				$permalink,
+				$before,
+				$length,
 				'%' . $wpdb->esc_like($permalink) . '%',
 				$post_id
 			)
@@ -233,7 +285,7 @@ class Assets
 
 		foreach ($results as $row) {
 			$anchor = '';
-			if (preg_match('/<a[^>]+href=["\']' . preg_quote($permalink, '/') . '["\'][^>]*>(.*?)<\/a>/is', $row->post_content, $m)) {
+			if (preg_match('/<a[^>]+href=["\']' . preg_quote($permalink, '/') . '["\'][^>]*>(.*?)<\/a>/is', (string) $row->content_excerpt, $m)) {
 				$anchor = wp_strip_all_tags($m[1]);
 			}
 
@@ -244,6 +296,16 @@ class Assets
 				'date'   => mysql2date('j M Y', $row->post_date),
 			];
 		}
+
+		/**
+		 * Filters how long the inbound link list of a post stays cached.
+		 *
+		 * @param int $ttl     Lifetime in seconds. Defaults to 15 minutes.
+		 * @param int $post_id The post the links point to.
+		 */
+		$ttl = (int) apply_filters('crawlwp_inbound_links_cache_ttl', 15 * MINUTE_IN_SECONDS, $post_id);
+
+		set_transient($cache_key, $links, max(MINUTE_IN_SECONDS, $ttl));
 
 		return $links;
 	}
