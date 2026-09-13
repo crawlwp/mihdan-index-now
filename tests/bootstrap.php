@@ -235,6 +235,20 @@ if (!function_exists('esc_attr__')) {
 	}
 }
 
+if (!function_exists('esc_js')) {
+	function esc_js($text)
+	{
+		return addcslashes((string)$text, "\\'\"&\n\r<>");
+	}
+}
+
+if (!function_exists('current_user_can')) {
+	function current_user_can($capability, ...$args)
+	{
+		return $GLOBALS['crawlwp_test_state']['current_user_can'][$capability] ?? true;
+	}
+}
+
 if (!function_exists('wp_json_encode')) {
 	function wp_json_encode($data, $options = 0, $depth = 512)
 	{
@@ -584,3 +598,4 @@ require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapSet
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapStylesheet.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/CustomUrlsSitemapProvider.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/VideoSitemapProvider.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Code/CodeSettings.php';

@@ -21,7 +21,7 @@ class CodeSettings
 
 	public function __construct()
 	{
-		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 45, 2);
+		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 18, 2);
 		add_filter('wposa_submitted_data', [$this, 'gate_raw_code_fields'], 10, 2);
 		add_action('wp_head', [$this, 'output_head'], 99);
 		add_action('wp_body_open', [$this, 'output_body'], 1);
@@ -37,7 +37,7 @@ class CodeSettings
 		$wposa->add_section([
 			'header_menu_id' => 'advanced_settings',
 			'id'             => self::SECTION,
-			'title'          => __('Header &amp; Footer Code', 'mihdan-index-now'),
+			'title'          => __('Header & Footer Code', 'mihdan-index-now'),
 			'desc'           => __('Insert tracking scripts (GA4, GTM) or arbitrary HTML in the site head, after &lt;body&gt;, or in the footer.', 'mihdan-index-now'),
 		]);
 
@@ -56,27 +56,30 @@ class CodeSettings
 		]);
 
 		$wposa->add_field(self::SECTION, [
-			'id'   => 'head',
-			'type' => 'textarea',
-			'name' => __('Scripts in &lt;head&gt;', 'mihdan-index-now'),
-			'rows' => 6,
-			'desc' => $this->raw_code_notice(__('Printed verbatim inside &lt;head&gt; on every page of your site.', 'mihdan-index-now')),
+			'id'                => 'head',
+			'type'              => 'textarea',
+			'name'              => __('Scripts in &lt;head&gt;', 'mihdan-index-now'),
+			'rows'              => 6,
+			'desc'              => $this->raw_code_notice(__('Printed verbatim inside &lt;head&gt; on every page of your site.', 'mihdan-index-now')),
+			'sanitize_callback' => [$this, 'sanitize_head'],
 		]);
 
 		$wposa->add_field(self::SECTION, [
-			'id'   => 'body',
-			'type' => 'textarea',
-			'name' => __('Scripts after &lt;body&gt;', 'mihdan-index-now'),
-			'rows' => 4,
-			'desc' => $this->raw_code_notice(__('Printed verbatim immediately after the opening &lt;body&gt; tag on every page of your site.', 'mihdan-index-now')),
+			'id'                => 'body',
+			'type'              => 'textarea',
+			'name'              => __('Scripts after &lt;body&gt;', 'mihdan-index-now'),
+			'rows'              => 4,
+			'desc'              => $this->raw_code_notice(__('Printed verbatim immediately after the opening &lt;body&gt; tag on every page of your site.', 'mihdan-index-now')),
+			'sanitize_callback' => [$this, 'sanitize_body'],
 		]);
 
 		$wposa->add_field(self::SECTION, [
-			'id'   => 'footer',
-			'type' => 'textarea',
-			'name' => __('Scripts in footer', 'mihdan-index-now'),
-			'rows' => 6,
-			'desc' => $this->raw_code_notice(__('Printed verbatim in the footer on every page of your site.', 'mihdan-index-now')),
+			'id'                => 'footer',
+			'type'              => 'textarea',
+			'name'              => __('Scripts in footer', 'mihdan-index-now'),
+			'rows'              => 6,
+			'desc'              => $this->raw_code_notice(__('Printed verbatim in the footer on every page of your site.', 'mihdan-index-now')),
+			'sanitize_callback' => [$this, 'sanitize_footer'],
 		]);
 	}
 
@@ -133,6 +136,52 @@ class CodeSettings
 		}
 
 		return $submitted_data;
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	public function sanitize_head($value): string
+	{
+		return $this->sanitize_code_field('head', $value);
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	public function sanitize_body($value): string
+	{
+		return $this->sanitize_code_field('body', $value);
+	}
+
+	/**
+	 * @param mixed $value
+	 */
+	public function sanitize_footer($value): string
+	{
+		return $this->sanitize_code_field('footer', $value);
+	}
+
+	/**
+	 * Sanitize raw code field input.
+	 *
+	 * Allows arbitrary HTML and script tags when the current user has unfiltered_html capability.
+	 * Retains the stored value if the user lacks unfiltered_html capability.
+	 *
+	 * @param string $field
+	 * @param mixed  $value
+	 */
+	private function sanitize_code_field(string $field, $value): string
+	{
+		if ( ! is_scalar($value)) {
+			return '';
+		}
+
+		if ( ! self::current_user_can_edit_code()) {
+			return (string) self::get($field, '');
+		}
+
+		return (string) $value;
 	}
 
 	public function output_head(): void
