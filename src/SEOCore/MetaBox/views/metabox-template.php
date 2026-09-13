@@ -4,8 +4,6 @@ use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 
 if (! defined('ABSPATH')) exit;
 $robots_adv = is_array($data['robots_advanced']) ? $data['robots_advanced'] : [];
-$schema_extra = is_array($data['schema_extra'] ?? null) ? $data['schema_extra'] : [];
-$schema_faq = is_array($schema_extra['faq'] ?? null) ? $schema_extra['faq'] : [['question' => '', 'answer' => '']];
 $categories = get_the_terms($post, 'category');
 $categories = is_array($categories) ? $categories : [];
 
@@ -154,7 +152,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
               <div class="cwp-serp-url" id="cwpSerpUrl"><?php echo esc_html(str_replace(['https://', 'http://'], '', $site_url)); ?></div>
             </div>
           </div>
-          <div class="cwp-serp-title" id="cwpSerpTitle"><?php echo esc_html($data['seo_title'] ?: $post->post_title); ?></div>
+          <div class="cwp-serp-title" id="cwpSerpTitle"><?php echo esc_html($data['seo_title'] ?: $post_title); ?></div>
           <div class="cwp-serp-desc"><span id="cwpSerpDesc"><?php echo esc_html($data['seo_description']); ?></span></div>
         </div>
       </div>
@@ -185,7 +183,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
             </div>
             <div class="cwp-fb-meta">
               <div class="cwp-fb-domain"><?php echo esc_html(wp_parse_url($site_url, PHP_URL_HOST)); ?></div>
-              <p class="cwp-fb-title" id="cwpFbTitlePrev"><?php echo esc_html($data['seo_title'] ?: $post->post_title); ?></p>
+              <p class="cwp-fb-title" id="cwpFbTitlePrev"><?php echo esc_html($data['seo_title'] ?: $post_title); ?></p>
               <p class="cwp-fb-desc" id="cwpFbDescPrev"><?php echo esc_html($data['seo_description']); ?></p>
             </div>
           </div>
@@ -283,7 +281,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
             </div>
             <div class="cwp-x-meta">
               <div class="cwp-x-domain"><?php echo esc_html(wp_parse_url($site_url, PHP_URL_HOST)); ?></div>
-              <p class="cwp-x-title" id="cwpXTitlePrev"><?php echo esc_html($data['seo_title'] ?: $post->post_title); ?></p>
+              <p class="cwp-x-title" id="cwpXTitlePrev"><?php echo esc_html($data['seo_title'] ?: $post_title); ?></p>
               <p class="cwp-x-desc" id="cwpXDescPrev"><?php echo esc_html($data['seo_description']); ?></p>
             </div>
           </div>
@@ -422,7 +420,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
         </div>
         <div class="cwp-field">
           <div class="cwp-label-row"><label class="cwp-label" for="cwpBreadcrumb"><?php esc_html_e('Breadcrumb label', 'mihdan-index-now'); ?></label></div>
-          <input class="cwp-input" id="cwpBreadcrumb" name="<?php echo esc_attr(MetaFields::SCHEMA_BREADCRUMB); ?>" type="text" value="<?php echo esc_attr($data['schema_breadcrumb']); ?>" placeholder="<?php echo esc_attr($post->post_title); ?>">
+          <input class="cwp-input" id="cwpBreadcrumb" name="<?php echo esc_attr(MetaFields::SCHEMA_BREADCRUMB); ?>" type="text" value="<?php echo esc_attr($data['schema_breadcrumb']); ?>" placeholder="<?php echo esc_attr($post_title); ?>">
           <p class="cwp-hint"><?php esc_html_e('Shown in the breadcrumb trail. Defaults to the post title.', 'mihdan-index-now'); ?></p>
           <div class="cwp-breadcrumb-preview" id="cwpBreadcrumbPreview"></div>
         </div>
@@ -430,7 +428,7 @@ $cwp_ai_button = static function (string $target, string $field): void {
 
       <div class="cwp-field">
         <div class="cwp-label-row"><label class="cwp-label" for="cwpHeadline"><?php esc_html_e('Headline', 'mihdan-index-now'); ?></label></div>
-        <input class="cwp-input" id="cwpHeadline" name="<?php echo esc_attr(MetaFields::SCHEMA_HEADLINE); ?>" type="text" value="<?php echo esc_attr($data['schema_headline']); ?>" placeholder="<?php echo esc_attr($post->post_title); ?>">
+        <input class="cwp-input" id="cwpHeadline" name="<?php echo esc_attr(MetaFields::SCHEMA_HEADLINE); ?>" type="text" value="<?php echo esc_attr($data['schema_headline']); ?>" placeholder="<?php echo esc_attr($post_title); ?>">
         <p class="cwp-hint"><?php esc_html_e('Leave empty to reuse the SEO title.', 'mihdan-index-now'); ?></p>
       </div>
 
@@ -442,60 +440,8 @@ $cwp_ai_button = static function (string $target, string $field): void {
     </div>
 
     <div class="cwp-section">
-      <h4 class="cwp-section-title"><?php esc_html_e('Rich result type', 'mihdan-index-now'); ?></h4>
-      <p class="cwp-section-desc"><?php esc_html_e('Optional extra schema (FAQ, HowTo, Recipe, Event, Job, Course, Video) output as its own JSON-LD block.', 'mihdan-index-now'); ?></p>
       <div class="cwp-field">
-        <select class="cwp-select" name="crawlwp_schema_extra[extra_type]" id="cwpExtraType">
-          <option value="" <?php selected($schema_extra['extra_type'] ?? '', ''); ?>><?php esc_html_e('None', 'mihdan-index-now'); ?></option>
-          <option value="FAQPage" <?php selected($schema_extra['extra_type'] ?? '', 'FAQPage'); ?>>FAQ</option>
-          <option value="HowTo" <?php selected($schema_extra['extra_type'] ?? '', 'HowTo'); ?>>HowTo</option>
-          <option value="Recipe" <?php selected($schema_extra['extra_type'] ?? '', 'Recipe'); ?>>Recipe</option>
-          <option value="Event" <?php selected($schema_extra['extra_type'] ?? '', 'Event'); ?>>Event</option>
-          <option value="JobPosting" <?php selected($schema_extra['extra_type'] ?? '', 'JobPosting'); ?>>JobPosting</option>
-          <option value="Course" <?php selected($schema_extra['extra_type'] ?? '', 'Course'); ?>>Course</option>
-          <option value="VideoObject" <?php selected($schema_extra['extra_type'] ?? '', 'VideoObject'); ?>>Video</option>
-        </select>
-      </div>
-      <?php foreach ($schema_faq as $faq_row) : ?>
-      <div class="cwp-grid-2">
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[faq_q][]" type="text" value="<?php echo esc_attr($faq_row['question'] ?? ''); ?>" placeholder="<?php esc_attr_e('FAQ question', 'mihdan-index-now'); ?>">
-        </div>
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[faq_a][]" type="text" value="<?php echo esc_attr($faq_row['answer'] ?? ''); ?>" placeholder="<?php esc_attr_e('FAQ answer', 'mihdan-index-now'); ?>">
-        </div>
-      </div>
-      <?php endforeach; ?>
-      <div class="cwp-field">
-        <input class="cwp-input" name="crawlwp_schema_extra[howto_name]" type="text" value="<?php echo esc_attr($schema_extra['howto']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('How-to title', 'mihdan-index-now'); ?>">
-        <textarea class="cwp-textarea" name="crawlwp_schema_extra[howto_steps][]" rows="2" placeholder="<?php esc_attr_e('How-to step (one field; add more by duplicating in HTML or use the HowTo block)', 'mihdan-index-now'); ?>"><?php echo esc_textarea($schema_extra['howto']['steps'][0]['text'] ?? ''); ?></textarea>
-      </div>
-      <div class="cwp-grid-2">
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[recipe_name]" type="text" value="<?php echo esc_attr($schema_extra['recipe']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Recipe name', 'mihdan-index-now'); ?>">
-        </div>
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[event_name]" type="text" value="<?php echo esc_attr($schema_extra['event']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Event name', 'mihdan-index-now'); ?>">
-        </div>
-      </div>
-      <div class="cwp-grid-2">
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[job_title]" type="text" value="<?php echo esc_attr($schema_extra['job']['title'] ?? ''); ?>" placeholder="<?php esc_attr_e('Job title', 'mihdan-index-now'); ?>">
-        </div>
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[course_name]" type="text" value="<?php echo esc_attr($schema_extra['course']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Course name', 'mihdan-index-now'); ?>">
-        </div>
-      </div>
-      <div class="cwp-grid-2">
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[video_name]" type="text" value="<?php echo esc_attr($schema_extra['video']['name'] ?? ''); ?>" placeholder="<?php esc_attr_e('Video title', 'mihdan-index-now'); ?>">
-        </div>
-        <div class="cwp-field">
-          <input class="cwp-input" name="crawlwp_schema_extra[video_url]" type="url" value="<?php echo esc_attr($schema_extra['video']['url'] ?? ''); ?>" placeholder="https://">
-        </div>
-      </div>
-      <div class="cwp-field">
-        <label class="cwp-label" for="cwpSchemaCustom"><?php esc_html_e('Custom JSON-LD', 'mihdan-index-now'); ?></label>
+        <div class="cwp-label-row"><label class="cwp-label" for="cwpSchemaCustom"><?php esc_html_e('Custom JSON-LD', 'mihdan-index-now'); ?></label></div>
         <textarea class="cwp-textarea" id="cwpSchemaCustom" name="<?php echo esc_attr(MetaFields::SCHEMA_CUSTOM); ?>" rows="4" placeholder="{ &quot;@type&quot;: &quot;WebPage&quot; }"><?php echo esc_textarea($data['schema_custom']); ?></textarea>
       </div>
     </div>

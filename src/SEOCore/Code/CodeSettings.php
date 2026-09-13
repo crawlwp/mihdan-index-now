@@ -12,9 +12,17 @@ class CodeSettings
 {
 	const SECTION = 'code';
 
+	/**
+	 * Fields whose value is printed verbatim in the frontend markup.
+	 *
+	 * @var string[]
+	 */
+	private const RAW_CODE_FIELDS = ['head', 'body', 'footer'];
+
 	public function __construct()
 	{
 		add_action('crawlwp_setup_fields', [$this, 'settings_fields'], 45, 2);
+		add_filter('wposa_submitted_data', [$this, 'gate_raw_code_fields'], 10, 2);
 		add_action('wp_head', [$this, 'output_head'], 99);
 		add_action('wp_body_open', [$this, 'output_body'], 1);
 		add_action('wp_footer', [$this, 'output_footer'], 99);
@@ -52,6 +60,7 @@ class CodeSettings
 			'type' => 'textarea',
 			'name' => __('Scripts in &lt;head&gt;', 'mihdan-index-now'),
 			'rows' => 6,
+			'desc' => $this->raw_code_notice(__('Printed verbatim inside &lt;head&gt; on every page of your site.', 'mihdan-index-now')),
 		]);
 
 		$wposa->add_field(self::SECTION, [
@@ -59,6 +68,7 @@ class CodeSettings
 			'type' => 'textarea',
 			'name' => __('Scripts after &lt;body&gt;', 'mihdan-index-now'),
 			'rows' => 4,
+			'desc' => $this->raw_code_notice(__('Printed verbatim immediately after the opening &lt;body&gt; tag on every page of your site.', 'mihdan-index-now')),
 		]);
 
 		$wposa->add_field(self::SECTION, [
@@ -66,7 +76,63 @@ class CodeSettings
 			'type' => 'textarea',
 			'name' => __('Scripts in footer', 'mihdan-index-now'),
 			'rows' => 6,
+			'desc' => $this->raw_code_notice(__('Printed verbatim in the footer on every page of your site.', 'mihdan-index-now')),
 		]);
+	}
+
+	/**
+	 * Field copy that spells out the risk of the raw code fields, and whether
+	 * the current user is allowed to change them.
+	 */
+	private function raw_code_notice(string $placement): string
+	{
+		$notice = $placement . ' ' . esc_html__('It is never filtered or escaped, so anything you paste here — including <script> tags — runs for every visitor. Only paste code you fully trust.', 'mihdan-index-now');
+
+		if ( ! self::current_user_can_edit_code()) {
+			$notice .= ' <strong>' . esc_html__('Your account cannot save unfiltered HTML, so changes to this field are ignored.', 'mihdan-index-now') . '</strong>';
+		}
+
+		return $notice;
+	}
+
+	/**
+	 * Whether the current user may store unescaped markup.
+	 *
+	 * On a single site this is every administrator; on multisite only network
+	 * administrators hold `unfiltered_html`.
+	 */
+	public static function current_user_can_edit_code(): bool
+	{
+		return current_user_can('unfiltered_html');
+	}
+
+	/**
+	 * Discard submitted values for the raw code fields when the user lacks
+	 * `unfiltered_html`.
+	 *
+	 * WPOSA merges the sanitised submission over the stored option, so simply
+	 * removing the keys keeps whatever is already saved.
+	 *
+	 * @param array  $submitted_data Posted values for this section.
+	 * @param string $name           Option name being saved.
+	 *
+	 * @return array
+	 */
+	public function gate_raw_code_fields($submitted_data, $name)
+	{
+		if ($name !== 'crawlwp_' . self::SECTION || ! is_array($submitted_data)) {
+			return $submitted_data;
+		}
+
+		if (self::current_user_can_edit_code()) {
+			return $submitted_data;
+		}
+
+		foreach (self::RAW_CODE_FIELDS as $field) {
+			unset($submitted_data[$field]);
+		}
+
+		return $submitted_data;
 	}
 
 	public function output_head(): void
@@ -85,7 +151,7 @@ class CodeSettings
 			echo "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','" . esc_js($ga4) . "');</script>\n";
 		}
 
-		echo (string) self::get('head', '');
+		echo self::get('head', '');
 	}
 
 	public function output_body(): void
@@ -96,12 +162,12 @@ class CodeSettings
 			echo '<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=' . esc_attr($gtm) . '" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>';
 		}
 
-		echo (string) self::get('body', '');
+		echo self::get('body', '');
 	}
 
 	public function output_footer(): void
 	{
-		echo (string) self::get('footer', '');
+		echo self::get('footer', '');
 	}
 
 	public static function get(string $field, $default = '')

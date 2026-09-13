@@ -2,6 +2,7 @@
 
 namespace Mihdan\IndexNow\SEOCore\SiteInfoSettings;
 
+use Mihdan\IndexNow\SEOCore\SettingsFieldsTrait;
 use Mihdan\IndexNow\Utils;
 use Mihdan\IndexNow\Views\WPOSA;
 
@@ -16,6 +17,8 @@ use Mihdan\IndexNow\Views\WPOSA;
  */
 class SiteInfoSettings
 {
+	use SettingsFieldsTrait;
+
 	/** Option/section id (without the crawlwp_ prefix). */
 	const SECTION = 'site_info';
 
@@ -51,6 +54,7 @@ class SiteInfoSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_site_type',
 			__('Site Representation', 'mihdan-index-now'),
 			__('Tell search engines how to represent this website in structured data. This determines whether a Person or Organization node is emitted in the JSON-LD graph.', 'mihdan-index-now')
@@ -77,6 +81,7 @@ class SiteInfoSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_identity',
 			__('Organization / Person Identity', 'mihdan-index-now'),
 			__('These details are used to build the Organization or Person node in the JSON-LD graph. Leave fields empty to use the WordPress site defaults.', 'mihdan-index-now')
@@ -118,6 +123,7 @@ class SiteInfoSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_local_seo',
 			__('Local SEO', 'mihdan-index-now'),
 			__('NAP details and opening hours for LocalBusiness structured data. Leave disabled for non-local sites.')
@@ -259,6 +265,7 @@ class SiteInfoSettings
 	{
 		$this->add_heading(
 			$wposa,
+			self::SECTION,
 			'heading_social_profiles',
 			__('Social Profiles', 'mihdan-index-now'),
 			__('Enter the social profile URLs for this site. They are added as the sameAs property on the Organization or Person node, which helps search engines connect your site to your social presence.', 'mihdan-index-now')
@@ -290,34 +297,6 @@ class SiteInfoSettings
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
-
-	/**
-	 * A full-width sub-heading inside the settings screen.
-	 */
-	private function add_heading(WPOSA $wposa, string $id, string $title, string $desc = ''): void
-	{
-		$html = sprintf('<h3 class="cwp-tm-subheading">%s</h3>', esc_html($title));
-
-		if ($desc !== '') {
-			$html .= sprintf('<p class="description">%s</p>', esc_html($desc));
-		}
-
-		$wposa->add_field(self::SECTION, [
-			'id'    => $id,
-			'type'  => 'html',
-			'name'  => '',
-			'desc'  => $html,
-			'class' => 'wposa-form-table__row cwp-tm-heading-row',
-		]);
-	}
-
-	/**
-	 * Wrap copy inside a description paragraph so it renders below a toggle.
-	 */
-	private function description(string $text): string
-	{
-		return sprintf('<p class="description">%s</p>', esc_html($text));
-	}
 
 	/**
 	 * Read a site info setting value.

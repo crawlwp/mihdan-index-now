@@ -49,6 +49,30 @@ class MetaFields
 	public const NONCE_ACTION = 'crawlwp_seo_metabox';
 	public const NONCE_NAME   = '_crawlwp_seo_nonce';
 
+	/**
+	 * Hidden tracker rendered by the SEO metabox (and any other full SEO form).
+	 *
+	 * Checkbox and multi-select fields signal "off" by being absent from the
+	 * request, so they can only be reset when we know the form that renders them
+	 * was actually submitted. Without this marker a third-party programmatic
+	 * wp_update_post()/save_post would wipe them.
+	 */
+	public const CHECKBOX_TRACKER = '_crawlwp_seo_fields_present';
+
+	/**
+	 * Meta keys that are always stored, even when empty.
+	 *
+	 * Keeping a row with an empty string lets the Bulk Editor find posts with no
+	 * SEO title/description through an indexed `meta_value = ''` comparison
+	 * instead of a NOT EXISTS sub-query.
+	 *
+	 * @var string[]
+	 */
+	public const ALWAYS_STORED = [
+		self::SEO_TITLE,
+		self::SEO_DESCRIPTION,
+	];
+
 	private static array $text_fields = [
 		self::SEO_TITLE,
 		self::FOCUS_KEYWORD,
@@ -114,7 +138,7 @@ class MetaFields
 			self::SCHEMA_TYPE         => [array_merge(self::$page_types, self::$article_types), ''],
 			self::SCHEMA_PAGE_TYPE    => [self::$page_types, 'WebPage'],
 			self::SCHEMA_ARTICLE_TYPE => [self::$article_types, 'Article'],
-			self::REDIRECT_TYPE       => [['301', '302', '307', '410'], '301'],
+			self::REDIRECT_TYPE       => [['301', '302', '307', '410', '451'], '301'],
 		];
 	}
 
@@ -140,6 +164,68 @@ class MetaFields
 		self::ROBOTS_ADVANCED,
 	];
 
+	/**
+	 * Field definitions handed to {@see FieldProcessor::process()}.
+	 *
+	 * @param bool $form_rendered Whether the request came from a form that
+	 *                            rendered the checkbox / multi-select fields
+	 *                            (see self::CHECKBOX_TRACKER).
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function field_definitions(bool $form_rendered = false): array
+	{
+		$fields = [];
+
+		foreach (self::$text_fields as $key) {
+			$fields[$key] = ['type' => FieldProcessor::TYPE_TEXT];
+		}
+
+		foreach (self::$textarea_fields as $key) {
+			$fields[$key] = ['type' => FieldProcessor::TYPE_TEXTAREA];
+		}
+
+		foreach (self::$url_fields as $key) {
+			$fields[$key] = ['type' => FieldProcessor::TYPE_URL];
+		}
+
+		foreach (self::select_fields() as $key => [$allowed, $fallback]) {
+			$fields[$key] = [
+				'type'     => FieldProcessor::TYPE_SELECT,
+				'allowed'  => $allowed,
+				'fallback' => $fallback,
+			];
+		}
+
+		foreach (self::$image_fields as $key) {
+			$fields[$key] = ['type' => FieldProcessor::TYPE_INT];
+		}
+
+		$fields[self::PRIMARY_CATEGORY] = ['type' => FieldProcessor::TYPE_INT];
+		$fields[self::SCHEMA_CUSTOM]    = ['type' => FieldProcessor::TYPE_JSON];
+
+		/*
+		 * Checkbox and robots-advanced fields are only touched when the SEO form
+		 * was rendered — otherwise an unrelated programmatic save would reset
+		 * them to their "off" state.
+		 */
+		foreach (self::$checkbox_fields as $key) {
+			$fields[$key] = [
+				'type'   => FieldProcessor::TYPE_CHECKBOX,
+				'always' => $form_rendered,
+			];
+		}
+
+		foreach (self::$array_fields as $key) {
+			$fields[$key] = [
+				'type'    => FieldProcessor::TYPE_MULTI_SELECT,
+				'allowed' => self::$robots_advanced_values,
+				'always'  => $form_rendered,
+			];
+		}
+
+		return $fields;
+	}
+
 	public static function save(int $post_id): void
 	{
 		if (
@@ -153,6 +239,22 @@ class MetaFields
 			return;
 		}
 
+		/*
+		 * Revisions are deliberately skipped and the SEO meta is NOT revisioned.
+		 *
+		 * WordPress' `_wp_post_revision_fields` only understands columns of the
+		 * posts table — post meta is not part of a revision, so tracking these
+		 * fields would mean shadow-copying every key onto each revision object
+		 * and re-applying it on `wp_restore_post_revision`. For this field set
+		 * that is riskier than it is useful: the values include serialized
+		 * arrays (robots advanced, schema extra), machine-managed caches (the SEO
+		 * score and signal caches) and checkbox fields whose "off" state is an
+		 * absent request key, so a partially populated revision would silently
+		 * clear real values on restore. Autosave revisions would also multiply
+		 * the meta rows on every keystroke-triggered save. Until there is a
+		 * dedicated diff/restore UI for SEO fields, bailing out here keeps the
+		 * stored values authoritative.
+		 */
 		if (wp_is_post_revision($post_id)) {
 			return;
 		}
@@ -161,70 +263,55 @@ class MetaFields
 			return;
 		}
 
-		foreach (self::$text_fields as $key) {
-			if (isset($_POST[$key])) {
-				update_post_meta($post_id, $key, sanitize_text_field(wp_unslash($_POST[$key])));
+		$form_rendered = isset($_POST[self::CHECKBOX_TRACKER]);
+		$values        = FieldProcessor::process(self::field_definitions($form_rendered), $_POST);
+
+		if (
+			isset($values[self::REDIRECT_URL]) &&
+			$values[self::REDIRECT_URL] !== '' &&
+			self::is_external_url($values[self::REDIRECT_URL]) &&
+			! self::can_redirect_externally($post_id)
+		) {
+			$values[self::REDIRECT_URL] = '';
+		}
+
+		foreach ($values as $key => $value) {
+			update_post_meta($post_id, $key, $value);
+		}
+
+		if (isset($_POST['crawlwp_schema_extra'])) {
+			update_post_meta($post_id, self::SCHEMA_EXTRA, self::sanitize_schema_extra($_POST['crawlwp_schema_extra']));
+		}
+
+		self::store_defaults($post_id);
+	}
+
+	/**
+	 * Make sure every self::ALWAYS_STORED key has a row, so filters can use an
+	 * indexed `= ''` comparison instead of a NOT EXISTS sub-query.
+	 */
+	public static function store_defaults(int $post_id): void
+	{
+		foreach (self::ALWAYS_STORED as $key) {
+			if (! metadata_exists('post', $post_id, $key)) {
+				add_post_meta($post_id, $key, '', true);
 			}
 		}
+	}
 
-		foreach (self::$textarea_fields as $key) {
-			if (isset($_POST[$key])) {
-				update_post_meta($post_id, $key, sanitize_textarea_field(wp_unslash($_POST[$key])));
-			}
+	/**
+	 * Store an optional text value, keeping an empty row for the keys the Bulk
+	 * Editor filters rely on and deleting the row for every other key.
+	 */
+	public static function save_optional(int $post_id, string $key, string $value): void
+	{
+		if ($value === '' && ! in_array($key, self::ALWAYS_STORED, true)) {
+			delete_post_meta($post_id, $key);
+
+			return;
 		}
 
-		foreach (self::$url_fields as $key) {
-			if (isset($_POST[$key])) {
-				$url = self::sanitize_url(wp_unslash($_POST[$key]));
-
-				if ($key === self::REDIRECT_URL && $url !== '' && self::is_external_url($url) && ! self::can_redirect_externally($post_id)) {
-					$url = '';
-				}
-
-				update_post_meta($post_id, $key, $url);
-			}
-		}
-
-		foreach (self::select_fields() as $key => [$allowed, $fallback]) {
-			if (isset($_POST[$key])) {
-				$value = sanitize_text_field(wp_unslash($_POST[$key]));
-				update_post_meta($post_id, $key, in_array($value, $allowed, true) ? $value : $fallback);
-			}
-		}
-
-		foreach (self::$checkbox_fields as $key) {
-			update_post_meta($post_id, $key, isset($_POST[$key]) ? '1' : '0');
-		}
-
-		foreach (self::$image_fields as $key) {
-			if (isset($_POST[$key])) {
-				update_post_meta($post_id, $key, absint($_POST[$key]));
-			}
-		}
-
-		foreach (self::$array_fields as $key) {
-			if (isset($_POST[$key]) && is_array($_POST[$key])) {
-				$sanitized = array_map('sanitize_text_field', wp_unslash($_POST[$key]));
-				$sanitized = array_values(array_intersect($sanitized, self::$robots_advanced_values));
-				update_post_meta($post_id, $key, $sanitized);
-			} else {
-				update_post_meta($post_id, $key, []);
-			}
-		}
-
-		if (isset($_POST[self::PRIMARY_CATEGORY])) {
-			update_post_meta($post_id, self::PRIMARY_CATEGORY, absint($_POST[self::PRIMARY_CATEGORY]));
-		}
-
-		if (isset($_POST[self::SCHEMA_CUSTOM])) {
-			$custom = trim((string) wp_unslash($_POST[self::SCHEMA_CUSTOM]));
-			if ($custom !== '' && json_decode($custom, true) === null && json_last_error() !== JSON_ERROR_NONE) {
-				$custom = '';
-			}
-			update_post_meta($post_id, self::SCHEMA_CUSTOM, $custom);
-		}
-
-		update_post_meta($post_id, self::SCHEMA_EXTRA, self::sanitize_schema_extra($_POST['crawlwp_schema_extra'] ?? []));
+		update_post_meta($post_id, $key, $value);
 	}
 
 	/**
