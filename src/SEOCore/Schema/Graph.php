@@ -62,7 +62,8 @@ class Graph
 			return;
 		}
 
-		if (array_is_list($node)) {
+		if (array_values($node) === $node) {
+			/** @var array<int, mixed> $node */
 			self::add_nodes($node);
 
 			return;
@@ -190,9 +191,7 @@ class Graph
 			}
 		}
 
-		$from_blocks = self::nodes_from_blocks((string) $post->post_content);
-
-		return array_values(array_filter(array_merge($nodes, $from_blocks)));
+		return $nodes;
 	}
 
 	/**
@@ -436,51 +435,5 @@ class Graph
 		$m = (int) $minutes;
 
 		return 'PT' . max(0, $m) . 'M';
-	}
-
-	/**
-	 * @return array<int,array<string,mixed>>
-	 */
-	public static function nodes_from_blocks(string $content): array
-	{
-		if ($content === '' || ! function_exists('parse_blocks')) {
-			return [];
-		}
-
-		$nodes  = [];
-		$blocks = parse_blocks($content);
-		self::walk_blocks($blocks, $nodes);
-
-		return $nodes;
-	}
-
-	/**
-	 * @param array<int,array<string,mixed>> $blocks
-	 * @param array<int,array<string,mixed>> $nodes
-	 */
-	private static function walk_blocks(array $blocks, array &$nodes): void
-	{
-		foreach ($blocks as $block) {
-			$name = (string) ($block['blockName'] ?? '');
-			$attrs = is_array($block['attrs'] ?? null) ? $block['attrs'] : [];
-
-			if ($name === 'crawlwp/faq') {
-				$node = self::faq($attrs['items'] ?? []);
-				if ($node) {
-					$nodes[] = $node;
-				}
-			}
-
-			if ($name === 'crawlwp/howto') {
-				$node = self::howto($attrs);
-				if ($node) {
-					$nodes[] = $node;
-				}
-			}
-
-			if (! empty($block['innerBlocks']) && is_array($block['innerBlocks'])) {
-				self::walk_blocks($block['innerBlocks'], $nodes);
-			}
-		}
 	}
 }

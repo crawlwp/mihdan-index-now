@@ -66,8 +66,9 @@
     },
 
     setupTokens: function() {
+      crawlwpSEO.postTitle = this.decodeEntities(crawlwpSEO.postTitle || '');
       this.TOKENS = {
-        'post.title':            crawlwpSEO.postTitle || '',
+        'post.title':            crawlwpSEO.postTitle,
         'site.title':            crawlwpSEO.siteName || '',
         'sep':                   crawlwpSEO.separator || '\u2014',
         'post.category':         crawlwpSEO.category || '',
@@ -318,6 +319,8 @@
 
       $('#cwpXTitlePrev').text(this.$xSync.prop('checked') ? fbT : (this.$xTitle.val() || fbT));
       $('#cwpXDescPrev').text(this.$xSync.prop('checked') ? fbD : (this.$xDesc.val()  || fbD));
+
+      this.updateBreadcrumbPreview();
     },
 
     toggleSync: function() {
@@ -398,8 +401,11 @@
       var $wpTitle = $('#title');
       if ($wpTitle.length) {
         $wpTitle.on('input', function() {
-          self.TOKENS['post.title'] = $wpTitle.val();
-          crawlwpSEO.postTitle = $wpTitle.val();
+          var val = $wpTitle.val();
+          self.TOKENS['post.title'] = val;
+          crawlwpSEO.postTitle = val;
+          $('#cwpBreadcrumb').attr('placeholder', val);
+          $('#cwpHeadline').attr('placeholder', val);
           self.emit('measure');
           self.emit('sync');
           self.emit('analyze');
@@ -417,6 +423,8 @@
             lastTitle = newTitle;
             self.TOKENS['post.title'] = newTitle;
             crawlwpSEO.postTitle = newTitle;
+            $('#cwpBreadcrumb').attr('placeholder', newTitle);
+            $('#cwpHeadline').attr('placeholder', newTitle);
             self.emit('measure');
             self.emit('sync');
             self.emit('analyze');
@@ -859,6 +867,13 @@
         .replace(/'/g, '&#039;');
     },
 
+    decodeEntities: function(str) {
+      if (!str) return '';
+      var txt = document.createElement('textarea');
+      txt.innerHTML = str;
+      return txt.value;
+    },
+
     /* Only allow http(s) URLs or a single-slash relative path in href — blocks javascript:, data:, //host etc. */
     safeUrl: function(url) {
       var u = $.trim(String(url == null ? '' : url));
@@ -896,12 +911,24 @@
           var content = sel.getEditedPostContent();
           if (content) return content;
         }
+        if (sel && typeof sel.getEditedPostAttribute === 'function') {
+          var attr = sel.getEditedPostAttribute('content');
+          if (typeof attr === 'string' && attr) return attr;
+        }
       }
       var $wpBlock = $('.block-editor-block-list__layout');
       if ($wpBlock.length) return $wpBlock.html();
+      /* Classic editor: the raw textarea holds the content while TinyMCE is
+         still initialising, and is the only source in the "Text" tab.
+         The content is never localized into crawlwpSEO — it would add
+         hundreds of kilobytes to every editor page load. */
       var $ta = $('#content');
-      if ($ta.length) return $ta.val();
-      return crawlwpSEO.postContent || '';
+      if ($ta.length) return $ta.val() || '';
+      if (typeof tinymce !== 'undefined') {
+        var fallbackEd = tinymce.get('content');
+        if (fallbackEd) return fallbackEd.getContent();
+      }
+      return '';
     },
 
     parseLinks: function(html) {
@@ -1155,7 +1182,7 @@
       var html = '';
       for (var i = 0; i < trail.length; i++) {
         if (i > 0) html += ' <span class="cwp-bc-sep">\u203a</span> ';
-        html += '<span class="cwp-bc-item' + (i === trail.length - 1 ? ' is-current' : '') + '">' + this.escHtml(trail[i]) + '</span>';
+        html += '<span class="cwp-bc-item' + (i === trail.length - 1 ? ' is-current' : '') + '">' + this.escHtml(this.decodeEntities(trail[i])) + '</span>';
       }
       $el.html(html);
     },

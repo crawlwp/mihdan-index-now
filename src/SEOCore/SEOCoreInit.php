@@ -33,7 +33,6 @@ use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
 use Mihdan\IndexNow\SEOCore\Importer\ImporterSettings;
 use Mihdan\IndexNow\SEOCore\TermSEO\TermMetaBox;
 use Mihdan\IndexNow\SEOCore\Schema\Graph;
-use Mihdan\IndexNow\SEOCore\Schema\Blocks;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\VideoSitemapProvider;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapStylesheet;
 use Mihdan\IndexNow\SEOCore\SitemapSettings\HtmlSitemap;
@@ -54,7 +53,6 @@ class SEOCoreInit
 	 */
 	private const MODULES_ALWAYS = [
 		Graph::class,
-		Blocks::class,
 		VideoSitemapProvider::class,
 		HtmlSitemap::class,
 		SitemapStylesheet::class,
