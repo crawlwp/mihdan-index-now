@@ -57,7 +57,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 
 	public function __construct()
 	{
-		$this->name = self::PROVIDER_NAME;
+		$this->name        = self::PROVIDER_NAME;
 		$this->object_type = 'crawlwp_news_item';
 
 		/*
@@ -110,7 +110,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 	public function get_url_list($page_num, $object_subtype = ''): array
 	{
 		$entries = $this->get_entries();
-		$urls = [];
+		$urls    = [];
 
 		foreach ($entries as $entry) {
 			$urls[] = ['loc' => $entry['loc']];
@@ -202,10 +202,10 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 		 *
 		 * @param string $language Language code derived from the site locale.
 		 */
-		$language = (string) apply_filters('crawlwp_news_sitemap_language', $language);
+		$language = (string)apply_filters('crawlwp_news_sitemap_language', $language);
 
 		$language = strtolower(str_replace('_', '-', trim($language)));
-		$language = (string) preg_replace('/[^a-z0-9-]/', '', $language);
+		$language = (string)preg_replace('/[^a-z0-9-]/', '', $language);
 
 		return $language !== '' ? $language : 'en';
 	}
@@ -221,7 +221,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 	{
 		$xml = get_transient(self::XML_TRANSIENT);
 
-		if (! is_string($xml) || $xml === '') {
+		if (!is_string($xml) || $xml === '') {
 			$xml = $this->build_xml();
 
 			set_transient(self::XML_TRANSIENT, $xml, self::CACHE_TTL);
@@ -240,9 +240,9 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 	 */
 	private function build_xml(): string
 	{
-		$entries = $this->get_entries();
+		$entries          = $this->get_entries();
 		$publication_name = SitemapSettings::get('news_publication_name', '') ?: get_bloginfo('name');
-		$language = $this->get_language();
+		$language         = $this->get_language();
 
 		$stylesheet_url = SitemapStylesheet::get_stylesheet_url('news');
 
@@ -259,7 +259,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 			$xml .= "\t\t<news:news>\n";
 			$xml .= "\t\t\t<news:publication>\n";
 			$xml .= "\t\t\t\t<news:name>" . esc_xml($publication_name) . "</news:name>\n";
-			$xml .= "\t\t\t\t<news:language>" . esc_xml($language) . "</news:language>\n";
+			$xml .= "\t\t\t\t<news:language>" . esc_xml($entry['language'] ?? $language) . "</news:language>\n";
 			$xml .= "\t\t\t</news:publication>\n";
 			$xml .= "\t\t\t<news:publication_date>" . esc_xml($entry['publication_date']) . "</news:publication_date>\n";
 			$xml .= "\t\t\t<news:title>" . esc_xml($entry['title']) . "</news:title>\n";
@@ -327,7 +327,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 		 */
 		$args = apply_filters('crawlwp_news_sitemap_query_args', $args);
 
-		$query = new \WP_Query($args);
+		$query   = new \WP_Query($args);
 		$entries = [];
 
 		foreach ($query->posts as $post) {
@@ -348,11 +348,18 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 			 *
 			 * @param array $entry News sitemap entry data.
 			 * @param \WP_Post $post Post object.
+			 * @param array $entries All News sitemap entries.
 			 */
-			$entry = apply_filters('crawlwp_news_sitemap_entry', $entry, $post);
+			$entry = apply_filters('crawlwp_news_sitemap_entry', $entry, $post, $entries);
 
 			if ($entry) {
-				$entries[] = $entry;
+				if (is_array($entry)) {
+					foreach ($entry as $item) {
+						$entries[] = $item;
+					}
+				} else {
+					$entries[] = $entry;
+				}
 			}
 		}
 
@@ -376,7 +383,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 		}
 
 		$registered = get_post_types(['public' => true]);
-		$enabled = [];
+		$enabled    = [];
 
 		foreach (array_keys($saved) as $name) {
 			if ($saved[$name] && isset($registered[$name])) {
