@@ -331,6 +331,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 		$entries = [];
 
 		foreach ($query->posts as $post) {
+
 			if (!($post instanceof \WP_Post)) {
 				continue;
 			}
@@ -353,7 +354,7 @@ class NewsSitemapProvider extends \WP_Sitemaps_Provider
 			$entry = apply_filters('crawlwp_news_sitemap_entry', $entry, $post, $entries);
 
 			if ($entry) {
-				if (is_array($entry)) {
+				if (is_array($entry) && isset($entry[0]) && is_array($entry[0])) {
 					foreach ($entry as $item) {
 						$entries[] = $item;
 					}

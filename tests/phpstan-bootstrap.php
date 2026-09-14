@@ -14,3 +14,8 @@ define('CRAWLWP_PLUGIN_DIR', __DIR__ . '/../');
 define('CRAWLWP_SETTINGS_URL', 'https://example.com/wp-admin/admin.php?page=crawlwp');
 define('CRAWLWP_API_SETTINGS_URL', CRAWLWP_SETTINGS_URL);
 define('CRAWLWP_ADVANCED_SETTINGS_URL', CRAWLWP_SETTINGS_URL);
+
+$crawlwp_pro_autoload = dirname(__DIR__, 2) . '/mihdan-index-now-pro/Libsodium/vendor/autoload.php';
+if (file_exists($crawlwp_pro_autoload)) {
+	require_once $crawlwp_pro_autoload;
+}

@@ -294,7 +294,7 @@ class PostListColumn
 	public function save_quick_edit(int $post_id): void
 	{
 		/* Only act when our nonce is present (i.e. Quick Edit was used). */
-		$nonce = isset($_POST['cwp_quick_edit_nonce']) ? $_POST['cwp_quick_edit_nonce'] : '';
+		$nonce = $_POST['cwp_quick_edit_nonce'] ?? '';
 		if (! wp_verify_nonce($nonce, self::QUICK_EDIT_NONCE)) {
 			return;
 		}
