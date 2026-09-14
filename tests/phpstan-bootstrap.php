@@ -19,3 +19,30 @@ $crawlwp_pro_autoload = dirname(__DIR__, 2) . '/mihdan-index-now-pro/Libsodium/v
 if (file_exists($crawlwp_pro_autoload)) {
 	require_once $crawlwp_pro_autoload;
 }
+
+if (! class_exists('Elementor\Controls_Manager')) {
+	eval('namespace Elementor; class Controls_Manager {
+		public const TAB_SETTINGS = "settings";
+		public const TEXT = "text";
+		public const TEXTAREA = "textarea";
+		public const SELECT = "select";
+		public const SELECT2 = "select2";
+		public const URL = "url";
+		public const SWITCHER = "switcher";
+		public const MEDIA = "media";
+		public const RAW_HTML = "raw_html";
+		public const CODE = "code";
+		public const HIDDEN = "hidden";
+		public const HEADING = "heading";
+		public const DIVIDER = "divider";
+	}');
+}
+
+if (! class_exists('Elementor\Core\DocumentTypes\Document')) {
+	eval('namespace Elementor\Core\DocumentTypes; class Document {
+		public function get_main_id(): int { return 0; }
+		public function start_controls_section(string $section_id, array $args = []): void {}
+		public function end_controls_section(): void {}
+		public function add_control(string $id, array $args = []): void {}
+	}');
+}

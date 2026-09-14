@@ -381,7 +381,7 @@ class MetaFields
 		return strtolower($host) !== strtolower($home);
 	}
 
-	private static function can_redirect_externally(int $post_id): bool
+	public static function can_redirect_externally(int $post_id): bool
 	{
 		/**
 		 * Filters whether the current user may store a redirect to an external host.

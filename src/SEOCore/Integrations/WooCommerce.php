@@ -212,8 +212,8 @@ class WooCommerce
 
 		$schema['offers'] = $this->get_offers($product, $post);
 
-		$rating       = (float) $product->get_average_rating();
-		$review_count = (int) $product->get_review_count();
+		$rating       = $product->get_average_rating();
+		$review_count = $product->get_review_count();
 
 		if ($rating > 0 && $review_count > 0) {
 			$schema['aggregateRating'] = [

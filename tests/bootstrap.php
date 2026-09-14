@@ -90,6 +90,11 @@ if (!function_exists('add_filter')) {
 if (!function_exists('add_action')) {
 	function add_action($hook, $callback, $priority = 10, $accepted_args = 1)
 	{
+		$GLOBALS['crawlwp_test_state']['actions'][$hook][] = [
+			'callback' => $callback,
+			'priority' => $priority,
+			'args'     => $accepted_args,
+		];
 		return true;
 	}
 }
@@ -323,6 +328,13 @@ if (!function_exists('_n')) {
 	function _n($single, $plural, $number, $domain = 'default')
 	{
 		return $number === 1 ? $single : $plural;
+	}
+}
+
+if (!function_exists('number_format_i18n')) {
+	function number_format_i18n($number, $decimals = 0)
+	{
+		return (string)$number;
 	}
 }
 
@@ -608,10 +620,95 @@ if (!function_exists('delete_post_meta')) {
 	}
 }
 
+if (!class_exists('WP_Post_Type')) {
+	#[\AllowDynamicProperties]
+	class WP_Post_Type
+	{
+		public string $name = '';
+		public $labels;
+		public bool $has_archive = false;
+
+		public function __construct(string $name, string $singular_name, string $plural_name = '', bool $has_archive = false)
+		{
+			$this->name = $name;
+			$this->labels = (object)[
+				'singular_name' => $singular_name,
+				'name'          => $plural_name ?: $singular_name,
+			];
+			$this->has_archive = $has_archive;
+		}
+	}
+}
+
+if (!class_exists('WP_Taxonomy')) {
+	#[\AllowDynamicProperties]
+	class WP_Taxonomy
+	{
+		public string $name = '';
+		public $labels;
+
+		public function __construct(string $name, string $singular_name, string $plural_name = '')
+		{
+			$this->name = $name;
+			$this->labels = (object)[
+				'singular_name' => $singular_name,
+				'name'          => $plural_name ?: $singular_name,
+			];
+		}
+	}
+}
+
+if (!function_exists('is_ssl')) {
+	function is_ssl()
+	{
+		return $GLOBALS['crawlwp_test_state']['is_ssl'] ?? true;
+	}
+}
+
+if (!function_exists('get_home_path')) {
+	function get_home_path()
+	{
+		return '/tmp/';
+	}
+}
+
+if (!function_exists('WP_Filesystem')) {
+	function WP_Filesystem()
+	{
+		return true;
+	}
+}
+
+if (!function_exists('get_filesystem_method')) {
+	function get_filesystem_method()
+	{
+		return 'direct';
+	}
+}
+
 if (!function_exists('get_post_types')) {
 	function get_post_types($args = [], $output = 'names', $operator = 'and')
 	{
+		if ($output === 'objects') {
+			return [
+				'post' => new WP_Post_Type('post', 'Post', 'Posts', true),
+				'page' => new WP_Post_Type('page', 'Page', 'Pages', false),
+			];
+		}
 		return ['post' => 'post', 'page' => 'page'];
+	}
+}
+
+if (!function_exists('get_taxonomies')) {
+	function get_taxonomies($args = [], $output = 'names', $operator = 'and')
+	{
+		if ($output === 'objects') {
+			return [
+				'category' => new WP_Taxonomy('category', 'Category', 'Categories'),
+				'post_tag' => new WP_Taxonomy('post_tag', 'Tag', 'Tags'),
+			];
+		}
+		return ['category' => 'category', 'post_tag' => 'post_tag'];
 	}
 }
 
@@ -1118,6 +1215,9 @@ require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/MetaFields.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SettingsFieldsTrait.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapSettings.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapStylesheet.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/Utils.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/FeatureGate/FeatureGate.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Notifications/Notifications.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Code/CodeSettings.php';
 
 $crawlwp_pro_autoload = dirname(CRAWLWP_TESTS_PLUGIN_DIR) . '/mihdan-index-now-pro/Libsodium/vendor/autoload.php';

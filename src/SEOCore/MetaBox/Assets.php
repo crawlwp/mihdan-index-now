@@ -47,67 +47,7 @@ class Assets
 
 		global $post;
 
-		$post_title = '';
-		$excerpt    = '';
-
-		if ($post instanceof \WP_Post) {
-			$post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
-			$excerpt    = $post->post_excerpt ?: wp_trim_words(wp_strip_all_tags($post->post_content), 30, '...');
-		}
-
-		$author      = '';
-		$categories  = [];
-		$inbound     = [];
-
-		if ($post instanceof \WP_Post) {
-			$author_obj = get_userdata($post->post_author);
-			$author     = $author_obj ? $author_obj->display_name : '';
-			$terms      = get_the_terms($post->ID, 'category');
-			if (! empty($terms) && ! is_wp_error($terms)) {
-				$categories = wp_list_pluck($terms, 'name');
-			}
-			$inbound = $this->get_inbound_links($post->ID);
-			$suggested = $this->get_suggested_links($post->ID);
-		}
-
-		$localize_data = [
-			'siteName'    => get_bloginfo('name'),
-			'siteUrl'     => home_url('/'),
-			'postTitle'   => $post_title,
-			'excerpt'     => $excerpt,
-			'separator'   => Variables::separator(),
-			'currentYear' => gmdate('Y'),
-			'author'      => $author,
-			'category'    => ! empty($categories) ? $categories[0] : '',
-			'permalink'   => $post instanceof \WP_Post ? get_permalink($post->ID) : '',
-			/* The post content is deliberately NOT localized here — it can be
-			   hundreds of kilobytes on every editor load. The JS reads the live
-			   content from the block editor store (or the Classic editor) via
-			   getEditorContent(). */
-			'inboundLinks' => $inbound,
-			'suggestedLinks' => $suggested ?? [],
-			'kwCheckNonce'  => wp_create_nonce('crawlwp_check_keyword'),
-			'suggestedNonce' => wp_create_nonce('crawlwp_suggested_links'),
-			'datePublished' => $post instanceof \WP_Post ? (string) get_the_date('c', $post) : '',
-			'dateModified'  => $post instanceof \WP_Post ? (string) get_the_modified_date('c', $post) : '',
-			'breadcrumbs' => $this->get_breadcrumb_trail($post),
-			'ajaxUrl'     => admin_url('admin-ajax.php'),
-			'aiNonce'       => wp_create_nonce('crawlwp_ai_generate'),
-			'indexNowNonce'  => wp_create_nonce('crawlwp_submit_indexnow'),
-			'postId'      => $post instanceof \WP_Post ? $post->ID : 0,
-			'featuredImageUrl' => $post instanceof \WP_Post ? (get_the_post_thumbnail_url($post->ID, 'medium') ?: '') : '',
-			'i18n'        => $this->get_i18n_strings(),
-		];
-
-		/**
-		 * Let add-on plugins (e.g. mihdan-index-now-pro) inject extra data into
-		 * the metabox's localized `crawlwpSEO` object — nonces, feature flags,
-		 * etc. — without this plugin needing to know about them.
-		 *
-		 * @param array         $localize_data Data exposed to JS as the `crawlwpSEO` global.
-		 * @param \WP_Post|null $post          The post being edited, if any.
-		 */
-		$localize_data = apply_filters('crawlwp_metabox_localize_data', $localize_data, $post);
+		$localize_data = self::get_localized_data($post instanceof \WP_Post ? $post : null);
 
 		// JSON_HEX_* flags make the payload safe to embed inline (post content may contain "</script>").
 		wp_add_inline_script(
@@ -126,6 +66,82 @@ class Assets
 	}
 
 	/**
+	 * Build localized configuration and data for the SEO editor interface.
+	 *
+	 * @param \WP_Post|null $post The post being edited, if any.
+	 * @return array
+	 */
+	public static function get_localized_data(?\WP_Post $post = null): array
+	{
+		if (! $post instanceof \WP_Post) {
+			global $post;
+		}
+
+		$post_title = '';
+		$excerpt    = '';
+
+		if ($post instanceof \WP_Post) {
+			$post_title = wp_specialchars_decode($post->post_title, ENT_QUOTES);
+			$excerpt    = $post->post_excerpt ?: wp_trim_words(wp_strip_all_tags($post->post_content), 30, '...');
+		}
+
+		$author      = '';
+		$categories  = [];
+		$inbound     = [];
+		$suggested   = [];
+
+		if ($post instanceof \WP_Post) {
+			$author_obj = get_userdata($post->post_author);
+			$author     = $author_obj ? $author_obj->display_name : '';
+			$terms      = get_the_terms($post->ID, 'category');
+			if (! empty($terms) && ! is_wp_error($terms)) {
+				$categories = wp_list_pluck($terms, 'name');
+			}
+			$inbound   = self::get_inbound_links($post->ID);
+			$suggested = self::get_suggested_links($post->ID);
+		}
+
+		$localize_data = [
+			'siteName'         => get_bloginfo('name'),
+			'siteUrl'          => home_url('/'),
+			'postTitle'        => $post_title,
+			'excerpt'          => $excerpt,
+			'separator'        => Variables::separator(),
+			'currentYear'      => gmdate('Y'),
+			'author'           => $author,
+			'category'         => ! empty($categories) ? $categories[0] : '',
+			'permalink'        => $post instanceof \WP_Post ? get_permalink($post->ID) : '',
+			/* The post content is deliberately NOT localized here — it can be
+			   hundreds of kilobytes on every editor load. The JS reads the live
+			   content from the block editor store (or the Classic editor) via
+			   getEditorContent(). */
+			'inboundLinks'     => $inbound,
+			'suggestedLinks'   => $suggested,
+			'kwCheckNonce'     => wp_create_nonce('crawlwp_check_keyword'),
+			'suggestedNonce'   => wp_create_nonce('crawlwp_suggested_links'),
+			'datePublished'    => $post instanceof \WP_Post ? (string) get_the_date('c', $post) : '',
+			'dateModified'     => $post instanceof \WP_Post ? (string) get_the_modified_date('c', $post) : '',
+			'breadcrumbs'      => self::get_breadcrumb_trail($post),
+			'ajaxUrl'          => admin_url('admin-ajax.php'),
+			'aiNonce'          => wp_create_nonce('crawlwp_ai_generate'),
+			'indexNowNonce'    => wp_create_nonce('crawlwp_submit_indexnow'),
+			'postId'           => $post instanceof \WP_Post ? $post->ID : 0,
+			'featuredImageUrl' => $post instanceof \WP_Post ? (get_the_post_thumbnail_url($post->ID, 'medium') ?: '') : '',
+			'i18n'             => self::get_i18n_strings(),
+		];
+
+		/**
+		 * Let add-on plugins (e.g. mihdan-index-now-pro) inject extra data into
+		 * the metabox's localized `crawlwpSEO` object — nonces, feature flags,
+		 * etc. — without this plugin needing to know about them.
+		 *
+		 * @param array         $localize_data Data exposed to JS as the `crawlwpSEO` global.
+		 * @param \WP_Post|null $post          The post being edited, if any.
+		 */
+		return apply_filters('crawlwp_metabox_localize_data', $localize_data, $post);
+	}
+
+	/**
 	 * Related posts an editor could link to from this content.
 	 *
 	 * @param int         $post_id The post being edited.
@@ -133,7 +149,7 @@ class Assets
 	 *                             saved meta value; pass a string to preview a
 	 *                             keyword that has not been saved yet.
 	 */
-	private function get_suggested_links(int $post_id, ?string $keyword = null): array
+	private static function get_suggested_links(int $post_id, ?string $keyword = null): array
 	{
 		$post = get_post($post_id);
 
@@ -219,7 +235,7 @@ class Assets
 	/**
 	 * Transient name holding the inbound links of a post.
 	 */
-	private function inbound_links_cache_key(int $post_id): string
+	private static function inbound_links_cache_key(int $post_id): string
 	{
 		return 'crawlwp_inbound_links_' . $post_id;
 	}
@@ -233,7 +249,7 @@ class Assets
 	 */
 	public function flush_inbound_links_cache(int $post_id): void
 	{
-		delete_transient($this->inbound_links_cache_key($post_id));
+		delete_transient(self::inbound_links_cache_key($post_id));
 	}
 
 	/**
@@ -244,13 +260,13 @@ class Assets
 	 * the anchor text comes from a bounded substring around the first match
 	 * instead of the whole content column.
 	 */
-	private function get_inbound_links(int $post_id): array
+	private static function get_inbound_links(int $post_id): array
 	{
 		$permalink = get_permalink($post_id);
 
 		if (! $permalink) return [];
 
-		$cache_key = $this->inbound_links_cache_key($post_id);
+		$cache_key = self::inbound_links_cache_key($post_id);
 		$cached    = get_transient($cache_key);
 
 		if (is_array($cached)) {
@@ -435,7 +451,7 @@ class Assets
 		];
 	}
 
-	private function get_i18n_strings(): array
+	private static function get_i18n_strings(): array
 	{
 		return [
 			/* Pixel meter labels */
@@ -700,7 +716,7 @@ class Assets
 	/**
 	 * Build the breadcrumb trail array for a post.
 	 */
-	private function get_breadcrumb_trail(?\WP_Post $post): array
+	private static function get_breadcrumb_trail(?\WP_Post $post): array
 	{
 		if (! $post instanceof \WP_Post) {
 			return [];

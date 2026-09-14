@@ -99,6 +99,12 @@ class Notifications
 
 	public function __construct()
 	{
+		if (did_action('admin_menu')) {
+			$this->add_menu_badge();
+		} else {
+			add_action('admin_menu', [$this, 'add_menu_badge'], 999);
+		}
+
 		add_action('admin_bar_menu', [$this, 'add_admin_bar_node'], 999);
 		add_action('admin_head', [$this, 'print_styles']);
 		add_action('admin_footer', [$this, 'print_panel_html']);
@@ -154,7 +160,7 @@ class Notifications
 			/* translators: %d number of SEO issues */
 				_n('%d SEO issue', '%d SEO issues', $count, 'mihdan-index-now'),
 				$count
-			)) . '">' . esc_html($count) . '</span>'
+			)) . '">' . esc_html((string)$count) . '</span>'
 			. '</span>';
 
 		$wp_admin_bar->add_node([
@@ -166,6 +172,75 @@ class Notifications
 				'tabindex' => '0',
 			],
 		]);
+	}
+
+	// -------------------------------------------------------------------------
+	// Admin Menu Badge
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Append notification count badge to the CrawlWP top-level admin menu.
+	 */
+	public function add_menu_badge(): void
+	{
+		if (!current_user_can('manage_options')) {
+			return;
+		}
+
+		$notices = $this->get_active_notices();
+
+		global $menu;
+
+		$menu_slug = defined('CRAWLWP_SLUG') ? CRAWLWP_SLUG : 'crawlwp';
+
+		if (empty($notices)) {
+			if (is_array($menu)) {
+				foreach ($menu as $key => $item) {
+					if (isset($item[2]) && $item[2] === $menu_slug && strpos($menu[$key][0], 'cwp-nc-menu-badge') !== false) {
+						$menu[$key][0] = preg_replace(
+							'/\s*<span class="[^"]*cwp-nc-menu-badge[^"]*">.*?<\/span><\/span>/s',
+							'',
+							$menu[$key][0]
+						);
+						break;
+					}
+				}
+			}
+
+			return;
+		}
+
+		if (!is_array($menu)) {
+			return;
+		}
+
+		$count = count($notices);
+		$formatted_count = number_format_i18n($count);
+
+		$badge = sprintf(
+			' <span class="update-plugins count-%1$d cwp-nc-menu-badge"><span class="plugin-count" aria-hidden="true">%2$s</span><span class="screen-reader-text">%3$s</span></span>',
+			$count,
+			esc_html($formatted_count),
+			esc_html(sprintf(
+				_n('%s notification', '%s notifications', $count, 'mihdan-index-now'),
+				$formatted_count
+			))
+		);
+
+		foreach ($menu as $key => $item) {
+			if (isset($item[2]) && $item[2] === $menu_slug) {
+				if (strpos($menu[$key][0], 'cwp-nc-menu-badge') !== false) {
+					$menu[$key][0] = preg_replace(
+						'/\s*<span class="[^"]*cwp-nc-menu-badge[^"]*">.*?<\/span><\/span>/s',
+						$badge,
+						$menu[$key][0]
+					);
+				} else {
+					$menu[$key][0] .= $badge;
+				}
+				break;
+			}
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -583,6 +658,22 @@ class Notifications
 					var badge = bellBtn.querySelector('.cwp-nc-badge');
 					var count = panel.querySelectorAll('.cwp-nc-item').length;
 					if (badge) badge.textContent = count;
+
+					var menuBadges = document.querySelectorAll('#adminmenu .cwp-nc-menu-badge');
+					for (var i = 0; i < menuBadges.length; i++) {
+						var mb = menuBadges[i];
+						if (count > 0) {
+							var countEl = mb.querySelector('.plugin-count') || mb;
+							countEl.textContent = count;
+							mb.className = mb.className.replace(/count-\d+/, 'count-' + count);
+							var srText = mb.querySelector('.screen-reader-text');
+							if (srText) {
+								srText.textContent = count + ' ' + (count === 1 ? 'notification' : 'notifications');
+							}
+						} else {
+							mb.remove();
+						}
+					}
 				}
 			}());
 		</script>
@@ -631,7 +722,7 @@ class Notifications
 	 *
 	 * @return array[]
 	 */
-	private function get_active_notices(): array
+	public function get_active_notices(): array
 	{
 		if ($this->active_notices !== null) {
 			return $this->active_notices;
@@ -645,6 +736,22 @@ class Notifications
 		);
 
 		return $this->active_notices;
+	}
+
+	/**
+	 * Return the count of active notices.
+	 */
+	public function get_notification_count(): int
+	{
+		return count($this->get_active_notices());
+	}
+
+	/**
+	 * Reset the cached active notices for testing or dynamic re-evaluations.
+	 */
+	public function reset_active_notices_cache(): void
+	{
+		$this->active_notices = null;
 	}
 
 	/**
@@ -1186,7 +1293,7 @@ class Notifications
 			return $wp_filesystem;
 		}
 
-		if (!function_exists('WP_Filesystem')) {
+		if (!function_exists('WP_Filesystem') && file_exists(ABSPATH . 'wp-admin/includes/file.php')) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 		}
 
@@ -1194,6 +1301,7 @@ class Notifications
 			return null;
 		}
 
+		// @phpstan-ignore-next-line
 		return $wp_filesystem instanceof \WP_Filesystem_Base ? $wp_filesystem : null;
 	}
 }
