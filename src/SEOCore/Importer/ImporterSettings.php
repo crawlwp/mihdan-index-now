@@ -124,6 +124,17 @@ class ImporterSettings
 		ob_start();
 		?>
 		<div class="cwp-importer" id="cwpImporter">
+			<div style="margin-bottom: 18px; padding: 12px 16px; background: #f0f6fc; border: 1px solid #c8d8f0; border-radius: 6px;">
+				<p style="margin: 0 0 4px; font-weight: 600; color: #1d2327;">
+					<?php esc_html_e('Prefer a guided walkthrough?', 'mihdan-index-now'); ?>
+				</p>
+				<p style="margin: 0 0 10px; font-size: 13px; color: #50575e;">
+					<?php esc_html_e('The Getting Started Wizard walks you through importing from active SEO plugins and setting up basic site schema and search defaults.', 'mihdan-index-now'); ?>
+				</p>
+				<a href="<?php echo esc_url(\Mihdan\IndexNow\SEOCore\Wizard\Wizard::wizard_url()); ?>" class="button button-secondary">
+					<?php esc_html_e('Launch Setup Wizard →', 'mihdan-index-now'); ?>
+				</a>
+			</div>
 			<p class="description">
 				<?php esc_html_e('Detected plugins appear below even if they are currently deactivated, as long as their data is still in the database.', 'mihdan-index-now'); ?>
 			</p>

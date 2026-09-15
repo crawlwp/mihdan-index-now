@@ -29,6 +29,7 @@ use Mihdan\IndexNow\SEOCore\BulkEditor\BulkEditorSettings;
 use Mihdan\IndexNow\SEOCore\Integrations\WooCommerce;
 use Mihdan\IndexNow\SEOCore\Integrations\Elementor;
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
+use Mihdan\IndexNow\SEOCore\Wizard\Wizard;
 use Mihdan\IndexNow\SEOCore\Importer\ImporterSettings;
 use Mihdan\IndexNow\SEOCore\TermSEO\TermMetaBox;
 use Mihdan\IndexNow\SEOCore\Schema\Graph;
@@ -95,6 +96,7 @@ class SEOCoreInit
 		// Feature gate — registers the "SEO Features" promo/settings tab.
 		// Must be first so the tab appears before all other header menus.
 		new FeatureGate();
+		new Wizard();
 
 		new AdvancedSettings();
 		new SiteVerificationSettings();

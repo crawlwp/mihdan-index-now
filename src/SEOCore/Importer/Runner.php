@@ -66,7 +66,76 @@ class Runner
 	}
 
 	/**
-	 * @return array<int,array{id:string,label:string,available:bool,posts:int,terms:int,users:int,redirects:int}>
+	 * Whether a third-party SEO plugin is currently active in WordPress.
+	 */
+	public static function is_plugin_active(string $id): bool
+	{
+		$constants = [
+			'yoast'    => defined('WPSEO_VERSION'),
+			'rankmath' => defined('RANK_MATH_VERSION'),
+			'aioseo'   => defined('AIOSEO_VERSION'),
+			'seopress' => defined('SEOPRESS_VERSION') || defined('SEOPRESS_PRO_VERSION'),
+			'tsf'      => defined('THE_SEO_FRAMEWORK_VERSION'),
+			'slimseo'  => defined('SLIM_SEO_VER'),
+		];
+
+		if (! empty($constants[$id])) {
+			return true;
+		}
+
+		if (! function_exists('is_plugin_active')) {
+			include_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		if (function_exists('is_plugin_active')) {
+			$files = [
+				'yoast'    => ['wordpress-seo/wp-seo.php', 'wordpress-seo-premium/wp-seo-premium.php'],
+				'rankmath' => ['seo-by-rank-math/rank-math.php', 'seo-by-rank-math-pro/rank-math-pro.php'],
+				'aioseo'   => ['all-in-one-seo-pack/all_in_one_seo_pack.php', 'all-in-one-seo-pack-pro/all_in_one_seo_pack.php'],
+				'seopress' => ['wp-seopress/seopress.php', 'wp-seopress-pro/seopress-pro.php'],
+				'tsf'      => ['autodescription/autodescription.php'],
+				'slimseo'  => ['slim-seo/slim-seo.php'],
+			];
+
+			foreach ($files[$id] ?? [] as $file) {
+				if (is_plugin_active($file)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the active plugin file basename for an SEO plugin, if currently active.
+	 */
+	public static function get_active_plugin_file(string $id): ?string
+	{
+		if (! function_exists('is_plugin_active')) {
+			include_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		$files = [
+			'yoast'    => ['wordpress-seo/wp-seo.php', 'wordpress-seo-premium/wp-seo-premium.php'],
+			'rankmath' => ['seo-by-rank-math/rank-math.php', 'seo-by-rank-math-pro/rank-math-pro.php'],
+			'aioseo'   => ['all-in-one-seo-pack/all_in_one_seo_pack.php', 'all-in-one-seo-pack-pro/all_in_one_seo_pack.php'],
+			'seopress' => ['wp-seopress/seopress.php', 'wp-seopress-pro/seopress-pro.php'],
+			'tsf'      => ['autodescription/autodescription.php'],
+			'slimseo'  => ['slim-seo/slim-seo.php'],
+		];
+
+		foreach ($files[$id] ?? [] as $file) {
+			if (function_exists('is_plugin_active') && is_plugin_active($file)) {
+				return $file;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @return array<int,array{id:string,label:string,available:bool,active:bool,posts:int,terms:int,users:int,redirects:int}>
 	 */
 	public static function inventory(): array
 	{
@@ -81,6 +150,7 @@ class Runner
 				'id'        => $source->id(),
 				'label'     => $source->label(),
 				'available' => $available,
+				'active'    => self::is_plugin_active($source->id()),
 				'posts'     => (int) $counts['posts'],
 				'terms'     => (int) $counts['terms'],
 				'users'     => (int) $counts['users'],
