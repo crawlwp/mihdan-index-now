@@ -101,30 +101,29 @@ class Elementor
 			'tab'   => \Elementor\Controls_Manager::TAB_SETTINGS,
 		]);
 
-		$document->add_control('crawlwp_ai_generate', [
-			'type'            => \Elementor\Controls_Manager::RAW_HTML,
-			'raw'             => $this->get_ai_button_html(),
-			'content_classes' => 'crawlwp-elementor-ai-wrapper',
-		]);
-
 		$document->add_control(MetaFields::SEO_TITLE, [
 			'label'       => __('SEO title', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::TEXT,
+			'label_block' => true,
+			'ai'          => ['active' => false],
 			'dynamic'     => ['active' => true],
 			'placeholder' => '{{ post.title }} {{ sep }} {{ site.title }}',
 			'default'     => (string) MetaFields::get($post_id, MetaFields::SEO_TITLE),
 		]);
 
 		$document->add_control(MetaFields::SEO_DESCRIPTION, [
-			'label'   => __('Meta description', 'mihdan-index-now'),
-			'type'    => \Elementor\Controls_Manager::TEXTAREA,
-			'dynamic' => ['active' => true],
-			'default' => (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION),
+			'label'       => __('Meta description', 'mihdan-index-now'),
+			'type'        => \Elementor\Controls_Manager::TEXTAREA,
+			'label_block' => true,
+			'ai'          => ['active' => false],
+			'dynamic'     => ['active' => true],
+			'default'     => (string) MetaFields::get($post_id, MetaFields::SEO_DESCRIPTION),
 		]);
 
 		$document->add_control(MetaFields::FOCUS_KEYWORD, [
 			'label'       => __('Focus keyword', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::TEXT,
+			'ai'          => ['active' => false],
 			'dynamic'     => ['active' => true],
 			'description' => __('Comma-separated list; first keyword is primary for scoring.', 'mihdan-index-now'),
 			'default'     => (string) MetaFields::get($post_id, MetaFields::FOCUS_KEYWORD),
@@ -133,6 +132,7 @@ class Elementor
 		$document->add_control(MetaFields::CANONICAL_URL, [
 			'label'       => __('Canonical URL', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::URL,
+			'ai'          => ['active' => false],
 			'dynamic'     => ['active' => true],
 			'placeholder' => 'https://...',
 			'default'     => ['url' => (string) MetaFields::get($post_id, MetaFields::CANONICAL_URL)],
@@ -182,21 +182,25 @@ class Elementor
 		]);
 
 		$document->add_control(MetaFields::OG_TITLE, [
-			'label'     => __('Open Graph title', 'mihdan-index-now'),
-			'type'      => \Elementor\Controls_Manager::TEXT,
-			'dynamic'   => ['active' => true],
-			'default'   => (string) MetaFields::get($post_id, MetaFields::OG_TITLE),
-			'condition' => [
+			'label'       => __('Open Graph title', 'mihdan-index-now'),
+			'type'        => \Elementor\Controls_Manager::TEXT,
+			'label_block' => true,
+			'ai'          => ['active' => false],
+			'dynamic'     => ['active' => true],
+			'default'     => (string) MetaFields::get($post_id, MetaFields::OG_TITLE),
+			'condition'   => [
 				MetaFields::OG_SYNC => '',
 			],
 		]);
 
 		$document->add_control(MetaFields::OG_DESCRIPTION, [
-			'label'     => __('Open Graph description', 'mihdan-index-now'),
-			'type'      => \Elementor\Controls_Manager::TEXTAREA,
-			'dynamic'   => ['active' => true],
-			'default'   => (string) MetaFields::get($post_id, MetaFields::OG_DESCRIPTION),
-			'condition' => [
+			'label'       => __('Open Graph description', 'mihdan-index-now'),
+			'type'        => \Elementor\Controls_Manager::TEXTAREA,
+			'label_block' => true,
+			'ai'          => ['active' => false],
+			'dynamic'     => ['active' => true],
+			'default'     => (string) MetaFields::get($post_id, MetaFields::OG_DESCRIPTION),
+			'condition'   => [
 				MetaFields::OG_SYNC => '',
 			],
 		]);
@@ -207,6 +211,7 @@ class Elementor
 		$document->add_control(MetaFields::OG_IMAGE, [
 			'label'   => __('Open Graph image', 'mihdan-index-now'),
 			'type'    => \Elementor\Controls_Manager::MEDIA,
+			'ai'      => ['active' => false],
 			'default' => [
 				'id'  => $og_img_id > 0 ? $og_img_id : '',
 				'url' => $og_img_url,
@@ -216,6 +221,7 @@ class Elementor
 		$document->add_control(MetaFields::OG_IMAGE_ALT, [
 			'label'   => __('Social image alt text', 'mihdan-index-now'),
 			'type'    => \Elementor\Controls_Manager::TEXT,
+			'ai'      => ['active' => false],
 			'default' => (string) MetaFields::get($post_id, MetaFields::OG_IMAGE_ALT),
 		]);
 
@@ -235,21 +241,25 @@ class Elementor
 		]);
 
 		$document->add_control(MetaFields::X_TITLE, [
-			'label'     => __('X title', 'mihdan-index-now'),
-			'type'      => \Elementor\Controls_Manager::TEXT,
-			'dynamic'   => ['active' => true],
-			'default'   => (string) MetaFields::get($post_id, MetaFields::X_TITLE),
-			'condition' => [
+			'label'       => __('X title', 'mihdan-index-now'),
+			'type'        => \Elementor\Controls_Manager::TEXT,
+			'label_block' => true,
+			'ai'          => ['active' => false],
+			'dynamic'     => ['active' => true],
+			'default'     => (string) MetaFields::get($post_id, MetaFields::X_TITLE),
+			'condition'   => [
 				MetaFields::X_SYNC => '',
 			],
 		]);
 
 		$document->add_control(MetaFields::X_DESCRIPTION, [
-			'label'     => __('X description', 'mihdan-index-now'),
-			'type'      => \Elementor\Controls_Manager::TEXTAREA,
-			'dynamic'   => ['active' => true],
-			'default'   => (string) MetaFields::get($post_id, MetaFields::X_DESCRIPTION),
-			'condition' => [
+			'label'       => __('X description', 'mihdan-index-now'),
+			'type'        => \Elementor\Controls_Manager::TEXTAREA,
+			'label_block' => true,
+			'ai'          => ['active' => false],
+			'dynamic'     => ['active' => true],
+			'default'     => (string) MetaFields::get($post_id, MetaFields::X_DESCRIPTION),
+			'condition'   => [
 				MetaFields::X_SYNC => '',
 			],
 		]);
@@ -260,6 +270,7 @@ class Elementor
 		$document->add_control(MetaFields::X_IMAGE, [
 			'label'     => __('X image', 'mihdan-index-now'),
 			'type'      => \Elementor\Controls_Manager::MEDIA,
+			'ai'        => ['active' => false],
 			'default'   => [
 				'id'  => $x_img_id > 0 ? $x_img_id : '',
 				'url' => $x_img_url,
@@ -282,6 +293,7 @@ class Elementor
 		$document->add_control(MetaFields::X_CREATOR, [
 			'label'       => __('Creator (@username)', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::TEXT,
+			'ai'          => ['active' => false],
 			'placeholder' => '@username',
 			'default'     => (string) MetaFields::get($post_id, MetaFields::X_CREATOR),
 		]);
@@ -340,6 +352,8 @@ class Elementor
 		$document->add_control(MetaFields::SCHEMA_HEADLINE, [
 			'label'       => __('Headline', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::TEXT,
+			'label_block' => true,
+			'ai'          => ['active' => false],
 			'dynamic'     => ['active' => true],
 			'placeholder' => __('Leave empty to use SEO title', 'mihdan-index-now'),
 			'default'     => (string) MetaFields::get($post_id, MetaFields::SCHEMA_HEADLINE),
@@ -348,6 +362,7 @@ class Elementor
 		$document->add_control(MetaFields::SCHEMA_SECTION, [
 			'label'   => __('Article section', 'mihdan-index-now'),
 			'type'    => \Elementor\Controls_Manager::TEXT,
+			'ai'      => ['active' => false],
 			'dynamic' => ['active' => true],
 			'default' => (string) MetaFields::get($post_id, MetaFields::SCHEMA_SECTION),
 		]);
@@ -355,6 +370,7 @@ class Elementor
 		$document->add_control(MetaFields::SCHEMA_BREADCRUMB, [
 			'label'   => __('Breadcrumb title', 'mihdan-index-now'),
 			'type'    => \Elementor\Controls_Manager::TEXT,
+			'ai'      => ['active' => false],
 			'dynamic' => ['active' => true],
 			'default' => (string) MetaFields::get($post_id, MetaFields::SCHEMA_BREADCRUMB),
 		]);
@@ -362,6 +378,8 @@ class Elementor
 		$document->add_control(MetaFields::SCHEMA_CUSTOM, [
 			'label'       => __('Custom JSON-LD schema', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::TEXTAREA,
+			'label_block' => true,
+			'ai'          => ['active' => false],
 			'description' => __('Valid JSON-LD block to merge into page schema.', 'mihdan-index-now'),
 			'default'     => (string) MetaFields::get($post_id, MetaFields::SCHEMA_CUSTOM),
 		]);
@@ -450,6 +468,7 @@ class Elementor
 			'label'       => __('301 / 302 Redirect URL', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::URL,
 			'placeholder' => 'https://...',
+			'ai'          => ['active' => false],
 			'dynamic'     => ['active' => true],
 			'default'     => ['url' => (string) MetaFields::get($post_id, MetaFields::REDIRECT_URL)],
 		]);
@@ -534,19 +553,5 @@ class Elementor
 
 		// Refresh signals cache
 		SeoSignals::persist($post_id);
-	}
-
-	/**
-	 * Build AI generation button markup for the Elementor panel.
-	 */
-	private function get_ai_button_html(): string
-	{
-		return '
-		<div class="cwp-elementor-ai-bar">
-			<button type="button" class="cwp-elementor-ai-btn" id="cwpElementorAiBtn" title="' . esc_attr__('Generate SEO title & description with AI', 'mihdan-index-now') . '">
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/><path d="M19 2l.87 2.61L22.5 5.5l-2.63.89L19 9l-.87-2.61L15.5 5.5l2.63-.89z"/></svg>
-				' . esc_html__('Generate SEO with AI', 'mihdan-index-now') . '
-			</button>
-		</div>';
 	}
 }

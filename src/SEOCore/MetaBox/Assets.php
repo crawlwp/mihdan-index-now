@@ -461,6 +461,9 @@ class Assets
 			/* translators: %1$s: pixel width, %2$s: pixel limit, %3$s: character count */
 			'meterDetail'      => __('%1$s / %2$s px · %3$s chars', 'mihdan-index-now'),
 
+			/* Variable inserter */
+			'insertVariable'   => __('Insert variable', 'mihdan-index-now'),
+
 			/* Live preview placeholders */
 			'enterTitle'       => __('Enter a title', 'mihdan-index-now'),
 			'addMetaDesc'      => __('Add a meta description to control what appears here.', 'mihdan-index-now'),

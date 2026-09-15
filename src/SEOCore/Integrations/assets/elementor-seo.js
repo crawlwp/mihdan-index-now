@@ -4,117 +4,207 @@
 (function($) {
   'use strict';
 
+  var VAR_CONFIGS = {
+    title: [
+      { token: '{{ post.title }}', label: 'Post title' },
+      { token: '{{ site.title }}', label: 'Site name' },
+      { token: '{{ sep }}', label: 'Separator' },
+      { token: '{{ post.category }}', label: 'Primary category' },
+      { token: '{{ post.auto_description }}', label: 'Post excerpt' },
+      { token: '{{ current.year }}', label: 'Current year' },
+      { token: '{{ post.author }}', label: 'Author name' },
+      { token: '{{ post.date }}', label: 'Publish date' },
+      { token: '{{ post.modified }}', label: 'Modified date' }
+    ],
+    description: [
+      { token: '{{ post.auto_description }}', label: 'Post excerpt' },
+      { token: '{{ post.title }}', label: 'Post title' },
+      { token: '{{ site.title }}', label: 'Site name' },
+      { token: '{{ post.category }}', label: 'Primary category' },
+      { token: '{{ current.year }}', label: 'Current year' },
+      { token: '{{ post.author }}', label: 'Author name' },
+      { token: '{{ sep }}', label: 'Separator' }
+    ]
+  };
+
+  var TARGET_CONTROLS = {
+    '_crawlwp_seo_title': 'title',
+    '_crawlwp_seo_description': 'description',
+    '_crawlwp_og_title': 'title',
+    '_crawlwp_og_description': 'description',
+    '_crawlwp_x_title': 'title',
+    '_crawlwp_x_description': 'description',
+    '_crawlwp_schema_headline': 'title'
+  };
+
   var SEO = {
     init: function() {
+      var self = this;
+
       this.bindUIEvents();
+
+      $(window).on('elementor:init', function() {
+        self.initHooks();
+      });
+
+      if (window.elementor) {
+        this.initHooks();
+      }
+    },
+
+    initHooks: function() {
+      var self = this;
+      if (!window.elementor) return;
+
+      if (elementor.hooks && elementor.hooks.addAction) {
+        elementor.hooks.addAction('panel/open_editor/settings', function() {
+          setTimeout(function() {
+            self.attachAllInserters();
+          }, 100);
+        });
+      }
+
+      if (elementor.hooks && elementor.hooks.addFilter) {
+        elementor.hooks.addFilter('controls/base/behaviors', function(behaviors, view) {
+          if (view && view.options && view.options.model) {
+            var name = view.options.model.get('name');
+            if (TARGET_CONTROLS[name]) {
+              setTimeout(function() {
+                if (view.$el) {
+                  self.injectVariableInserter(view.$el, TARGET_CONTROLS[name]);
+                }
+              }, 50);
+            }
+          }
+          return behaviors;
+        });
+      }
+
+      // Observe panel DOM for tab changes or dynamic control rendering
+      var panelEl = document.getElementById('elementor-panel');
+      if (panelEl && window.MutationObserver) {
+        var observer = new MutationObserver(function() {
+          self.attachAllInserters();
+        });
+        observer.observe(panelEl, { childList: true, subtree: true });
+      }
+
+      setTimeout(function() {
+        self.attachAllInserters();
+      }, 200);
+    },
+
+    buildVarHtml: function(varType) {
+      var data = window.crawlwpSEO || {};
+      var btnLabel = (data.i18n && data.i18n.insertVariable) ? data.i18n.insertVariable : 'Insert variable';
+      var vars = VAR_CONFIGS[varType] || VAR_CONFIGS.title;
+
+      var itemsHtml = '';
+      $.each(vars, function(i, item) {
+        itemsHtml += '<button class="cwp-var-item" type="button" data-token="' + item.token + '">' +
+          '<code>' + item.token + '</code>' +
+          '<span>' + item.label + '</span>' +
+          '</button>';
+      });
+
+      return '<div class="cwp-var">' +
+        '<button class="cwp-var-btn" type="button" title="' + btnLabel + '">' +
+        '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+        '<span>' + btnLabel + '</span>' +
+        '</button>' +
+        '<div class="cwp-var-menu">' + itemsHtml + '</div>' +
+        '</div>';
+    },
+
+    injectVariableInserter: function($control, varType) {
+      if (!$control.length || $control.find('.cwp-var').length) {
+        return;
+      }
+
+      var $title = $control.find('.elementor-control-title');
+      var $varEl = $(this.buildVarHtml(varType));
+
+      if ($title.length) {
+        $title.after($varEl);
+      } else {
+        var $field = $control.find('.elementor-control-field');
+        if ($field.length) {
+          $field.prepend($varEl);
+        }
+      }
+    },
+
+    attachAllInserters: function() {
+      var self = this;
+      $.each(TARGET_CONTROLS, function(settingKey, varType) {
+        var $control = $('.elementor-control-' + settingKey);
+        if ($control.length && !$control.find('.cwp-var').length) {
+          self.injectVariableInserter($control, varType);
+        }
+      });
     },
 
     bindUIEvents: function() {
       var self = this;
 
-      // AI Generate action
-      $(document).on('click', '#cwpElementorAiBtn', function(e) {
+      // Toggle variable menu
+      $(document).on('click', '.cwp-var-btn', function(e) {
         e.preventDefault();
-        self.handleAiGenerate($(this));
+        e.stopPropagation();
+        var $btn = $(this);
+        var $menu = $btn.siblings('.cwp-var-menu');
+        $('.cwp-var-menu').not($menu).removeClass('is-open');
+        $menu.toggleClass('is-open');
       });
-    },
 
-    getSetting: function(key) {
-      if (window.elementor && elementor.settings && elementor.settings.page) {
-        var val = elementor.settings.page.model.get(key);
-        if (val !== undefined && val !== null) {
-          if (typeof val === 'object' && val.url !== undefined) {
-            return val.url;
+      // Close menu when clicking outside
+      $(document).on('click', function(e) {
+        if (!$(e.target).closest('.cwp-var').length) {
+          $('.cwp-var-menu').removeClass('is-open');
+        }
+      });
+
+      // Close menu on Escape key
+      $(document).on('keydown', function(e) {
+        if (e.which === 27) {
+          $('.cwp-var-menu').removeClass('is-open');
+        }
+      });
+
+      // Click variable item -> insert token at cursor / end
+      $(document).on('click', '.cwp-var-item', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $item = $(this);
+        var token = $item.data('token');
+        var $menu = $item.closest('.cwp-var-menu');
+        var $control = $item.closest('.elementor-control');
+        var $input = $control.find('input, textarea');
+
+        if ($input.length) {
+          var el = $input[0];
+          var start = (typeof el.selectionStart === 'number') ? el.selectionStart : el.value.length;
+          var end = (typeof el.selectionEnd === 'number') ? el.selectionEnd : start;
+          var currentVal = el.value || '';
+          var newVal = currentVal.substring(0, start) + token + currentVal.substring(end);
+
+          el.value = newVal;
+          $input.trigger('input').trigger('change');
+
+          var settingKey = $input.data('setting');
+          if (settingKey && window.elementor && elementor.settings && elementor.settings.page) {
+            elementor.settings.page.model.set(settingKey, newVal);
           }
-          return val;
-        }
-      }
-      var $el = $('[data-setting="' + key + '"]');
-      if ($el.length) {
-        return $el.val() || '';
-      }
-      return '';
-    },
 
-    setSetting: function(key, value) {
-      if (window.elementor && elementor.settings && elementor.settings.page) {
-        elementor.settings.page.model.set(key, value);
-      }
-      var $el = $('[data-setting="' + key + '"]');
-      if ($el.length) {
-        $el.val(value).trigger('input').trigger('change');
-      }
-    },
-
-    getEditorContent: function() {
-      if (window.elementor && elementor.$previewContents) {
-        var $body = elementor.$previewContents.find('.elementor-section-wrap, .elementor-inner, body');
-        if ($body.length) {
-          return $body.html() || '';
-        }
-      }
-      return '';
-    },
-
-    stripTags: function(html) {
-      return $('<div>').html(html).text();
-    },
-
-    handleAiGenerate: function($btn) {
-      var self = this;
-      var data = window.crawlwpSEO || {};
-      if (!data.ajaxUrl || !data.aiNonce) return;
-
-      var html = this.getEditorContent();
-      var text = this.stripTags(html);
-      var keyword = this.getSetting('_crawlwp_focus_keyword');
-      var postTitle = data.postTitle || '';
-
-      $btn.prop('disabled', true).text('Generating...');
-
-      // Generate Title
-      $.ajax({
-        url: data.ajaxUrl,
-        type: 'POST',
-        data: {
-          action: 'crawlwp_ai_generate',
-          nonce: data.aiNonce,
-          post_id: data.postId || 0,
-          field: 'title',
-          post_title: postTitle,
-          post_content: text.slice(0, 4000),
-          focus_keyword: keyword
-        }
-      }).done(function(res) {
-        if (res.success && res.data && res.data.text) {
-          self.setSetting('_crawlwp_seo_title', res.data.text);
-        }
-        // Also Generate Description
-        $.ajax({
-          url: data.ajaxUrl,
-          type: 'POST',
-          data: {
-            action: 'crawlwp_ai_generate',
-            nonce: data.aiNonce,
-            post_id: data.postId || 0,
-            field: 'description',
-            post_title: postTitle,
-            post_content: text.slice(0, 4000),
-            focus_keyword: keyword
+          el.focus();
+          var newPos = start + token.length;
+          if (typeof el.setSelectionRange === 'function') {
+            el.setSelectionRange(newPos, newPos);
           }
-        }).done(function(descRes) {
-          if (descRes.success && descRes.data && descRes.data.text) {
-            self.setSetting('_crawlwp_seo_description', descRes.data.text);
-          }
-        }).always(function() {
-          $btn.prop('disabled', false).html(
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/><path d="M19 2l.87 2.61L22.5 5.5l-2.63.89L19 9l-.87-2.61L15.5 5.5l2.63-.89z"/></svg> Generate SEO with AI'
-          );
-        });
-      }).fail(function() {
-        $btn.prop('disabled', false).html(
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74z"/><path d="M19 2l.87 2.61L22.5 5.5l-2.63.89L19 9l-.87-2.61L15.5 5.5l2.63-.89z"/></svg> Generate SEO with AI'
-        );
+        }
+
+        $menu.removeClass('is-open');
       });
     }
   };

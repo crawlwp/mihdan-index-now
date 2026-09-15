@@ -41,7 +41,7 @@ class ElementorIntegrationTest extends TestCase
 		$this->assertArrayHasKey('crawlwp_seo_advanced', $document->sections);
 
 		// Assert general controls and actions
-		$this->assertArrayHasKey('crawlwp_ai_generate', $document->controls);
+		$this->assertArrayNotHasKey('crawlwp_ai_generate', $document->controls);
 		$this->assertArrayNotHasKey('crawlwp_seo_analysis', $document->controls);
 		$this->assertArrayNotHasKey('crawlwp_seo_preview', $document->controls);
 		$this->assertArrayNotHasKey(MetaFields::SEO_SCORE, $document->controls);
@@ -50,6 +50,17 @@ class ElementorIntegrationTest extends TestCase
 		$this->assertArrayHasKey(MetaFields::FOCUS_KEYWORD, $document->controls);
 		$this->assertArrayHasKey(MetaFields::CANONICAL_URL, $document->controls);
 		$this->assertArrayHasKey(MetaFields::PRIMARY_CATEGORY, $document->controls);
+
+		// Assert AI is disabled on controls to prevent Elementor AI buttons from showing
+		$this->assertFalse($document->controls[MetaFields::SEO_TITLE]['ai']['active'] ?? true);
+		$this->assertFalse($document->controls[MetaFields::SEO_DESCRIPTION]['ai']['active'] ?? true);
+		$this->assertFalse($document->controls[MetaFields::FOCUS_KEYWORD]['ai']['active'] ?? true);
+		$this->assertFalse($document->controls[MetaFields::OG_TITLE]['ai']['active'] ?? true);
+		$this->assertFalse($document->controls[MetaFields::X_TITLE]['ai']['active'] ?? true);
+
+		// Assert label_block is true on title and description fields for variable inserter header
+		$this->assertTrue($document->controls[MetaFields::SEO_TITLE]['label_block'] ?? false);
+		$this->assertTrue($document->controls[MetaFields::SEO_DESCRIPTION]['label_block'] ?? false);
 
 		// Assert dynamic tags are enabled on text and url controls
 		$this->assertTrue($document->controls[MetaFields::SEO_TITLE]['dynamic']['active'] ?? false);
