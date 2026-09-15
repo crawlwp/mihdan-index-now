@@ -91,7 +91,7 @@ class Assets
 		$suggested   = [];
 
 		if ($post instanceof \WP_Post) {
-			$author_obj = get_userdata($post->post_author);
+			$author_obj = get_userdata((int) $post->post_author);
 			$author     = $author_obj ? $author_obj->display_name : '';
 			$terms      = get_the_terms($post->ID, 'category');
 			if (! empty($terms) && ! is_wp_error($terms)) {

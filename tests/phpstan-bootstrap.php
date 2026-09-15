@@ -40,7 +40,10 @@ if (! class_exists('Elementor\Controls_Manager')) {
 
 if (! class_exists('Elementor\Core\DocumentTypes\Document')) {
 	eval('namespace Elementor\Core\DocumentTypes; class Document {
-		public function get_main_id(): int { return 0; }
+		public int $id = 0;
+		public array $controls = [];
+		public array $sections = [];
+		public function get_main_id(): int { return $this->id; }
 		public function start_controls_section(string $section_id, array $args = []): void {}
 		public function end_controls_section(): void {}
 		public function add_control(string $id, array $args = []): void {}

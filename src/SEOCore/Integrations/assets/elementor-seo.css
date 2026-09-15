@@ -1,0 +1,41 @@
+/**
+ * CrawlWP SEO - Elementor Integration Styles
+ */
+
+/* AI Generation Action */
+.cwp-elementor-ai-bar {
+  margin-bottom: 12px;
+}
+
+.cwp-elementor-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: #f0f7f5;
+  color: #0e9384;
+  border: 1px solid #c2e2dc;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.cwp-elementor-ai-btn svg {
+  flex-shrink: 0;
+}
+
+.cwp-elementor-ai-btn:hover {
+  background: #0e9384;
+  color: #fff;
+  border-color: #0e9384;
+}
+
+.cwp-elementor-ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

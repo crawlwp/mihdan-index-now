@@ -452,6 +452,20 @@ if (!function_exists('sanitize_text_field')) {
 	}
 }
 
+if (!function_exists('sanitize_textarea_field')) {
+	function sanitize_textarea_field($str)
+	{
+		return trim(strip_tags((string)$str));
+	}
+}
+
+if (!function_exists('metadata_exists')) {
+	function metadata_exists($meta_type, $object_id, $meta_key)
+	{
+		return array_key_exists($meta_key, $GLOBALS['crawlwp_test_state']['post_meta'][$object_id] ?? []);
+	}
+}
+
 if (!function_exists('get_query_var')) {
 	function get_query_var($var, $default = '')
 	{
@@ -606,6 +620,14 @@ if (!function_exists('get_post_meta')) {
 
 if (!function_exists('update_post_meta')) {
 	function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '')
+	{
+		$GLOBALS['crawlwp_test_state']['post_meta'][$post_id][$meta_key] = $meta_value;
+		return true;
+	}
+}
+
+if (!function_exists('add_post_meta')) {
+	function add_post_meta($post_id, $meta_key, $meta_value, $unique = false)
 	{
 		$GLOBALS['crawlwp_test_state']['post_meta'][$post_id][$meta_key] = $meta_value;
 		return true;
@@ -1207,6 +1229,27 @@ if (!function_exists('pll_get_term_translations')) {
 	}
 }
 
+if (!function_exists('wp_unslash')) {
+	function wp_unslash($value)
+	{
+		return is_array($value) ? array_map('wp_unslash', $value) : (is_string($value) ? stripslashes($value) : $value);
+	}
+}
+
+if (!function_exists('get_the_terms')) {
+	function get_the_terms($post, $taxonomy)
+	{
+		return $GLOBALS['crawlwp_test_state']['terms'][$taxonomy] ?? [];
+	}
+}
+
+if (!function_exists('wp_get_attachment_image_url')) {
+	function wp_get_attachment_image_url($attachment_id, $size = 'thumbnail', $icon = false)
+	{
+		return 'https://example.test/uploads/' . $attachment_id . '.jpg';
+	}
+}
+
 // Classes under test. Loaded explicitly so the suite never depends on vendor/.
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Importer/TokenMapper.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Schema/Graph.php';
@@ -1219,6 +1262,44 @@ require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/Utils.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/FeatureGate/FeatureGate.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Notifications/Notifications.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Code/CodeSettings.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/FieldProcessor.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/SeoSignals.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/Assets.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Integrations/Elementor.php';
+
+if (! class_exists('Elementor\Controls_Manager')) {
+	eval('namespace Elementor; class Controls_Manager {
+		public const TAB_SETTINGS = "settings";
+		public const TEXT         = "text";
+		public const TEXTAREA     = "textarea";
+		public const SELECT       = "select";
+		public const SELECT2      = "select2";
+		public const URL          = "url";
+		public const SWITCHER     = "switcher";
+		public const MEDIA        = "media";
+		public const RAW_HTML     = "raw_html";
+		public const CODE         = "code";
+		public const HIDDEN       = "hidden";
+		public const HEADING      = "heading";
+		public const DIVIDER      = "divider";
+	}');
+}
+
+if (! class_exists('Elementor\Core\DocumentTypes\Document')) {
+	eval('namespace Elementor\Core\DocumentTypes; class Document {
+		public array $controls = [];
+		public array $sections = [];
+		public int $id = 0;
+		public function get_main_id(): int { return $this->id; }
+		public function start_controls_section(string $section_id, array $args = []): void {
+			$this->sections[$section_id] = $args;
+		}
+		public function end_controls_section(): void {}
+		public function add_control(string $id, array $args = []): void {
+			$this->controls[$id] = $args;
+		}
+	}');
+}
 
 $crawlwp_pro_autoload = dirname(CRAWLWP_TESTS_PLUGIN_DIR) . '/mihdan-index-now-pro/Libsodium/vendor/autoload.php';
 if (file_exists($crawlwp_pro_autoload)) {
