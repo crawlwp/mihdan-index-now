@@ -40,9 +40,9 @@ class FeatureGate
 		}
 
 		// The gate page no longer exists once the features are on — send anyone
-		// landing on it (bookmark, stale link) to the setup wizard.
+		// landing on it (bookmark, stale link) back to the main settings screen.
 		if (is_admin() && Utils::_GET_var('wposa-menu') === self::OPTION_KEY) {
-			Utils::content_http_redirect(Wizard::wizard_url());
+			Utils::content_http_redirect(CRAWLWP_SETTINGS_URL);
 		}
 	}
 
@@ -113,6 +113,9 @@ class FeatureGate
 
 		if (self::is_fresh_install()) {
 			self::enable();
+			if (! get_option(Wizard::COMPLETED_OPTION)) {
+				set_transient(Wizard::REDIRECT_TRANSIENT, 1, 60);
+			}
 		} else {
 			self::disable();
 		}
@@ -125,14 +128,9 @@ class FeatureGate
 	{
 		$options = get_option(self::OPTION_KEY, []);
 		$options = is_array($options) ? $options : [];
-		$was_enabled = isset($options[self::OPTION_FIELD]) && $options[self::OPTION_FIELD] === 'on';
 		$options[self::OPTION_FIELD] = 'on';
 		update_option(self::OPTION_KEY, $options);
 		self::$cache = true;
-
-		if (! $was_enabled && ! get_option(Wizard::COMPLETED_OPTION)) {
-			set_transient(Wizard::REDIRECT_TRANSIENT, 1, 60);
-		}
 	}
 
 	/**

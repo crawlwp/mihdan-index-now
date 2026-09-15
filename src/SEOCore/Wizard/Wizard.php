@@ -23,7 +23,6 @@ class Wizard
 	{
 		add_action('admin_menu', [$this, 'register_menu_page'], 20);
 		add_action('admin_init', [$this, 'maybe_redirect_to_wizard']);
-		add_action('admin_notices', [$this, 'maybe_show_admin_notice']);
 		add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
 		add_action('admin_post_crawlwp_enable_and_launch_wizard', [$this, 'handle_enable_and_launch']);
 
@@ -49,7 +48,7 @@ class Wizard
 	public function register_menu_page(): void
 	{
 		add_submenu_page(
-			'crawlwp',
+			null,
 			__('Getting Started Wizard', 'mihdan-index-now'),
 			__('Setup Wizard', 'mihdan-index-now'),
 			'manage_options',

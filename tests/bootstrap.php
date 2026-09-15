@@ -113,6 +113,26 @@ if (!function_exists('add_action')) {
 	}
 }
 
+if (!function_exists('add_submenu_page')) {
+	function add_submenu_page($parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback = '', $position = null)
+	{
+		global $submenu;
+		if ($parent_slug !== null) {
+			$submenu[$parent_slug][] = [$menu_title, $capability, $menu_slug, $page_title];
+		}
+		return 'admin_page_' . $menu_slug;
+	}
+}
+
+if (!function_exists('add_menu_page')) {
+	function add_menu_page($page_title, $menu_title, $capability, $menu_slug, $callback = '', $icon_url = '', $position = null)
+	{
+		global $menu;
+		$menu[] = [$menu_title, $capability, $menu_slug, $page_title];
+		return 'toplevel_page_' . $menu_slug;
+	}
+}
+
 if (!function_exists('do_action')) {
 	function do_action($hook, ...$args)
 	{

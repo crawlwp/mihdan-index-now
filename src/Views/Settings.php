@@ -9,6 +9,7 @@ namespace Mihdan\IndexNow\Views;
 
 use Mihdan\IndexNow\Logger\Logger;
 use Mihdan\IndexNow\SEOCore\FeatureGate\FeatureGate;
+use Mihdan\IndexNow\SEOCore\Wizard\Wizard;
 use Mihdan\IndexNow\Utils;
 
 /**
@@ -202,6 +203,21 @@ class Settings
 						return $html;
 
 					})(),
+				]
+			);
+		}
+
+		if (class_exists(FeatureGate::class) && FeatureGate::is_enabled() && class_exists(Wizard::class)) {
+			$this->wposa->add_sidebar_card(
+				[
+					'id'    => 'setup_wizard',
+					'title' => __('Setup Wizard', 'mihdan-index-now'),
+					'desc'  => sprintf(
+						'<p>%s</p><div style="margin-top: 12px;"><a href="%s" class="button button-secondary cwp-relaunch-wizard-btn">%s</a></div>',
+						esc_html__('Need to configure your SEO settings again, re-import data from another plugin, or adjust Indexing settings?', 'mihdan-index-now'),
+						esc_url(Wizard::wizard_url()),
+						esc_html__('Relaunch Setup Wizard', 'mihdan-index-now')
+					),
 				]
 			);
 		}
