@@ -396,21 +396,30 @@ class Yoast extends Source
 		$noindex = (int) get_post_meta($post_id, '_yoast_wpseo_meta-robots-noindex', true);
 		$nofollow = (int) get_post_meta($post_id, '_yoast_wpseo_meta-robots-nofollow', true);
 
+		$schema_page_type    = (string) get_post_meta($post_id, '_yoast_wpseo_schema_page_type', true);
+		$schema_article_type = (string) get_post_meta($post_id, '_yoast_wpseo_schema_article_type', true);
+		if (strtolower($schema_article_type) === 'none') {
+			$schema_article_type = 'none';
+		}
+
 		$data = [
-			'title'            => $title,
-			'description'      => $desc,
-			'focus_keyword'    => $kw,
-			'canonical'        => $canon,
-			'og_title'         => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_opengraph-title', true)),
-			'og_description'   => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_opengraph-description', true)),
-			'og_image'         => (string) get_post_meta($post_id, '_yoast_wpseo_opengraph-image-id', true)
+			'title'               => $title,
+			'description'         => $desc,
+			'focus_keyword'       => $kw,
+			'canonical'           => $canon,
+			'og_title'            => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_opengraph-title', true)),
+			'og_description'      => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_opengraph-description', true)),
+			'og_image'            => (string) get_post_meta($post_id, '_yoast_wpseo_opengraph-image-id', true)
 				?: (string) get_post_meta($post_id, '_yoast_wpseo_opengraph-image', true),
-			'x_title'          => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_twitter-title', true)),
-			'x_description'    => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_twitter-description', true)),
-			'x_image'          => (string) get_post_meta($post_id, '_yoast_wpseo_twitter-image', true),
-			'primary_category' => (int) get_post_meta($post_id, '_yoast_wpseo_primary_category', true),
-			'cornerstone'      => (string) get_post_meta($post_id, '_yoast_wpseo_is_cornerstone', true),
-			'redirect_url'     => (string) get_post_meta($post_id, '_yoast_wpseo_redirect', true),
+			'x_title'             => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_twitter-title', true)),
+			'x_description'       => $this->convert((string) get_post_meta($post_id, '_yoast_wpseo_twitter-description', true)),
+			'x_image'             => (string) get_post_meta($post_id, '_yoast_wpseo_twitter-image-id', true)
+				?: (string) get_post_meta($post_id, '_yoast_wpseo_twitter-image', true),
+			'primary_category'    => (int) get_post_meta($post_id, '_yoast_wpseo_primary_category', true),
+			'cornerstone'         => (string) get_post_meta($post_id, '_yoast_wpseo_is_cornerstone', true),
+			'redirect_url'        => (string) get_post_meta($post_id, '_yoast_wpseo_redirect', true),
+			'schema_page_type'    => $schema_page_type,
+			'schema_article_type' => $schema_article_type,
 		];
 
 		if ($noindex === 1) {

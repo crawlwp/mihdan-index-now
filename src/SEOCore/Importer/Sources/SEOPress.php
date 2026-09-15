@@ -349,17 +349,36 @@ class SEOPress extends Source
 		$noindex  = $get($id, '_seopress_robots_index', true);
 		$nofollow = $get($id, '_seopress_robots_follow', true);
 
+		$primary_category = 0;
+		$redirect_url     = '';
+		$redirect_type    = '';
+
+		if ($type === 'post') {
+			$primary_category = (int) $get($id, '_seopress_robots_primary_cat', true);
+			$redirect_enabled = $get($id, '_seopress_redirections_enabled', true);
+
+			if ($redirect_enabled === 'yes' || $redirect_enabled === '1' || $redirect_enabled === true) {
+				$redirect_url  = (string) $get($id, '_seopress_redirections_value', true);
+				$redirect_type = (string) $get($id, '_seopress_redirections_type', true) ?: '301';
+			}
+		}
+
 		$data = [
-			'title'         => $this->convert((string) $get($id, '_seopress_titles_title', true)),
-			'description'   => $this->convert((string) $get($id, '_seopress_titles_desc', true)),
-			'focus_keyword' => (string) $get($id, '_seopress_analysis_target_kw', true),
-			'canonical'     => (string) $get($id, '_seopress_robots_canonical', true),
-			'og_title'      => $this->convert((string) $get($id, '_seopress_social_fb_title', true)),
-			'og_description'=> $this->convert((string) $get($id, '_seopress_social_fb_desc', true)),
-			'og_image'      => (string) $get($id, '_seopress_social_fb_img', true),
-			'x_title'       => $this->convert((string) $get($id, '_seopress_social_twitter_title', true)),
-			'x_description' => $this->convert((string) $get($id, '_seopress_social_twitter_desc', true)),
-			'x_image'       => (string) $get($id, '_seopress_social_twitter_img', true),
+			'title'            => $this->convert((string) $get($id, '_seopress_titles_title', true)),
+			'description'      => $this->convert((string) $get($id, '_seopress_titles_desc', true)),
+			'focus_keyword'    => (string) $get($id, '_seopress_analysis_target_kw', true),
+			'canonical'        => (string) $get($id, '_seopress_robots_canonical', true),
+			'og_title'         => $this->convert((string) $get($id, '_seopress_social_fb_title', true)),
+			'og_description'   => $this->convert((string) $get($id, '_seopress_social_fb_desc', true)),
+			'og_image'         => (string) $get($id, '_seopress_social_fb_img_id', true)
+				?: (string) $get($id, '_seopress_social_fb_img', true),
+			'x_title'          => $this->convert((string) $get($id, '_seopress_social_twitter_title', true)),
+			'x_description'    => $this->convert((string) $get($id, '_seopress_social_twitter_desc', true)),
+			'x_image'          => (string) $get($id, '_seopress_social_twitter_img_id', true)
+				?: (string) $get($id, '_seopress_social_twitter_img', true),
+			'primary_category' => $primary_category,
+			'redirect_url'     => $redirect_url,
+			'redirect_type'    => $redirect_type,
 		];
 
 		if ($noindex === 'yes' || $noindex === true || $noindex === '1') {

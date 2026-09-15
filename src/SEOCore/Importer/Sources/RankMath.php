@@ -388,22 +388,47 @@ class RankMath extends Source
 
 		$twitter_use_fb = (string) $get($id, 'rank_math_twitter_use_facebook', true);
 
+		$schema_page_type    = '';
+		$schema_article_type = '';
+		$redirect_url        = '';
+
+		if ($type === 'post') {
+			$snippet = (string) $get($id, 'rank_math_rich_snippet', true);
+			if ($snippet === 'off') {
+				$schema_article_type = 'none';
+			} elseif ($snippet === 'article') {
+				$art_type            = (string) $get($id, 'rank_math_article_type', true);
+				$schema_article_type = $art_type !== '' ? $art_type : 'Article';
+			} elseif ($get($id, 'rank_math_schema_NewsArticle', true)) {
+				$schema_article_type = 'NewsArticle';
+			} elseif ($get($id, 'rank_math_schema_BlogPosting', true)) {
+				$schema_article_type = 'BlogPosting';
+			} elseif ($get($id, 'rank_math_schema_Article', true)) {
+				$schema_article_type = 'Article';
+			}
+
+			$redirect_url = (string) $get($id, 'rank_math_redirection_url', true);
+		}
+
 		$data = [
-			'title'            => $title,
-			'description'      => $desc,
-			'focus_keyword'    => $kw,
-			'canonical'        => (string) $get($id, 'rank_math_canonical_url', true),
-			'og_title'         => $this->convert((string) $get($id, 'rank_math_facebook_title', true)),
-			'og_description'   => $this->convert((string) $get($id, 'rank_math_facebook_description', true)),
-			'og_image'         => (string) $get($id, 'rank_math_facebook_image_id', true)
+			'title'               => $title,
+			'description'         => $desc,
+			'focus_keyword'       => $kw,
+			'canonical'           => (string) $get($id, 'rank_math_canonical_url', true),
+			'og_title'            => $this->convert((string) $get($id, 'rank_math_facebook_title', true)),
+			'og_description'      => $this->convert((string) $get($id, 'rank_math_facebook_description', true)),
+			'og_image'            => (string) $get($id, 'rank_math_facebook_image_id', true)
 				?: (string) $get($id, 'rank_math_facebook_image', true),
-			'x_title'          => $this->convert((string) $get($id, 'rank_math_twitter_title', true)),
-			'x_description'    => $this->convert((string) $get($id, 'rank_math_twitter_description', true)),
-			'x_image'          => $twitter_use_fb === 'on'
+			'x_title'             => $this->convert((string) $get($id, 'rank_math_twitter_title', true)),
+			'x_description'       => $this->convert((string) $get($id, 'rank_math_twitter_description', true)),
+			'x_image'             => $twitter_use_fb === 'on'
 				? ''
-				: ((string) $get($id, 'rank_math_twitter_image', true)),
-			'primary_category' => (int) $get($id, 'rank_math_primary_category', true),
-			'cornerstone'      => (string) $get($id, 'rank_math_pillar_content', true),
+				: ((string) $get($id, 'rank_math_twitter_image_id', true) ?: (string) $get($id, 'rank_math_twitter_image', true)),
+			'primary_category'    => (int) $get($id, 'rank_math_primary_category', true),
+			'cornerstone'         => (string) $get($id, 'rank_math_pillar_content', true),
+			'redirect_url'        => $redirect_url,
+			'schema_page_type'    => $schema_page_type,
+			'schema_article_type' => $schema_article_type,
 		];
 
 		if ($noindex) {

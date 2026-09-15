@@ -360,6 +360,9 @@ class Variables
 			case 'tag':
 				return $this->first_term_name($post, 'post_tag');
 
+			case 'parent_title':
+				return ! empty($post->post_parent) ? get_the_title($post->post_parent) : '';
+
 			case 'comment_count':
 				return (string) (int) $post->comment_count;
 		}
@@ -659,6 +662,7 @@ class Variables
 					'post.author'           => __('Post author display name', 'mihdan-index-now'),
 					'post.category'         => __('First category assigned to the post', 'mihdan-index-now'),
 					'post.tag'              => __('First tag assigned to the post', 'mihdan-index-now'),
+					'post.parent_title'     => __('Parent post or page title', 'mihdan-index-now'),
 					'post.date'             => __('Post publish date', 'mihdan-index-now'),
 					'post.modified'         => __('Post last modified date', 'mihdan-index-now'),
 					'post.url'              => __('Post permalink', 'mihdan-index-now'),

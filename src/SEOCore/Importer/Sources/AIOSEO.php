@@ -412,19 +412,54 @@ class AIOSEO extends Source
 			}
 		}
 
+		$primary_category = 0;
+		$raw_primary      = $row['primary_term'] ?? null;
+		if (is_numeric($raw_primary)) {
+			$primary_category = (int) $raw_primary;
+		} elseif (is_string($raw_primary) && strpos($raw_primary, '{') !== false) {
+			$decoded = json_decode($raw_primary, true);
+			if (is_array($decoded)) {
+				$primary_category = (int) ($decoded['category'] ?? reset($decoded) ?? 0);
+			}
+		}
+
+		$schema_page_type    = '';
+		$schema_article_type = '';
+		if (! empty($row['schema_type_options'])) {
+			$schema_opts = json_decode((string) $row['schema_type_options'], true);
+			if (is_array($schema_opts)) {
+				if (! empty($schema_opts['webPage']['webPageType'])) {
+					$schema_page_type = (string) $schema_opts['webPage']['webPageType'];
+				}
+				if (! empty($schema_opts['article']['articleType'])) {
+					$schema_article_type = (string) $schema_opts['article']['articleType'];
+				}
+			}
+		}
+
+		if ($schema_page_type === '' && ! empty($row['schema_type'])) {
+			if (in_array($row['schema_type'], ['WebPage', 'AboutPage', 'ContactPage', 'FAQPage', 'ItemPage', 'ProfilePage'], true)) {
+				$schema_page_type = (string) $row['schema_type'];
+			} elseif ($row['schema_type'] === 'Article' && $schema_article_type === '') {
+				$schema_article_type = 'Article';
+			}
+		}
+
 		$data = [
-			'title'            => $this->convert((string) ($row['title'] ?? '')),
-			'description'      => $this->convert((string) ($row['description'] ?? '')),
-			'focus_keyword'    => $kw,
-			'canonical'        => (string) ($row['canonical_url'] ?? ''),
-			'og_title'         => $this->convert((string) ($row['og_title'] ?? '')),
-			'og_description'   => $this->convert((string) ($row['og_description'] ?? '')),
-			'og_image'         => (string) ($row['og_image_url'] ?? ''),
-			'x_title'          => $this->convert((string) ($row['twitter_title'] ?? '')),
-			'x_description'    => $this->convert((string) ($row['twitter_description'] ?? '')),
-			'x_image'          => (string) ($row['twitter_image_url'] ?? ''),
-			'primary_category' => (int) ($row['primary_term'] ?? 0),
-			'cornerstone'      => ! empty($row['pillar_content']),
+			'title'               => $this->convert((string) ($row['title'] ?? '')),
+			'description'         => $this->convert((string) ($row['description'] ?? '')),
+			'focus_keyword'       => $kw,
+			'canonical'           => (string) ($row['canonical_url'] ?? ''),
+			'og_title'            => $this->convert((string) ($row['og_title'] ?? '')),
+			'og_description'      => $this->convert((string) ($row['og_description'] ?? '')),
+			'og_image'            => (string) ($row['og_image_url'] ?? ''),
+			'x_title'             => $this->convert((string) ($row['twitter_title'] ?? '')),
+			'x_description'       => $this->convert((string) ($row['twitter_description'] ?? '')),
+			'x_image'             => (string) ($row['twitter_image_url'] ?? ''),
+			'primary_category'    => $primary_category,
+			'cornerstone'         => ! empty($row['pillar_content']),
+			'schema_page_type'    => $schema_page_type,
+			'schema_article_type' => $schema_article_type,
 		];
 
 		if (! empty($row['robots_noindex'])) {
@@ -445,11 +480,17 @@ class AIOSEO extends Source
 	 */
 	private function legacy_post_payload(int $post_id): array
 	{
+		$primary_category = (int) get_post_meta($post_id, '_aioseop_primary_term', true);
+		if ($primary_category === 0) {
+			$primary_category = (int) get_post_meta($post_id, '_aioseop_primary_category', true);
+		}
+
 		$data = [
-			'title'         => $this->convert((string) get_post_meta($post_id, '_aioseop_title', true)),
-			'description'   => $this->convert((string) get_post_meta($post_id, '_aioseop_description', true)),
-			'focus_keyword' => (string) get_post_meta($post_id, '_aioseop_keywords', true),
-			'canonical'     => (string) get_post_meta($post_id, '_aioseop_custom_link', true),
+			'title'            => $this->convert((string) get_post_meta($post_id, '_aioseop_title', true)),
+			'description'      => $this->convert((string) get_post_meta($post_id, '_aioseop_description', true)),
+			'focus_keyword'    => (string) get_post_meta($post_id, '_aioseop_keywords', true),
+			'canonical'        => (string) get_post_meta($post_id, '_aioseop_custom_link', true),
+			'primary_category' => $primary_category,
 		];
 
 		if ((string) get_post_meta($post_id, '_aioseop_noindex', true) === 'on') {

@@ -23,14 +23,14 @@ namespace {
 		echo "OK  {$msg}\n";
 	}
 
-	$yoast = TokenMapper::convert('%%title%% %%sep%% %%sitename%%', 'yoast');
-	cwp_assert($yoast === '{{ post.title }} {{ sep }} {{ site.title }}', 'Yoast title tokens');
+	$yoast = TokenMapper::convert('%%title%% %%sep%% %%sitename%% %%parent_title%% %%tagline%%', 'yoast');
+	cwp_assert($yoast === '{{ post.title }} {{ sep }} {{ site.title }} {{ post.parent_title }} {{ site.description }}', 'Yoast title tokens');
 
-	$rm = TokenMapper::convert('%excerpt% on %sitename%', 'rankmath');
-	cwp_assert($rm === '{{ post.auto_description }} on {{ site.title }}', 'Rank Math excerpt/sitename');
+	$rm = TokenMapper::convert('%post_title% on %blog_title% | %blog_description% %parent_title%', 'rankmath');
+	cwp_assert($rm === '{{ post.title }} on {{ site.title }} | {{ site.description }} {{ post.parent_title }}', 'Rank Math title/blog/parent');
 
-	$aio = TokenMapper::convert('#post_title #separator_sa #site_title', 'aioseo');
-	cwp_assert($aio === '{{ post.title }} {{ sep }} {{ site.title }}', 'AIOSEO tokens');
+	$aio = TokenMapper::convert('#post_title #separator_sa #site_title #tagline #parent_title #author_bio', 'aioseo');
+	cwp_assert($aio === '{{ post.title }} {{ sep }} {{ site.title }} {{ site.description }} {{ post.parent_title }} {{ author.description }}', 'AIOSEO tokens');
 
 	$sp = TokenMapper::convert('%%post_title%% %%sep%% %%sitetitle%%', 'seopress');
 	cwp_assert($sp === '{{ post.title }} {{ sep }} {{ site.title }}', 'SEOPress tokens');
