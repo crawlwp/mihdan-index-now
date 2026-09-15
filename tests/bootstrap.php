@@ -1250,6 +1250,27 @@ if (!function_exists('wp_get_attachment_image_url')) {
 	}
 }
 
+if (!function_exists('strip_shortcodes')) {
+	function strip_shortcodes($content)
+	{
+		return (string) $content;
+	}
+}
+
+if (!function_exists('post_password_required')) {
+	function post_password_required($post = null)
+	{
+		return false;
+	}
+}
+
+if (!function_exists('get_post_thumbnail_id')) {
+	function get_post_thumbnail_id($post = null)
+	{
+		return 0;
+	}
+}
+
 // Classes under test. Loaded explicitly so the suite never depends on vendor/.
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Importer/TokenMapper.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Schema/Graph.php';

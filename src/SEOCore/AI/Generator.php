@@ -2,6 +2,8 @@
 
 namespace Mihdan\IndexNow\SEOCore\AI;
 
+use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+
 /**
  * Generates SEO copy (search title, meta description and the social
  * overrides) with the AI provider connected to WordPress through the core
@@ -371,8 +373,20 @@ class Generator
 		}
 
 		if ($keyword !== '') {
-			/* translators: %s: focus keyword */
-			$parts[] = sprintf(__("Focus keyword (include it naturally):\n%s", 'mihdan-index-now'), $keyword);
+			$keywords = MetaFields::parse_keywords($keyword);
+			if (count($keywords) > 1) {
+				$primary     = $keywords[0];
+				$secondaries = array_slice($keywords, 1);
+				$parts[]     = sprintf(
+					/* translators: 1: primary keyword, 2: secondary keywords */
+					__("Primary focus keyword (include it naturally):\n%1\$s\n\nSecondary keywords (weave in only if natural; avoid keyword stuffing):\n%2\$s", 'mihdan-index-now'),
+					$primary,
+					implode(', ', $secondaries)
+				);
+			} else {
+				/* translators: %s: focus keyword */
+				$parts[] = sprintf(__("Focus keyword (include it naturally):\n%s", 'mihdan-index-now'), $keyword);
+			}
 		}
 
 		if ($content !== '') {

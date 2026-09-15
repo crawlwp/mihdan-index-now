@@ -395,21 +395,21 @@ class Elementor
 		]);
 
 		$document->add_control(MetaFields::ROBOTS_INDEX, [
-			'label'   => __('Robots index', 'mihdan-index-now'),
+			'label'   => __('Allow Indexing', 'mihdan-index-now'),
 			'type'    => \Elementor\Controls_Manager::SELECT,
 			'options' => [
-				'index'   => __('index (default)', 'mihdan-index-now'),
-				'noindex' => __('noindex', 'mihdan-index-now'),
+				'index'   => __('Yes — index this post', 'mihdan-index-now'),
+				'noindex' => __('No — keep it out of search results', 'mihdan-index-now'),
 			],
 			'default' => (string) MetaFields::get($post_id, MetaFields::ROBOTS_INDEX, 'index'),
 		]);
 
 		$document->add_control(MetaFields::ROBOTS_FOLLOW, [
-			'label'   => __('Robots follow', 'mihdan-index-now'),
+			'label'   => __('Follow links', 'mihdan-index-now'),
 			'type'    => \Elementor\Controls_Manager::SELECT,
 			'options' => [
-				'follow'   => __('follow (default)', 'mihdan-index-now'),
-				'nofollow' => __('nofollow', 'mihdan-index-now'),
+				'follow'   => __('Yes — follow links on this page', 'mihdan-index-now'),
+				'nofollow' => __('No — do not follow links on this page', 'mihdan-index-now'),
 			],
 			'default' => (string) MetaFields::get($post_id, MetaFields::ROBOTS_FOLLOW, 'follow'),
 		]);
@@ -420,15 +420,15 @@ class Elementor
 		}
 
 		$document->add_control(MetaFields::ROBOTS_ADVANCED, [
-			'label'       => __('Advanced robots meta', 'mihdan-index-now'),
+			'label'       => __('Crawler directives', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::SELECT2,
 			'multiple'    => true,
 			'label_block' => true,
 			'options'     => [
-				'noimageindex' => 'noimageindex',
-				'noarchive'    => 'noarchive',
-				'nosnippet'    => 'nosnippet',
-				'notranslate'  => 'notranslate',
+				'noimageindex' => __('No image indexing (noimageindex)', 'mihdan-index-now'),
+				'noarchive'    => __('No cached copy (noarchive)', 'mihdan-index-now'),
+				'nosnippet'    => __('No snippet (nosnippet)', 'mihdan-index-now'),
+				'notranslate'  => __('No translated results (notranslate)', 'mihdan-index-now'),
 			],
 			'default'     => $saved_robots_adv,
 		]);
@@ -438,7 +438,7 @@ class Elementor
 			'type'    => \Elementor\Controls_Manager::SELECT,
 			'options' => [
 				''     => __('Default', 'mihdan-index-now'),
-				'none' => __('None (no snippet)', 'mihdan-index-now'),
+				'none' => __('None — no snippet', 'mihdan-index-now'),
 				'160'  => __('160 characters', 'mihdan-index-now'),
 			],
 			'default' => (string) MetaFields::get($post_id, MetaFields::MAX_SNIPPET, ''),

@@ -292,9 +292,9 @@ class SeoSignals
 
 	private static function keyword_signal(\WP_Post $post, string $resolved_title): array
 	{
-		$keyword = trim((string) MetaFields::get($post->ID, MetaFields::FOCUS_KEYWORD, ''));
+		$keywords = MetaFields::keywords($post->ID);
 
-		if ($keyword === '') {
+		if ($keywords === []) {
 			return self::signal(
 				'keyword',
 				'K',
@@ -305,7 +305,10 @@ class SeoSignals
 			);
 		}
 
-		$needle  = mb_strtolower($keyword);
+		$primary     = $keywords[0];
+		$secondaries = array_slice($keywords, 1);
+
+		$needle  = mb_strtolower($primary);
 		$content = mb_strtolower(wp_strip_all_tags(strip_shortcodes((string) $post->post_content)));
 		$slug    = str_replace('-', ' ', (string) $post->post_name);
 
@@ -326,19 +329,52 @@ class SeoSignals
 			$missing[] = __('content', 'mihdan-index-now');
 		}
 
-		if ($hits === 3) {
-			$state   = self::GOOD;
-			$summary = __('Found in the title, URL slug and content.', 'mihdan-index-now');
-		} elseif ($hits === 0) {
-			$state   = self::BAD;
-			$summary = __('Not found in the title, URL slug or content.', 'mihdan-index-now');
-		} else {
-			$state = self::WARN;
-			/* translators: %s: comma-separated list of places */
-			$summary = sprintf(__('Missing from the %s.', 'mihdan-index-now'), implode(', ', $missing));
+		$sec_total = count($secondaries);
+		$sec_found = 0;
+		if ($sec_total > 0 && $content !== '') {
+			foreach ($secondaries as $sec) {
+				if (mb_stripos($content, mb_strtolower($sec)) !== false) {
+					$sec_found++;
+				}
+			}
 		}
 
-		return self::signal('keyword', 'K', __('Keyword', 'mihdan-index-now'), $state, $summary, self::quote($keyword));
+		if ($sec_total === 0) {
+			if ($hits === 3) {
+				$state   = self::GOOD;
+				$summary = __('Found in the title, URL slug and content.', 'mihdan-index-now');
+			} elseif ($hits === 0) {
+				$state   = self::BAD;
+				$summary = __('Not found in the title, URL slug or content.', 'mihdan-index-now');
+			} else {
+				$state = self::WARN;
+				/* translators: %s: comma-separated list of places */
+				$summary = sprintf(__('Missing from the %s.', 'mihdan-index-now'), implode(', ', $missing));
+			}
+
+			$detail = self::quote($primary);
+		} else {
+			if ($hits === 3 && $sec_found === $sec_total) {
+				$state   = self::GOOD;
+				/* translators: %d: number of secondary keywords */
+				$summary = sprintf(__('Found in title, slug and content. All %d secondary keywords found in content.', 'mihdan-index-now'), $sec_total);
+			} elseif ($hits === 3) {
+				$state   = self::WARN;
+				/* translators: 1: number of found secondary keywords, 2: total secondary keywords */
+				$summary = sprintf(__('Found in title, slug and content. %1$d of %2$d secondary keywords found in content.', 'mihdan-index-now'), $sec_found, $sec_total);
+			} else {
+				$state   = ($hits === 0 && $sec_found === 0) ? self::BAD : self::WARN;
+				/* translators: %s: comma-separated list of places */
+				$summary = sprintf(__('Primary missing from %s.', 'mihdan-index-now'), implode(', ', $missing));
+				/* translators: 1: number of found secondary keywords, 2: total secondary keywords */
+				$summary .= ' ' . sprintf(__('%1$d of %2$d secondary keywords found in content.', 'mihdan-index-now'), $sec_found, $sec_total);
+			}
+
+			/* translators: 1: primary keyword, 2: number of secondary keywords */
+			$detail = sprintf(__('%1$s (plus %2$d secondary keywords)', 'mihdan-index-now'), self::quote($primary), $sec_total);
+		}
+
+		return self::signal('keyword', 'K', __('Keyword', 'mihdan-index-now'), $state, $summary, $detail);
 	}
 
 	private static function indexing_signal(\WP_Post $post, string $entity): array

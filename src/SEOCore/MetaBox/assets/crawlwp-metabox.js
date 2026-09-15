@@ -36,6 +36,8 @@
     $articleType: null,
     $schemaHeadline: null,
     $schemaSection: null,
+    activeKwIndex: 0,
+    analysisResults: [],
 
     /* ---------- bootstrap ---------- */
     init: function() {
@@ -209,6 +211,16 @@
           self.checkDuplicateKeyword();
           self.refreshSuggestedLinks(keyword);
         }, 600);
+      });
+
+      /* keyword tabs switcher */
+      $('#cwpKwTabs').on('click', '.cwp-kw-tab', function(e) {
+        e.preventDefault();
+        var idx = parseInt($(this).data('kwIndex'), 10);
+        if (!isNaN(idx)) {
+          self.activeKwIndex = idx;
+          self.renderAnalysisTabs();
+        }
       });
 
       /* breadcrumb label updates preview */
@@ -1190,12 +1202,12 @@
     /* ---------- focus keyword duplicate check ---------- */
     checkDuplicateKeyword: function() {
       var self = this;
-      var keyword = $.trim($('#cwpKeyword').val()).split(',')[0].replace(/^\s+|\s+$/g, '');
+      var raw = $.trim($('#cwpKeyword').val());
       var $warning = $('#cwpKwWarning');
       var $text = $('#cwpKwWarningText');
       var L = crawlwpSEO.i18n;
 
-      if (!keyword) {
+      if (!raw) {
         $warning.hide();
         return;
       }
@@ -1206,12 +1218,18 @@
         data: {
           action: 'crawlwp_check_duplicate_keyword',
           nonce: crawlwpSEO.kwCheckNonce,
-          keyword: keyword,
+          keyword: raw,
           post_id: crawlwpSEO.postId
         },
         success: function(resp) {
           if (resp.success && resp.data && resp.data.duplicate) {
-            $text.html(self.fmt(L.kwDuplicateWarn, '<b>' + self.escHtml(resp.data.postTitle) + '</b>') +
+            var msg;
+            if (resp.data.keyword && L.kwDuplicateWarnWithKw) {
+              msg = self.fmt(L.kwDuplicateWarnWithKw, '<b>"' + self.escHtml(resp.data.keyword) + '"</b>', '<b>' + self.escHtml(resp.data.postTitle) + '</b>');
+            } else {
+              msg = self.fmt(L.kwDuplicateWarn, '<b>' + self.escHtml(resp.data.postTitle) + '</b>');
+            }
+            $text.html(msg +
               (self.safeUrl(resp.data.editUrl) ? ' <a href="' + self.escAttr(self.safeUrl(resp.data.editUrl)) + '" target="_blank" rel="noopener noreferrer">\u2192 ' + self.escHtml(resp.data.postTitle) + '</a>' : ''));
             $warning.css('display', 'flex');
           } else {
@@ -1264,13 +1282,15 @@
     /* ---------- analysis panel ---------- */
     runAnalysis: function() {
       var self = this;
-      var keyword = $.trim($('#cwpKeyword').val()).split(',')[0].replace(/^\s+|\s+$/g, '').toLowerCase();
+      var rawKeywords = $.trim($('#cwpKeyword').val());
+      var keywords = rawKeywords.split(',').map(function(k) {
+        return $.trim(k);
+      }).filter(Boolean);
+
       var $checklist = $('#cwpChecklist');
       var $noticeText = $('#cwpAnalysisNoticeText');
       var $analysisDot = this.$mb.find('.cwp-dot-analysis');
-
-      $checklist.empty();
-
+      var $kwTabs = $('#cwpKwTabs');
       var L = crawlwpSEO.i18n;
 
       /* always update readability badge regardless of keyword */
@@ -1280,27 +1300,30 @@
       var sentences = plainText.split(/[.!?]+/).filter(function(s) { return $.trim(s).length > 5; });
       this.updateReadability(plainText, wordCount, sentences);
 
-      if (!keyword) {
+      if (keywords.length === 0) {
+        $checklist.empty();
+        $kwTabs.hide().empty();
+        this.activeKwIndex = 0;
+        this.analysisResults = [];
         $noticeText.text(L.enterFocusKw);
         $analysisDot.prop('hidden', true);
         this.updateScore(0, 0);
         return;
       }
 
-      $noticeText.html(this.fmt(L.scoredAgainst, '<b>' + this.escHtml(keyword) + '</b>'));
-
       var seoTitle = this.resolve(this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}').toLowerCase();
+      var rawTitleVal = this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}';
+      var titleText = this.resolve(rawTitleVal);
+      var titlePx = this.widthOf(titleText, 'bold 20px Arial');
       var seoDesc = this.resolve(this.$desc.val() || '').toLowerCase();
+      var descPx = this.widthOf(this.resolve(this.$desc.val()), '14px Arial');
       var slugVal = (this.getSlug() || '').toLowerCase();
       var parsed = this.parseLinks(html);
 
-      /* extract headings */
       var $tmp = $('<div>').html(html);
       var $headings = $tmp.find('h1,h2,h3,h4,h5,h6');
-      var $h1s = $tmp.find('h1');
       var $h2s = $tmp.find('h2');
 
-      /* extract images */
       var $images = $tmp.find('img');
       var imagesNoAlt = 0;
       $images.each(function() {
@@ -1308,34 +1331,67 @@
         if (!alt) imagesNoAlt++;
       });
 
-      /* keyword in image alt */
-      var keywordInAlt = false;
-      $images.each(function() {
-        if (($(this).attr('alt') || '').toLowerCase().indexOf(keyword) !== -1) keywordInAlt = true;
-      });
-
-      /* first paragraph */
       var $paragraphs = $tmp.find('p');
       var firstParaText = $paragraphs.length > 0 ? ($paragraphs.first().text() || '').toLowerCase() : '';
-
-      /* headings with keyword */
-      var headingsWithKw = 0;
-      $headings.each(function() {
-        if ($(this).text().toLowerCase().indexOf(keyword) !== -1) headingsWithKw++;
-      });
-
-      /* keyword density */
-      var kwCount = 0;
-      if (keyword && plainText) {
-        var re = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-        var matches = plainText.match(re);
-        kwCount = matches ? matches.length : 0;
-      }
-      var density = wordCount > 0 ? (kwCount / wordCount * 100) : 0;
-
-      /* avg sentence length for readability check */
       var avgSentenceLen = sentences.length > 0 ? Math.round(wordCount / sentences.length) : 0;
 
+      var sharedData = {
+        plainText: plainText,
+        wordCount: wordCount,
+        sentences: sentences,
+        avgSentenceLen: avgSentenceLen,
+        seoTitle: seoTitle,
+        titlePx: titlePx,
+        seoDesc: seoDesc,
+        descPx: descPx,
+        slugVal: slugVal,
+        parsed: parsed,
+        $headings: $headings,
+        $h2s: $h2s,
+        $images: $images,
+        imagesNoAlt: imagesNoAlt,
+        firstParaText: firstParaText
+      };
+
+      var results = [];
+      for (var i = 0; i < keywords.length; i++) {
+        var kw = keywords[i];
+        var res = self.evaluateKeyword(kw, i === 0, sharedData);
+        var score = res.total > 0 ? Math.round(res.passed / res.total * 100) : 0;
+        results.push({
+          keyword: kw,
+          isPrimary: (i === 0),
+          passed: res.passed,
+          total: res.total,
+          score: score,
+          checks: res.checks
+        });
+      }
+
+      this.analysisResults = results;
+
+      if (this.activeKwIndex >= results.length) {
+        this.activeKwIndex = 0;
+      }
+
+      var headlineScore = results[0].score;
+      if (results.length > 1) {
+        var secSum = 0;
+        for (var s = 1; s < results.length; s++) {
+          secSum += results[s].score;
+        }
+        var secAvg = secSum / (results.length - 1);
+        headlineScore = Math.round((results[0].score * 0.7) + (secAvg * 0.3));
+      }
+
+      this.renderAnalysisTabs();
+      this.updateScore(headlineScore, 100);
+    },
+
+    evaluateKeyword: function(kw, isPrimary, d) {
+      var self = this;
+      var L = crawlwpSEO.i18n;
+      var kwLower = kw.toLowerCase();
       var checks = [];
       var passed = 0;
       var total = 0;
@@ -1346,39 +1402,64 @@
         checks.push({ status: status, bold: boldText, detail: detail });
       }
 
-      /* 1. Keyword in SEO title */
-      if (seoTitle.indexOf(keyword) !== -1) {
-        var pos = seoTitle.indexOf(keyword);
-        if (pos < seoTitle.length / 3) {
-          addCheck('good', L.kwInTitleGood, L.kwInTitleStart);
+      var keywordInAlt = false;
+      d.$images.each(function() {
+        if (($(this).attr('alt') || '').toLowerCase().indexOf(kwLower) !== -1) keywordInAlt = true;
+      });
+
+      var headingsWithKw = 0;
+      d.$headings.each(function() {
+        if ($(this).text().toLowerCase().indexOf(kwLower) !== -1) headingsWithKw++;
+      });
+
+      var kwCount = 0;
+      if (kwLower && d.plainText) {
+        var re = new RegExp(kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        var matches = d.plainText.match(re);
+        kwCount = matches ? matches.length : 0;
+      }
+      var density = d.wordCount > 0 ? (kwCount / d.wordCount * 100) : 0;
+
+      if (isPrimary) {
+        /* 1. Keyword in SEO title */
+        if (d.seoTitle.indexOf(kwLower) !== -1) {
+          var pos = d.seoTitle.indexOf(kwLower);
+          if (pos < d.seoTitle.length / 3) {
+            addCheck('good', L.kwInTitleGood, L.kwInTitleStart);
+          } else {
+            addCheck('good', L.kwInTitleGood, L.kwInTitleMove);
+          }
         } else {
-          addCheck('good', L.kwInTitleGood, L.kwInTitleMove);
+          addCheck('bad', L.kwInTitleBad, L.kwInTitleFix);
+        }
+
+        /* 2. Keyword in URL slug */
+        if (d.slugVal.indexOf(kwLower.replace(/\s+/g, '-')) !== -1 || d.slugVal.indexOf(kwLower.replace(/\s+/g, '')) !== -1) {
+          addCheck('good', L.kwInSlugGood, '');
+        } else {
+          addCheck('bad', L.kwInSlugBad, L.kwInSlugFix);
         }
       } else {
-        addCheck('bad', L.kwInTitleBad, L.kwInTitleFix);
-      }
-
-      /* 2. Keyword in URL slug */
-      if (slugVal.indexOf(keyword.replace(/\s+/g, '-')) !== -1 || slugVal.indexOf(keyword.replace(/\s+/g, '')) !== -1) {
-        addCheck('good', L.kwInSlugGood, '');
-      } else {
-        addCheck('bad', L.kwInSlugBad, L.kwInSlugFix);
+        /* Secondary: In Content Body */
+        if (kwCount > 0) {
+          addCheck('good', L.kwInContentGood, self.fmt(L.kwInContentGoodD, kwCount));
+        } else {
+          addCheck('bad', L.kwInContentBad, L.kwInContentBadD);
+        }
       }
 
       /* 3. Title length (pixel width) */
-      var titleText = this.resolve(this.$title.val() || '{{ post.title }} {{ sep }} {{ site.title }}');
-      var titlePx = this.widthOf(titleText, 'bold 20px Arial');
-      if (titlePx >= 200 && titlePx <= 580) {
-        addCheck('good', L.titleLenGood, this.fmt(L.titleLenDetail, titlePx));
-      } else if (titlePx > 580) {
-        addCheck('warn', L.titleLenLong, this.fmt(L.titleLenLongD, titlePx));
+      if (d.titlePx >= 200 && d.titlePx <= 580) {
+        addCheck('good', L.titleLenGood, this.fmt(L.titleLenDetail, d.titlePx));
+      } else if (d.titlePx > 580) {
+        addCheck('warn', L.titleLenLong, this.fmt(L.titleLenLongD, d.titlePx));
       } else {
-        addCheck('warn', L.titleLenShort, this.fmt(L.titleLenShortD, titlePx));
+        addCheck('warn', L.titleLenShort, this.fmt(L.titleLenShortD, d.titlePx));
       }
 
       /* 4. Meta description */
-      if (seoDesc.length > 0) {
-        if (seoDesc.indexOf(keyword) !== -1) {
+      if (d.seoDesc.length > 0) {
+        if (d.seoDesc.indexOf(kwLower) !== -1) {
           addCheck('good', L.kwInDescGood, '');
         } else {
           addCheck('warn', L.kwInDescWarn, L.kwInDescWarnD);
@@ -1388,21 +1469,20 @@
       }
 
       /* 5. Meta description length */
-      if (seoDesc.length > 0) {
-        var descPx = this.widthOf(this.resolve(this.$desc.val()), '14px Arial');
-        if (descPx >= 400 && descPx <= 920) {
-          addCheck('good', L.descLenGood, this.fmt(L.descLenGoodD, descPx));
-        } else if (descPx > 920) {
-          addCheck('warn', L.descLenLong, this.fmt(L.descLenLongD, descPx));
+      if (d.seoDesc.length > 0) {
+        if (d.descPx >= 400 && d.descPx <= 920) {
+          addCheck('good', L.descLenGood, this.fmt(L.descLenGoodD, d.descPx));
+        } else if (d.descPx > 920) {
+          addCheck('warn', L.descLenLong, this.fmt(L.descLenLongD, d.descPx));
         } else {
           addCheck('warn', L.descLenShort, L.descLenShortD);
         }
       }
 
       /* 6. Keyword in first paragraph */
-      if (firstParaText && firstParaText.indexOf(keyword) !== -1) {
+      if (d.firstParaText && d.firstParaText.indexOf(kwLower) !== -1) {
         addCheck('good', L.kwFirstParaGood, '');
-      } else if (plainText.length > 0) {
+      } else if (d.plainText.length > 0) {
         addCheck('warn', L.kwFirstParaWarn, L.kwFirstParaFix);
       }
 
@@ -1411,21 +1491,21 @@
         addCheck('good', this.fmt(L.kwSubheadGood, headingsWithKw), '');
       } else if (headingsWithKw === 1) {
         addCheck('warn', L.kwSubheadOne, L.kwSubheadOneFix);
-      } else if ($headings.length > 0) {
-        addCheck('bad', L.kwSubheadBad, L.kwSubheadFix);
+      } else if (d.$headings.length > 0) {
+        addCheck(isPrimary ? 'bad' : 'warn', L.kwSubheadBad, L.kwSubheadFix);
       }
 
-      /* 9. Images alt text */
-      if ($images.length === 0) {
+      /* 8. Images alt text */
+      if (d.$images.length === 0) {
         addCheck('warn', L.noImages, L.noImagesFix);
-      } else if (imagesNoAlt === 0) {
-        addCheck('good', L.allImgAlt, this.fmt(L.imgAltDetail, $images.length));
+      } else if (d.imagesNoAlt === 0) {
+        addCheck('good', L.allImgAlt, this.fmt(L.imgAltDetail, d.$images.length));
       } else {
-        addCheck('bad', this.fmt(L.imgAltMissing, imagesNoAlt), L.imgAltFix);
+        addCheck('bad', this.fmt(L.imgAltMissing, d.imagesNoAlt), L.imgAltFix);
       }
 
-      /* 10. Keyword in image alt */
-      if ($images.length > 0) {
+      /* 9. Keyword in image alt */
+      if (d.$images.length > 0) {
         if (keywordInAlt) {
           addCheck('good', L.kwImgAltGood, '');
         } else {
@@ -1433,33 +1513,33 @@
         }
       }
 
-      /* 11. Internal links */
-      if (parsed.internal.length >= 2) {
-        addCheck('good', this.fmt(L.intLinksGood, parsed.internal.length), L.intLinksGoodD);
-      } else if (parsed.internal.length === 1) {
+      /* 10. Internal links */
+      if (d.parsed.internal.length >= 2) {
+        addCheck('good', this.fmt(L.intLinksGood, d.parsed.internal.length), L.intLinksGoodD);
+      } else if (d.parsed.internal.length === 1) {
         addCheck('warn', L.intLinksOne, L.intLinksOneFix);
       } else {
         addCheck('bad', L.intLinksNone, L.intLinksNoneFix);
       }
 
-      /* 12. External links */
-      if (parsed.external.length >= 1) {
-        addCheck('good', this.fmt(L.extLinksGood, parsed.external.length), L.extLinksGoodD);
+      /* 11. External links */
+      if (d.parsed.external.length >= 1) {
+        addCheck('good', this.fmt(L.extLinksGood, d.parsed.external.length), L.extLinksGoodD);
       } else {
         addCheck('warn', L.extLinksNone, L.extLinksNoneFix);
       }
 
-      /* 13. Content length */
-      if (wordCount >= 300) {
-        addCheck('good', this.fmt(L.wordsLabel, wordCount.toLocaleString()), L.wordsEnough);
-      } else if (wordCount >= 100) {
-        addCheck('warn', this.fmt(L.wordsLabel, wordCount.toLocaleString()), L.wordsAim300);
+      /* 12. Content length */
+      if (d.wordCount >= 300) {
+        addCheck('good', this.fmt(L.wordsLabel, d.wordCount.toLocaleString()), L.wordsEnough);
+      } else if (d.wordCount >= 100) {
+        addCheck('warn', this.fmt(L.wordsLabel, d.wordCount.toLocaleString()), L.wordsAim300);
       } else {
-        addCheck('bad', this.fmt(L.wordsLabel, wordCount.toLocaleString()), L.wordsThin);
+        addCheck('bad', this.fmt(L.wordsLabel, d.wordCount.toLocaleString()), L.wordsThin);
       }
 
-      /* 14. Keyword density */
-      if (wordCount > 50) {
+      /* 13. Keyword density */
+      if (d.wordCount > 50) {
         if (density >= 0.5 && density <= 3.0) {
           addCheck('good', this.fmt(L.densityLabel, density.toFixed(1)), L.densityGoodD);
         } else if (density > 3.0) {
@@ -1469,29 +1549,82 @@
         }
       }
 
-      /* 15. Readability: avg sentence length */
-      if (sentences.length >= 3) {
-        if (avgSentenceLen <= 20) {
-          addCheck('good', this.fmt(L.readability, avgSentenceLen), L.readabilityGoodD);
-        } else if (avgSentenceLen <= 25) {
-          addCheck('warn', this.fmt(L.readability, avgSentenceLen), L.readabilityWarnD);
+      /* 14. Readability: avg sentence length */
+      if (d.sentences.length >= 3) {
+        if (d.avgSentenceLen <= 20) {
+          addCheck('good', this.fmt(L.readability, d.avgSentenceLen), L.readabilityGoodD);
+        } else if (d.avgSentenceLen <= 25) {
+          addCheck('warn', this.fmt(L.readability, d.avgSentenceLen), L.readabilityWarnD);
         } else {
-          addCheck('bad', this.fmt(L.readability, avgSentenceLen), L.readabilityBadD);
+          addCheck('bad', this.fmt(L.readability, d.avgSentenceLen), L.readabilityBadD);
         }
       }
 
-      /* 16. Heading hierarchy (uses H2s) */
-      if ($h2s.length >= 2) {
-        addCheck('good', this.fmt(L.h2Good, $h2s.length), '');
-      } else if ($h2s.length === 1) {
+      /* 15. Heading hierarchy (uses H2s) */
+      if (d.$h2s.length >= 2) {
+        addCheck('good', this.fmt(L.h2Good, d.$h2s.length), '');
+      } else if (d.$h2s.length === 1) {
         addCheck('warn', L.h2One, L.h2OneFix);
-      } else if (wordCount > 300) {
+      } else if (d.wordCount > 300) {
         addCheck('warn', L.h2None, L.h2NoneFix);
       }
 
-      /* render */
+      return { passed: passed, total: total, checks: checks };
+    },
+
+    renderAnalysisTabs: function() {
+      var self = this;
+      var results = this.analysisResults || [];
+      var $checklist = $('#cwpChecklist');
+      var $noticeText = $('#cwpAnalysisNoticeText');
+      var $analysisDot = this.$mb.find('.cwp-dot-analysis');
+      var $kwTabs = $('#cwpKwTabs');
+      var L = crawlwpSEO.i18n;
+
+      if (!results.length) return;
+
+      if (this.activeKwIndex >= results.length) {
+        this.activeKwIndex = 0;
+      }
+
+      /* Render tabs if more than 1 keyword */
+      if (results.length > 1) {
+        $kwTabs.empty().show();
+        $.each(results, function(idx, item) {
+          var badgeCls = item.score >= 70 ? 'is-good' : (item.score >= 40 ? 'is-warn' : 'is-bad');
+          var activeCls = (idx === self.activeKwIndex) ? ' is-active' : '';
+          var roleText = item.isPrimary ? (L.primaryKw || 'Primary') : (L.secondaryKw || 'Secondary');
+
+          var $tab = $('<button>', {
+            type: 'button',
+            'class': 'cwp-kw-tab' + activeCls,
+            'data-kw-index': idx
+          }).html(
+            '<span class="cwp-kw-tab-role">' + self.escHtml(roleText) + '</span>' +
+            '<span class="cwp-kw-tab-name">' + self.escHtml(item.keyword) + '</span>' +
+            '<span class="cwp-kw-tab-badge ' + badgeCls + '">' + item.score + '%</span>'
+          );
+
+          $kwTabs.append($tab);
+        });
+      } else {
+        $kwTabs.hide().empty();
+      }
+
+      var active = results[this.activeKwIndex];
+
+      /* Notice text */
+      if (active.isPrimary) {
+        $noticeText.html(this.fmt(L.scoredAgainst, '<b>' + this.escHtml(active.keyword) + '</b>'));
+      } else {
+        var secTpl = L.scoredAgainstSecondary || 'Scored against secondary keyword %s. Title and slug checks are relaxed to prevent keyword stuffing.';
+        $noticeText.html(this.fmt(secTpl, '<b>' + this.escHtml(active.keyword) + '</b>'));
+      }
+
+      /* Checklist items */
+      $checklist.empty();
       var symbols = { good: '\u2713', warn: '!', bad: '\u2715' };
-      $.each(checks, function(i, c) {
+      $.each(active.checks, function(i, c) {
         var $div = $('<div>', { 'class': 'cwp-checkitem' });
         $div.html('<span class="cwp-badge is-' + c.status + '">' + symbols[c.status] + '</span>' +
           '<span class="cwp-checktext"><b>' + self.escHtml(c.bold) + '</b>' +
@@ -1499,8 +1632,8 @@
         $checklist.append($div);
       });
 
-      /* update dot */
-      var issues = total - passed;
+      /* Dot counter */
+      var issues = active.total - active.passed;
       if ($analysisDot.length) {
         if (issues > 0) {
           $analysisDot.prop('hidden', false).attr('title', this.fmt(L.issueCount, issues));
@@ -1508,8 +1641,6 @@
           $analysisDot.prop('hidden', true);
         }
       }
-
-      this.updateScore(passed, total);
     },
 
     updateScore: function(passed, total) {

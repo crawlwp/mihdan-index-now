@@ -548,6 +548,40 @@
 .cwp-kw-warning svg{flex:none;margin-top:1px;color:#f59e0b;}
 .cwp-kw-warning a{color:#b45309;font-weight:500;}
 
+/* ---------- keyword tabs ---------- */
+.cwp-kw-tabs{
+  display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 12px;
+}
+.cwp-kw-tab{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:6px;
+  border:1px solid var(--cwp-line);background:var(--cwp-white);
+  color:var(--cwp-ink-2);font-size:12px;cursor:pointer;
+  transition:all .15s ease;
+}
+.cwp-kw-tab:hover{border-color:var(--cwp-blue);color:var(--cwp-blue);}
+.cwp-kw-tab.is-active{
+  border-color:var(--cwp-accent);background:var(--cwp-accent-soft);color:var(--cwp-accent);
+  font-weight:600;
+}
+.cwp-kw-tab-role{
+  font-size:10px;text-transform:uppercase;letter-spacing:0.5px;
+  background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:3px;
+  font-weight:600;
+}
+.cwp-kw-tab.is-active .cwp-kw-tab-role{
+  background:rgba(37,99,235,0.15);
+}
+.cwp-kw-tab-name{
+  max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.cwp-kw-tab-badge{
+  font-size:11px;font-weight:700;padding:1px 6px;border-radius:10px;
+}
+.cwp-kw-tab-badge.is-good{background:var(--cwp-good-bg);color:var(--cwp-good);}
+.cwp-kw-tab-badge.is-warn{background:var(--cwp-warn-bg);color:var(--cwp-warn);}
+.cwp-kw-tab-badge.is-bad{background:var(--cwp-bad-bg);color:var(--cwp-bad);}
+
 /* ---------- breadcrumb preview ---------- */
 .cwp-breadcrumb-preview{
   margin-top:8px;padding:8px 12px;border-radius:6px;

@@ -310,14 +310,12 @@ class MetaFields
 	}
 
 	/**
-	 * Comma-separated focus keywords; first is the primary.
+	 * Parse a comma-separated keywords string into a trimmed, non-empty array of keywords.
 	 *
 	 * @return string[]
 	 */
-	public static function keywords(int $post_id): array
+	public static function parse_keywords(string $raw): array
 	{
-		$raw = (string) self::get($post_id, self::FOCUS_KEYWORD, '');
-
 		if ($raw === '') {
 			return [];
 		}
@@ -327,6 +325,16 @@ class MetaFields
 		return array_values(array_filter($parts, static function ($v) {
 			return $v !== '';
 		}));
+	}
+
+	/**
+	 * Comma-separated focus keywords; first is the primary.
+	 *
+	 * @return string[]
+	 */
+	public static function keywords(int $post_id): array
+	{
+		return self::parse_keywords((string) self::get($post_id, self::FOCUS_KEYWORD, ''));
 	}
 
 	/**

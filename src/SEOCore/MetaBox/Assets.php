@@ -171,8 +171,11 @@ class Assets
 			$keyword = (string) get_post_meta($post_id, MetaFields::FOCUS_KEYWORD, true);
 		}
 
-		if ($keyword !== '') {
-			$args['s'] = $keyword;
+		$parsed_keywords = MetaFields::parse_keywords($keyword);
+		$search_keyword  = $parsed_keywords[0] ?? '';
+
+		if ($search_keyword !== '') {
+			$args['s'] = $search_keyword;
 		} elseif (! empty($categories)) {
 			/* Fall back to same-category posts */
 			unset($args['orderby']);
@@ -501,9 +504,18 @@ class Assets
 			'copied'           => __('Copied!', 'mihdan-index-now'),
 
 			/* Analysis notice */
-			'enterFocusKw'     => __('Enter a focus keyword above to run the analysis.', 'mihdan-index-now'),
+			'enterFocusKw'            => __('Enter a focus keyword above to run the analysis.', 'mihdan-index-now'),
 			/* translators: %s: keyword */
-			'scoredAgainst'    => __('Scored against %s. Change the focus keyword above to rescore.', 'mihdan-index-now'),
+			'scoredAgainst'           => __('Scored against %s. Change the focus keyword above to rescore.', 'mihdan-index-now'),
+			/* translators: %s: secondary keyword */
+			'scoredAgainstSecondary'  => __('Scored against secondary keyword %s. Title and slug checks are relaxed to prevent keyword stuffing.', 'mihdan-index-now'),
+			'primaryKw'               => __('Primary', 'mihdan-index-now'),
+			'secondaryKw'             => __('Secondary', 'mihdan-index-now'),
+			'kwInContentGood'         => __('Keyword is in the post content.', 'mihdan-index-now'),
+			/* translators: %s: number of occurrences */
+			'kwInContentGoodD'        => __('Found %s time(s) in post content.', 'mihdan-index-now'),
+			'kwInContentBad'          => __('Keyword is missing from post content.', 'mihdan-index-now'),
+			'kwInContentBadD'         => __('Mention this secondary keyword naturally in your article body.', 'mihdan-index-now'),
 
 			/* Analysis: 1 – Keyword in title */
 			'kwInTitleGood'    => __('Keyword is in the SEO title.', 'mihdan-index-now'),
@@ -651,6 +663,8 @@ class Assets
 			/* Focus keyword duplicate warning */
 			/* translators: %1$s: post title, %2$s: edit link */
 			'kwDuplicateWarn'       => __('This keyword is already used by "%1$s". Using the same keyword on multiple posts may cause keyword cannibalization.', 'mihdan-index-now'),
+			/* translators: 1: keyword, 2: post title */
+			'kwDuplicateWarnWithKw' => __('The focus keyword %1$s is already used by %2$s. Using the same keyword on multiple posts may cause keyword cannibalization.', 'mihdan-index-now'),
 			'kwChecking'            => __('Checking…', 'mihdan-index-now'),
 
 			/* Breadcrumb preview */
@@ -749,7 +763,7 @@ class Assets
 	}
 
 	/**
-	 * AJAX: Check if a focus keyword is already used by another published post.
+	 * AJAX: Check if any focus keyword is already used by another published post.
 	 */
 	public function ajax_check_duplicate_keyword(): void
 	{
@@ -759,41 +773,50 @@ class Assets
 			wp_send_json_error(['message' => 'Unauthorized'], 403);
 		}
 
-		$keyword = isset($_POST['keyword']) ? sanitize_text_field(wp_unslash($_POST['keyword'])) : '';
-		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+		$raw_keyword = isset($_POST['keyword']) ? sanitize_text_field(wp_unslash($_POST['keyword'])) : '';
+		$post_id     = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
 
 		if ($post_id && ! current_user_can('edit_post', $post_id)) {
 			wp_send_json_error(['message' => 'Unauthorized'], 403);
 		}
 
-		if (empty($keyword)) {
+		$keywords = MetaFields::parse_keywords($raw_keyword);
+
+		if ($keywords === []) {
 			wp_send_json_success(['duplicate' => false]);
 		}
 
 		global $wpdb;
 
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT p.ID, p.post_title
-				 FROM {$wpdb->postmeta} pm
-				 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-				 WHERE pm.meta_key = %s
-				   AND LOWER(pm.meta_value) = LOWER(%s)
-				   AND p.post_status = 'publish'
-				   AND p.ID != %d
-				 LIMIT 1",
-				MetaFields::FOCUS_KEYWORD,
-				$keyword,
-				$post_id
-			)
-		);
+		foreach ($keywords as $kw) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT p.ID, p.post_title, pm.meta_value
+					 FROM {$wpdb->postmeta} pm
+					 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+					 WHERE pm.meta_key = %s
+					   AND pm.meta_value LIKE %s
+					   AND p.post_status = 'publish'
+					   AND p.ID != %d
+					 LIMIT 20",
+					MetaFields::FOCUS_KEYWORD,
+					'%' . $wpdb->esc_like($kw) . '%',
+					$post_id
+				)
+			);
 
-		if ($row) {
-			wp_send_json_success([
-				'duplicate' => true,
-				'postTitle' => $row->post_title,
-				'editUrl'   => get_edit_post_link($row->ID, 'raw'),
-			]);
+			$target_lower = mb_strtolower($kw);
+			foreach ($rows as $row) {
+				$existing_kws = array_map('mb_strtolower', MetaFields::parse_keywords((string) $row->meta_value));
+				if (in_array($target_lower, $existing_kws, true)) {
+					wp_send_json_success([
+						'duplicate' => true,
+						'keyword'   => $kw,
+						'postTitle' => $row->post_title,
+						'editUrl'   => get_edit_post_link((int) $row->ID, 'raw'),
+					]);
+				}
+			}
 		}
 
 		wp_send_json_success(['duplicate' => false]);
