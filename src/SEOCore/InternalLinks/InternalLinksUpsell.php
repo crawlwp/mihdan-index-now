@@ -39,13 +39,14 @@ class InternalLinksUpsell
 
 		$desc = sprintf(
 			'<div class="cwp-upsell-notice no-left-border">' .
+				'<h4 style="margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px;">' .
 					'<span>%1$s</span>' .
 					'<span style="background:#2271b1;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:0.5px;text-transform:uppercase;">%2$s</span>' .
 				'</h4>' .
 				'<p>%3$s</p>' .
 				'<p><strong>%4$s</strong> %5$s</p>' .
 				'<a href="%6$s" target="_blank" rel="noopener noreferrer" class="button button-primary">%7$s &rarr;</a>' .
-			'</div><style>#submit_crawlwp_internal_links {display:none;}</style>',
+			'</div><style>#submit_crawlwp_internal_links {display:none;}#crawlwp_internal_links table tr th {display: none;}</style>',
 			esc_html__('Automated Keyword Internal Linking', 'mihdan-index-now'),
 			esc_html__('PRO', 'mihdan-index-now'),
 			esc_html__('Supercharge your on-page SEO by automatically converting target keywords in your post and page content into internal links. Build a strong site structure, distribute link equity, and improve rankings effortlessly.', 'mihdan-index-now'),

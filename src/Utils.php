@@ -387,4 +387,9 @@ class Utils
 			return false;
 		}
 	}
+
+	public static function asset_suffix()
+	{
+		return (defined('W3GUY_LOCAL') && W3GUY_LOCAL) || (defined('SCRIPT_DEBUG') && SCRIPT_DEBUG) ? '' : '.min';
+	}
 }

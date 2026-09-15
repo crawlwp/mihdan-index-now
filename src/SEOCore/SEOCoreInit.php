@@ -36,6 +36,7 @@ use Mihdan\IndexNow\SEOCore\SitemapSettings\SitemapStylesheet;
 use Mihdan\IndexNow\SEOCore\ImageSEO\ImageSEO;
 use Mihdan\IndexNow\SEOCore\LlmsTxt\LlmsTxt;
 use Mihdan\IndexNow\SEOCore\InternalLinks\InternalLinksUpsell;
+use Mihdan\IndexNow\SEOCore\EmailReports\EmailReportsUpsell;
 use Mihdan\IndexNow\SEOCore\Code\CodeSettings;
 
 class SEOCoreInit
@@ -54,6 +55,7 @@ class SEOCoreInit
 		ImageSEO::class,
 		LlmsTxt::class,
 		InternalLinksUpsell::class,
+		EmailReportsUpsell::class,
 		CodeSettings::class,
 		Elementor::class,
 		CoreSettings\CoreSettings::class,

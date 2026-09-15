@@ -87,6 +87,20 @@ if (!function_exists('add_filter')) {
 	}
 }
 
+if (!function_exists('__return_true')) {
+	function __return_true()
+	{
+		return true;
+	}
+}
+
+if (!function_exists('__return_false')) {
+	function __return_false()
+	{
+		return false;
+	}
+}
+
 if (!function_exists('add_action')) {
 	function add_action($hook, $callback, $priority = 10, $accepted_args = 1)
 	{
@@ -1275,6 +1289,7 @@ if (!function_exists('get_post_thumbnail_id')) {
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Importer/TokenMapper.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/Schema/Graph.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/InternalLinks/InternalLinksUpsell.php';
+require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/EmailReports/EmailReportsUpsell.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/MetaBox/MetaFields.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SettingsFieldsTrait.php';
 require_once CRAWLWP_TESTS_PLUGIN_DIR . '/src/SEOCore/SitemapSettings/SitemapSettings.php';

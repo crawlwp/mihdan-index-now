@@ -4,6 +4,7 @@ namespace Mihdan\IndexNow\SEOCore\Breadcrumbs;
 
 use Mihdan\IndexNow\SEOCore\Breadcrumbs\BreadcrumbSettings;
 use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
+use Mihdan\IndexNow\Utils;
 
 /**
  * Builds and renders HTML breadcrumbs for every public front-end context.
@@ -72,9 +73,11 @@ class Breadcrumbs
 	 */
 	public function enqueue_styles(): void
 	{
+		$suffix = Utils::asset_suffix();
+
 		wp_enqueue_style(
 			'crawlwp-breadcrumbs',
-			plugin_dir_url(__FILE__) . 'assets/breadcrumbs.css',
+			plugin_dir_url(__FILE__) . 'assets/breadcrumbs' . $suffix . '.css',
 			[],
 			'1.0.0'
 		);
