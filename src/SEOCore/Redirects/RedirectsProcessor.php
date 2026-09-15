@@ -43,15 +43,29 @@ class RedirectsProcessor
 	{
 		$this->manager = $manager;
 
-		add_action('template_redirect', [$this, 'process'], -1);
+		/**
+		 * Filters the action hook used to process redirects.
+		 *
+		 * @param string $hook Action hook name. Default 'wp'.
+		 */
+		$hook = (string) apply_filters('crawlwp_redirect_hook', 'wp');
+
+		/**
+		 * Filters the priority of the redirect processing action hook.
+		 *
+		 * @param int $priority Hook priority. Default -1.
+		 */
+		$priority = (int) apply_filters('crawlwp_redirect_priority', -1);
+
+		add_action($hook, [$this, 'process'], $priority);
 		add_filter('allowed_redirect_hosts', [$this, 'filter_allowed_redirect_hosts']);
 	}
 
 	/**
 	 * Match the current request against stored redirects and respond.
 	 *
-	 * Hooked to template_redirect at priority -1 so CrawlWP fires before
-	 * themes or other plugins.
+	 * Hooked to wp at priority -1 by default so CrawlWP fires before
+	 * theme templates or template-redirect handlers.
 	 */
 	public function process(): void
 	{
