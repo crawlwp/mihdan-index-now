@@ -23,7 +23,6 @@ use Mihdan\IndexNow\SEOCore\TitleMeta\Variables;
  *  I — Indexing         indexable? (status, robots, canonical, redirect)
  *  F — Following        follow / nofollow + extra crawler directives
  *  S — Social           social image availability and size
- *  N — IndexNow         freshness of the last IndexNow submission
  *
  * Each signal is an array:
  *   id, letter, label, state (good|warn|bad|neutral), summary, detail (optional).
@@ -60,7 +59,7 @@ class SeoSignals
 	public const CACHE_META = '_crawlwp_seo_signals';
 
 	/** Bumped whenever the cached payload shape or the signal logic changes. */
-	private const CACHE_VERSION = 1;
+	private const CACHE_VERSION = 2;
 
 	/**
 	 * Every signal for a post, in display order.
@@ -79,7 +78,7 @@ class SeoSignals
 	 *
 	 * A stale cache is detected through a fingerprint of everything the signals
 	 * depend on outside the post meta we write ourselves (locale, modification
-	 * time, last IndexNow ping, the global entity options), so the list table
+	 * time, the global entity options), so the list table
 	 * never shows values from before a settings change.
 	 *
 	 * @return array<int, array>
@@ -155,7 +154,6 @@ class SeoSignals
 			function_exists('determine_locale') ? determine_locale() : get_locale(),
 			(string) $post->post_modified_gmt,
 			(string) $post->post_status,
-			(string) get_post_meta($post->ID, '_crawlwp_last_indexnow', true),
 			(string) get_option('blog_public', 1),
 			(string) wp_json_encode(Options::all($entity)),
 		];
@@ -179,7 +177,6 @@ class SeoSignals
 			self::indexing_signal($post, $entity),
 			self::follow_signal($post, $entity),
 			self::social_signal($post, $entity),
-			self::indexnow_signal($post),
 		];
 
 		/**
@@ -565,53 +562,6 @@ class SeoSignals
 		return self::signal('social', 'S', __('Social', 'mihdan-index-now'), $state, $summary, $detail);
 	}
 
-	private static function indexnow_signal(\WP_Post $post): array
-	{
-		$label = __('IndexNow', 'mihdan-index-now');
-		$last  = (int) get_post_meta($post->ID, '_crawlwp_last_indexnow', true);
-
-		if ($post->post_status !== 'publish') {
-			return self::signal('indexnow', 'N', $label, self::NEUTRAL, __('Publish the post first.', 'mihdan-index-now'), __('Unpublished content cannot be submitted to search engines.', 'mihdan-index-now'));
-		}
-
-		if ($last <= 0) {
-			return self::signal(
-				'indexnow',
-				'N',
-				$label,
-				self::NEUTRAL,
-				__('Never submitted to IndexNow.', 'mihdan-index-now'),
-				__('Use the "Submit to IndexNow" row action to notify search engines right away.', 'mihdan-index-now')
-			);
-		}
-
-		$modified = (int) get_post_modified_time('U', true, $post);
-		/* translators: %s: human readable time difference */
-		$ago = sprintf(__('%s ago', 'mihdan-index-now'), human_time_diff($last, time()));
-
-		if ($modified > $last + MINUTE_IN_SECONDS) {
-			return self::signal(
-				'indexnow',
-				'N',
-				$label,
-				self::WARN,
-				__('Edited since the last submission.', 'mihdan-index-now'),
-				/* translators: %s: human readable time difference */
-				sprintf(__('Last submitted %s. Resubmit so engines fetch the latest version.', 'mihdan-index-now'), $ago)
-			);
-		}
-
-		return self::signal(
-			'indexnow',
-			'N',
-			$label,
-			self::GOOD,
-			/* translators: %s: human readable time difference */
-			sprintf(__('Submitted %s.', 'mihdan-index-now'), $ago),
-			__('Search engines were notified of the current version.', 'mihdan-index-now')
-		);
-	}
-
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
@@ -709,9 +659,6 @@ class SeoSignals
 			case 'social':
 				/* translators: One-character abbreviation of "Social" in the post list SEO strip. Keep it to a single character. */
 				return _x('S', 'SEO signal letter: Social', 'mihdan-index-now');
-			case 'indexnow':
-				/* translators: One-character abbreviation of "IndexNow" in the post list SEO strip. Keep it to a single character. */
-				return _x('N', 'SEO signal letter: IndexNow', 'mihdan-index-now');
 			default:
 				return $fallback;
 		}

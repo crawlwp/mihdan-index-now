@@ -6,7 +6,7 @@ namespace Mihdan\IndexNow\SEOCore\MetaBox;
  * Adds an "SEO" column to WordPress post list tables for all public post types.
  *
  * The cell renders a compact "signal strip" — one lettered, colour-coded
- * segment per SEO signal (T D K I F S N, see SeoSignals) with an accessible
+ * segment per SEO signal (T D K I F S, see SeoSignals) with an accessible
  * hover/focus popover explaining each one — plus a thin gauge for the overall
  * score. Also injects SEO title + meta description fields into the native
  * Quick Edit panel.
