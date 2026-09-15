@@ -39,7 +39,7 @@ class AIOSEO extends Source
 		return [
 			'posts'     => $posts,
 			'terms'     => $this->count_table($this->table('terms')),
-			'users'     => $this->count_user_meta('_aioseo_title') + $this->count_user_meta('_aioseop_title'),
+			'users'     => 0,
 			'redirects' => $this->count_table($this->table('redirects')),
 		];
 	}
@@ -129,41 +129,6 @@ class AIOSEO extends Source
 		}
 
 		return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
-	}
-
-	public function import_users(int $offset, int $limit, bool $overwrite): array
-	{
-		$ids      = $this->user_ids($offset, $limit);
-		$imported = 0;
-		$skipped  = 0;
-
-		foreach ($ids as $user_id) {
-			$title = (string) get_user_meta($user_id, '_aioseo_title', true);
-			$desc  = (string) get_user_meta($user_id, '_aioseo_description', true);
-
-			if ($title === '') {
-				$title = (string) get_user_meta($user_id, '_aioseop_title', true);
-			}
-
-			if ($desc === '') {
-				$desc = (string) get_user_meta($user_id, '_aioseop_description', true);
-			}
-
-			$data = array_filter([
-				'title'       => $this->convert($title),
-				'description' => $this->convert($desc),
-			], static function ($v) {
-				return $v !== '' && $v !== null;
-			});
-
-			if ($data === []) {
-				continue;
-			}
-
-			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
-		}
-
-		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
 	}
 
 	public function import_redirects(int $offset, int $limit): array

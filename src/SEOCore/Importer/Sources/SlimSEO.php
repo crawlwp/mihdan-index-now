@@ -24,7 +24,7 @@ class SlimSEO extends Source
 		return defined('SLIM_SEO_VER')
 			|| get_option('slim_seo') !== false
 			|| $this->has_meta('slim_seo')
-			|| $this->table_exists($this->redirects_table());
+			|| get_option('ss_redirects') !== false;
 	}
 
 	public function counts(): array
@@ -32,8 +32,8 @@ class SlimSEO extends Source
 		return [
 			'posts'     => $this->count_meta('slim_seo'),
 			'terms'     => $this->count_term_meta('slim_seo'),
-			'users'     => $this->count_user_meta('slim_seo'),
-			'redirects' => $this->count_table($this->redirects_table()),
+			'users'     => 0,
+			'redirects' => count($this->redirects_option()),
 		];
 	}
 
@@ -75,41 +75,17 @@ class SlimSEO extends Source
 		return $this->batch_result($imported, $skipped, $offset, count($terms), $limit);
 	}
 
-	public function import_users(int $offset, int $limit, bool $overwrite): array
-	{
-		$ids      = $this->user_ids($offset, $limit);
-		$imported = 0;
-		$skipped  = 0;
-
-		foreach ($ids as $user_id) {
-			$data = $this->from_bundle(get_user_meta($user_id, 'slim_seo', true));
-
-			if ($data === []) {
-				continue;
-			}
-
-			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
-		}
-
-		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
-	}
-
 	public function import_redirects(int $offset, int $limit): array
 	{
-		global $wpdb;
+		$redirects = $this->redirects_option();
 
-		$table = $this->redirects_table();
-
-		if (! $this->table_exists($table)) {
+		if ($redirects === []) {
 			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
-		$rows = $wpdb->get_results(
-			$this->table_query('SELECT * FROM %i ORDER BY id ASC LIMIT %d OFFSET %d', $table, $limit, $offset),
-			ARRAY_A
-		);
+		$batch = array_slice(array_values($redirects), $offset, $limit);
 
-		if (! is_array($rows) || $rows === []) {
+		if ($batch === []) {
 			return $this->batch_result(0, 0, $offset, 0, $limit);
 		}
 
@@ -117,7 +93,20 @@ class SlimSEO extends Source
 		$imported = 0;
 		$skipped  = 0;
 
-		foreach ($rows as $row) {
+		$cond_map = [
+			'exact-match' => 'exact',
+			'contain'     => 'contains',
+			'start-with'  => 'starts_with',
+			'end-with'    => 'ends_with',
+			'regex'       => 'regex',
+		];
+
+		foreach ($batch as $row) {
+			if (! is_array($row)) {
+				$skipped++;
+				continue;
+			}
+
 			$from = (string) ($row['from'] ?? $row['from_url'] ?? '');
 
 			if ($from === '' || $manager->exists_from_url($from)) {
@@ -125,9 +114,16 @@ class SlimSEO extends Source
 				continue;
 			}
 
-			$type  = (int) ($row['type'] ?? $row['redirect_type'] ?? 301);
-			$cond  = (string) ($row['condition'] ?? $row['match_type'] ?? 'exact');
-			$match = $cond === 'regex' ? 'regex' : 'exact';
+			$type = (int) ($row['type'] ?? $row['redirect_type'] ?? 301);
+			$cond = (string) ($row['condition'] ?? $row['match_type'] ?? 'exact');
+
+			if (isset($cond_map[$cond])) {
+				$match = $cond_map[$cond];
+			} elseif (in_array($cond, ['exact', 'regex', 'contains', 'starts_with', 'ends_with'], true)) {
+				$match = $cond;
+			} else {
+				$match = 'exact';
+			}
 
 			$ok = $manager->insert([
 				'from_url'            => $from,
@@ -135,14 +131,14 @@ class SlimSEO extends Source
 				'redirect_type'       => in_array($type, [301, 302, 307, 410, 451], true) ? $type : 301,
 				'match_type'          => $match,
 				'note'                => __('Imported from Slim SEO', 'mihdan-index-now'),
-				'ignore_query_string' => empty($row['ignoreParameters']) ? 1 : (int) (bool) $row['ignoreParameters'],
+				'ignore_query_string' => ! empty($row['ignoreParameters']) ? 1 : 0,
 				'enabled'             => isset($row['enable']) ? (int) (bool) $row['enable'] : 1,
 			]);
 
 			$ok ? $imported++ : $skipped++;
 		}
 
-		return $this->batch_result($imported, $skipped, $offset, count($rows), $limit);
+		return $this->batch_result($imported, $skipped, $offset, count($batch), $limit);
 	}
 
 	/**
@@ -220,11 +216,14 @@ class SlimSEO extends Source
 		return $fields;
 	}
 
-	private function redirects_table(): string
+	/**
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function redirects_option(): array
 	{
-		global $wpdb;
+		$redirects = get_option('ss_redirects');
 
-		return $wpdb->prefix . 'slim_seo_redirects';
+		return is_array($redirects) ? $redirects : [];
 	}
 
 	/**
