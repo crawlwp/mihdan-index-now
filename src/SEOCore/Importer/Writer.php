@@ -12,8 +12,9 @@ use Mihdan\IndexNow\Utils;
  *
  * Expected $data keys (all optional):
  *   title, description, focus_keyword, canonical, robots_index, robots_follow,
- *   og_title, og_description, og_image (attachment ID or URL),
- *   x_title, x_description, x_image, primary_category, cornerstone,
+ *   robots_advanced (array or comma separated string), max_snippet, max_image,
+ *   og_title, og_description, og_image (attachment ID or URL), og_image_alt,
+ *   x_title, x_description, x_image, x_card_type, primary_category, cornerstone,
  *   redirect_url, redirect_type, schema_page_type, schema_article_type
  */
 class Writer
@@ -24,6 +25,23 @@ class Writer
 	 * Kept in sync with RedirectsManager::sanitize() and RedirectsProcessor.
 	 */
 	public const REDIRECT_TYPES = ['301', '302', '307', '410', '451'];
+
+	/**
+	 * Advanced robots directives the SEO metabox stores.
+	 *
+	 * Kept in sync with MetaFields::field_definitions().
+	 */
+	public const ROBOTS_ADVANCED_VALUES = ['noimageindex', 'noarchive', 'nosnippet', 'notranslate'];
+
+	/**
+	 * Image preview sizes the SEO metabox stores.
+	 */
+	public const MAX_IMAGE_VALUES = ['large', 'standard', 'none'];
+
+	/**
+	 * X (Twitter) card types the SEO metabox stores.
+	 */
+	public const X_CARD_TYPES = ['summary', 'summary_large_image'];
 
 	/**
 	 * Request-level `url => attachment id` cache so the same social image URL
@@ -86,10 +104,15 @@ class Writer
 			'canonical'           => MetaFields::CANONICAL_URL,
 			'robots_index'        => MetaFields::ROBOTS_INDEX,
 			'robots_follow'       => MetaFields::ROBOTS_FOLLOW,
+			'robots_advanced'     => MetaFields::ROBOTS_ADVANCED,
+			'max_snippet'         => MetaFields::MAX_SNIPPET,
+			'max_image'           => MetaFields::MAX_IMAGE,
 			'og_title'            => MetaFields::OG_TITLE,
 			'og_description'      => MetaFields::OG_DESCRIPTION,
+			'og_image_alt'        => MetaFields::OG_IMAGE_ALT,
 			'x_title'             => MetaFields::X_TITLE,
 			'x_description'       => MetaFields::X_DESCRIPTION,
+			'x_card_type'         => MetaFields::X_CARD_TYPE,
 			'redirect_url'        => MetaFields::REDIRECT_URL,
 			'redirect_type'       => MetaFields::REDIRECT_TYPE,
 			'schema_page_type'    => MetaFields::SCHEMA_PAGE_TYPE,
@@ -121,6 +144,34 @@ class Writer
 				$value = $value === 'nofollow' || $value === 1 || $value === '1' || $value === true ? 'nofollow' : 'follow';
 			}
 
+			if ($key === 'robots_advanced') {
+				$value = self::robots_advanced($value);
+				if ($value === []) {
+					continue;
+				}
+			}
+
+			if ($key === 'max_snippet') {
+				$value = self::max_snippet($value);
+				if ($value === '') {
+					continue;
+				}
+			}
+
+			if ($key === 'max_image') {
+				$value = (string) $value;
+				if (! in_array($value, self::MAX_IMAGE_VALUES, true)) {
+					continue;
+				}
+			}
+
+			if ($key === 'x_card_type') {
+				$value = (string) $value;
+				if (! in_array($value, self::X_CARD_TYPES, true)) {
+					continue;
+				}
+			}
+
 			if ($key === 'canonical' || $key === 'redirect_url') {
 				$value = MetaFields::sanitize_url((string) $value);
 				if ($value === '') {
@@ -146,7 +197,7 @@ class Writer
 				$value = $value ? '1' : '0';
 			}
 
-			if (in_array($key, ['title', 'focus_keyword', 'og_title', 'x_title', 'schema_page_type', 'schema_article_type'], true)) {
+			if (in_array($key, ['title', 'focus_keyword', 'og_title', 'og_image_alt', 'x_title', 'schema_page_type', 'schema_article_type'], true)) {
 				$value = sanitize_text_field((string) $value);
 			}
 
@@ -157,11 +208,11 @@ class Writer
 			self::update_meta($object_type, $id, $meta_key, $value);
 			$written++;
 
-			if ($key === 'og_title' || $key === 'og_description') {
+			if ($key === 'og_title' || $key === 'og_description' || $key === 'og_image_alt') {
 				$og_written = true;
 			}
 
-			if ($key === 'x_title' || $key === 'x_description') {
+			if ($key === 'x_title' || $key === 'x_description' || $key === 'x_card_type') {
 				$x_written = true;
 			}
 		}
@@ -199,6 +250,59 @@ class Writer
 		}
 
 		return $written;
+	}
+
+	/**
+	 * Keep only the advanced robots directives the metabox understands.
+	 *
+	 * @param mixed $raw An array or a comma separated string.
+	 *
+	 * @return string[]
+	 */
+	private static function robots_advanced($raw): array
+	{
+		if (is_string($raw)) {
+			$raw = explode(',', $raw);
+		}
+
+		if (! is_array($raw)) {
+			return [];
+		}
+
+		$values = array_map(static function ($v) {
+			return is_scalar($v) ? sanitize_text_field((string) $v) : '';
+		}, $raw);
+
+		return array_values(array_unique(array_filter($values, static function ($v) {
+			return in_array($v, self::ROBOTS_ADVANCED_VALUES, true);
+		})));
+	}
+
+	/**
+	 * Translate a source `max-snippet` length onto one of the stored choices.
+	 *
+	 * A negative length means "no limit", which is the CrawlWP default and is
+	 * therefore not stored.
+	 *
+	 * @param mixed $raw
+	 */
+	private static function max_snippet($raw): string
+	{
+		if ($raw === 'none' || $raw === '160') {
+			return $raw;
+		}
+
+		if (! is_numeric($raw)) {
+			return '';
+		}
+
+		$length = (int) $raw;
+
+		if ($length === 0) {
+			return 'none';
+		}
+
+		return $length > 0 ? '160' : '';
 	}
 
 	/**

@@ -386,6 +386,13 @@ class RankMath extends Source
 		$noindex = is_array($robots) && in_array('noindex', $robots, true);
 		$nofollow = is_array($robots) && in_array('nofollow', $robots, true);
 
+		$robots_advanced = is_array($robots)
+			? array_values(array_intersect($robots, Writer::ROBOTS_ADVANCED_VALUES))
+			: [];
+
+		$advanced = $get($id, 'rank_math_advanced_robots', true);
+		$advanced = is_array($advanced) ? $advanced : [];
+
 		$twitter_use_fb = (string) $get($id, 'rank_math_twitter_use_facebook', true);
 
 		$schema_page_type    = '';
@@ -424,6 +431,8 @@ class RankMath extends Source
 			'x_image'             => $twitter_use_fb === 'on'
 				? ''
 				: ((string) $get($id, 'rank_math_twitter_image_id', true) ?: (string) $get($id, 'rank_math_twitter_image', true)),
+			'x_card_type'         => (string) $get($id, 'rank_math_twitter_card_type', true),
+			'max_image'           => (string) ($advanced['max-image-preview'] ?? ''),
 			'primary_category'    => (int) $get($id, 'rank_math_primary_category', true),
 			'cornerstone'         => (string) $get($id, 'rank_math_pillar_content', true),
 			'redirect_url'        => $redirect_url,
@@ -439,9 +448,23 @@ class RankMath extends Source
 			$data['robots_follow'] = 'nofollow';
 		}
 
-		return array_filter($data, static function ($v) {
+		if ($robots_advanced !== []) {
+			$data['robots_advanced'] = $robots_advanced;
+		}
+
+		$data = array_filter($data, static function ($v) {
 			return $v !== '' && $v !== null && $v !== 0 && $v !== '0';
 		});
+
+		/*
+		 * A zero length means "no snippet", so it is added after the filter that
+		 * drops empty values.
+		 */
+		if (is_numeric($advanced['max-snippet'] ?? null)) {
+			$data['max_snippet'] = $advanced['max-snippet'];
+		}
+
+		return $data;
 	}
 
 	private function has_meta(string $key): bool

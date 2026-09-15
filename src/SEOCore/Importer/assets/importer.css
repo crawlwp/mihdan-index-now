@@ -21,3 +21,7 @@
 	max-height: 220px;
 	overflow: auto;
 }
+
+#crawlwp_importer table tr th {
+	display: none;
+}

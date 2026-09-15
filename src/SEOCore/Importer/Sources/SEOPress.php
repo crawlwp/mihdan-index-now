@@ -32,7 +32,7 @@ class SEOPress extends Source
 	{
 		return [
 			'posts'     => $this->count_meta('_seopress_titles_title') + $this->count_meta('_seopress_titles_desc'),
-			'terms'     => $this->count_term_meta('_seopress_titles_title'),
+			'terms'     => $this->count_term_meta('_seopress_titles_title') + $this->count_term_meta('_seopress_titles_desc'),
 			'users'     => 0,
 			'redirects' => $this->count_redirects(),
 		];
@@ -238,11 +238,11 @@ class SEOPress extends Source
 			$fields['description'] = $this->convert($desc);
 		}
 
-		if (isset($node['noindex']) && $node['noindex'] !== null) {
+		if (isset($node['noindex'])) {
 			$fields['noindex'] = ! empty($node['noindex']) ? 'on' : 'off';
 		}
 
-		if (isset($node['nofollow']) && $node['nofollow'] !== null) {
+		if (isset($node['nofollow'])) {
 			$fields['nofollow'] = ! empty($node['nofollow']) ? 'on' : 'off';
 		}
 
@@ -336,7 +336,7 @@ class SEOPress extends Source
 			'fields'         => 'ids',
 		]);
 
-		return (int) $q->found_posts;
+		return $q->found_posts;
 	}
 
 	/**
@@ -348,6 +348,14 @@ class SEOPress extends Source
 
 		$noindex  = $get($id, '_seopress_robots_index', true);
 		$nofollow = $get($id, '_seopress_robots_follow', true);
+
+		$nosnippet    = $get($id, '_seopress_robots_snippet', true);
+		$noimageindex = $get($id, '_seopress_robots_imageindex', true);
+
+		$robots_advanced = array_keys(array_filter([
+			'nosnippet'    => $nosnippet === 'yes' || $nosnippet === true || $nosnippet === '1',
+			'noimageindex' => $noimageindex === 'yes' || $noimageindex === true || $noimageindex === '1',
+		]));
 
 		$primary_category = 0;
 		$redirect_url     = '';
@@ -370,11 +378,11 @@ class SEOPress extends Source
 			'canonical'        => (string) $get($id, '_seopress_robots_canonical', true),
 			'og_title'         => $this->convert((string) $get($id, '_seopress_social_fb_title', true)),
 			'og_description'   => $this->convert((string) $get($id, '_seopress_social_fb_desc', true)),
-			'og_image'         => (string) $get($id, '_seopress_social_fb_img_id', true)
+			'og_image'         => (string) $get($id, '_seopress_social_fb_img_attachment_id', true)
 				?: (string) $get($id, '_seopress_social_fb_img', true),
 			'x_title'          => $this->convert((string) $get($id, '_seopress_social_twitter_title', true)),
 			'x_description'    => $this->convert((string) $get($id, '_seopress_social_twitter_desc', true)),
-			'x_image'          => (string) $get($id, '_seopress_social_twitter_img_id', true)
+			'x_image'          => (string) $get($id, '_seopress_social_twitter_img_attachment_id', true)
 				?: (string) $get($id, '_seopress_social_twitter_img', true),
 			'primary_category' => $primary_category,
 			'redirect_url'     => $redirect_url,
@@ -387,6 +395,10 @@ class SEOPress extends Source
 
 		if ($nofollow === 'yes' || $nofollow === true || $nofollow === '1') {
 			$data['robots_follow'] = 'nofollow';
+		}
+
+		if ($robots_advanced !== []) {
+			$data['robots_advanced'] = $robots_advanced;
 		}
 
 		return array_filter($data, static function ($v) {

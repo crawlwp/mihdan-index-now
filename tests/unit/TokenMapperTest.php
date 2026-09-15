@@ -25,10 +25,18 @@ class TokenMapperTest extends TestCase
 	{
 		return [
 			'yoast title'       => ['%%title%% %%sep%% %%sitename%%', 'yoast', '{{ post.title }} {{ sep }} {{ site.title }}'],
+			'yoast term'        => ['%%term_title%% %%term_description%%', 'yoast', '{{ term.title }} {{ term.description }}'],
+			'yoast custom tax'  => ['%%ct_genre%%', 'yoast', '{{ post.taxonomy.genre }}'],
 			'rank math excerpt' => ['%excerpt% on %sitename%', 'rankmath', '{{ post.auto_description }} on {{ site.title }}'],
+			'rank math term'    => ['%term% %term_description%', 'rankmath', '{{ term.title }} {{ term.description }}'],
+			'rank math field'   => ['%customfield(subtitle)%', 'rankmath', '{{ post.custom_field.subtitle }}'],
 			'aioseo'            => ['#post_title #separator_sa #site_title', 'aioseo', '{{ post.title }} {{ sep }} {{ site.title }}'],
+			'aioseo term'       => ['#taxonomy_title #taxonomy_description', 'aioseo', '{{ term.title }} {{ term.description }}'],
 			'seopress'          => ['%%post_title%% %%sep%% %%sitetitle%%', 'seopress', '{{ post.title }} {{ sep }} {{ site.title }}'],
-			'slim seo alias'    => ['{{ post.categories }}', 'slimseo', '{{ post.category }}'],
+			'seopress term'     => ['%%term_title%% %%term_description%%', 'seopress', '{{ term.title }} {{ term.description }}'],
+			'seopress field'    => ['%%_cf_subtitle%%', 'seopress', '{{ post.custom_field.subtitle }}'],
+			'slim seo alias'    => ['{{ post.modified_date }}', 'slimseo', '{{ post.modified }}'],
+			'slim seo native'   => ['{{ post.categories }}', 'slimseo', '{{ post.categories }}'],
 			'plain text'        => ['A plain title', 'tsf', 'A plain title'],
 		];
 	}

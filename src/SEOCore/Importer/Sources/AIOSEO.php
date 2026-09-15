@@ -445,6 +445,31 @@ class AIOSEO extends Source
 			}
 		}
 
+		/*
+		 * AIOSEO only honours its per-object robots columns when `robots_default`
+		 * is off, so the advanced directives are read under the same condition.
+		 */
+		$robots_advanced = [];
+		$max_snippet     = null;
+		$max_image       = '';
+
+		if (empty($row['robots_default'])) {
+			$robots_advanced = array_keys(array_filter([
+				'noarchive'    => ! empty($row['robots_noarchive']),
+				'nosnippet'    => ! empty($row['robots_nosnippet']),
+				'noimageindex' => ! empty($row['robots_noimageindex']),
+				'notranslate'  => ! empty($row['robots_notranslate']),
+			]));
+
+			$max_snippet = $row['robots_max_snippet'] ?? null;
+			$max_image   = (string) ($row['robots_max_imagepreview'] ?? '');
+		}
+
+		$card = (string) ($row['twitter_card'] ?? '');
+		if ($card === 'default') {
+			$card = '';
+		}
+
 		$data = [
 			'title'               => $this->convert((string) ($row['title'] ?? '')),
 			'description'         => $this->convert((string) ($row['description'] ?? '')),
@@ -452,10 +477,14 @@ class AIOSEO extends Source
 			'canonical'           => (string) ($row['canonical_url'] ?? ''),
 			'og_title'            => $this->convert((string) ($row['og_title'] ?? '')),
 			'og_description'      => $this->convert((string) ($row['og_description'] ?? '')),
-			'og_image'            => (string) ($row['og_image_url'] ?? ''),
+			'og_image'            => (string) ($row['og_image_url'] ?? '')
+				?: (string) ($row['og_image_custom_url'] ?? ''),
 			'x_title'             => $this->convert((string) ($row['twitter_title'] ?? '')),
 			'x_description'       => $this->convert((string) ($row['twitter_description'] ?? '')),
-			'x_image'             => (string) ($row['twitter_image_url'] ?? ''),
+			'x_image'             => (string) ($row['twitter_image_url'] ?? '')
+				?: (string) ($row['twitter_image_custom_url'] ?? ''),
+			'x_card_type'         => $card,
+			'max_image'           => $max_image,
 			'primary_category'    => $primary_category,
 			'cornerstone'         => ! empty($row['pillar_content']),
 			'schema_page_type'    => $schema_page_type,
@@ -470,9 +499,23 @@ class AIOSEO extends Source
 			$data['robots_follow'] = 'nofollow';
 		}
 
-		return array_filter($data, static function ($v) {
+		if ($robots_advanced !== []) {
+			$data['robots_advanced'] = $robots_advanced;
+		}
+
+		$data = array_filter($data, static function ($v) {
 			return $v !== '' && $v !== null && $v !== 0 && $v !== '0' && $v !== false;
 		});
+
+		/*
+		 * A zero length means "no snippet", so it is added after the filter that
+		 * drops empty values.
+		 */
+		if (is_numeric($max_snippet)) {
+			$data['max_snippet'] = $max_snippet;
+		}
+
+		return $data;
 	}
 
 	/**

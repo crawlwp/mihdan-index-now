@@ -13,9 +13,11 @@ use Mihdan\IndexNow\SEOCore\MetaBox\MetaFields;
 class Variables
 {
 	/**
-	 * Matches {{ name }}, {{name}} and {{ some.name }}.
+	 * Matches {{ name }}, {{name}}, {{ some.name }} and the dynamic forms that
+	 * carry a meta key or taxonomy slug as their last segment, e.g.
+	 * {{ post.custom_field.my-key }}.
 	 */
-	private const TOKEN_REGEX = '/\{\{\s*([a-z0-9_]+(?:\.[a-z0-9_]+)?)\s*\}\}/i';
+	private const TOKEN_REGEX = '/\{\{\s*([a-z0-9_]+(?:\.[a-z0-9_\-]+)*)\s*\}\}/i';
 
 	/**
 	 * Resolution context for the current request.
@@ -272,6 +274,15 @@ class Variables
 			case 'current.date':
 				return wp_date((string) get_option('date_format')) ?: gmdate('Y-m-d');
 
+			case 'current.time':
+				return wp_date((string) get_option('time_format')) ?: gmdate('H:i');
+
+			case 'current.month_short':
+				return (string) (wp_date('M') ?: gmdate('M'));
+
+			case 'current.month_num':
+				return (string) (wp_date('m') ?: gmdate('m'));
+
 			case 'search.query':
 				return (string) get_search_query();
 
@@ -282,6 +293,18 @@ class Variables
 
 			case 'date.archive_title':
 				return $this->date_archive_title();
+
+			case 'date.year':
+				return $this->date_archive_part('year');
+
+			case 'date.month':
+				return $this->date_archive_part('month');
+
+			case 'date.month_name':
+				return $this->date_archive_part('month_name');
+
+			case 'date.day':
+				return $this->date_archive_part('day');
 		}
 
 		if (strpos($token, 'post.') === 0) {
@@ -321,6 +344,20 @@ class Variables
 			return '';
 		}
 
+		/* Dynamic segments: {{ post.custom_field.key }}, {{ post.taxonomy.slug }}
+		 * and {{ post.taxonomy_description.slug }}. */
+		if (strpos($key, 'custom_field.') === 0) {
+			return self::meta_value('post', $post->ID, substr($key, 13));
+		}
+
+		if (strpos($key, 'taxonomy_description.') === 0) {
+			return $this->taxonomy_description($post, substr($key, 21));
+		}
+
+		if (strpos($key, 'taxonomy.') === 0) {
+			return $this->term_names($post, substr($key, 9));
+		}
+
 		switch ($key) {
 			case 'title':
 				return get_the_title($post);
@@ -357,11 +394,34 @@ class Variables
 			case 'category':
 				return $this->first_term_name($post, 'category');
 
+			case 'categories':
+				return $this->term_names($post, 'category');
+
 			case 'tag':
 				return $this->first_term_name($post, 'post_tag');
 
+			case 'tags':
+				return $this->term_names($post, 'post_tag');
+
 			case 'parent_title':
 				return ! empty($post->post_parent) ? get_the_title($post->post_parent) : '';
+
+			case 'thumbnail_url':
+				return (string) get_the_post_thumbnail_url($post, 'full');
+
+			case 'focus_keyword':
+				$keywords = MetaFields::keywords($post->ID);
+
+				return $keywords === [] ? '' : $keywords[0];
+
+			case 'year':
+				return (string) get_the_date('Y', $post);
+
+			case 'month':
+				return (string) get_the_date('F', $post);
+
+			case 'day':
+				return (string) get_the_date('j', $post);
 
 			case 'comment_count':
 				return (string) (int) $post->comment_count;
@@ -376,6 +436,10 @@ class Variables
 
 		if (! $term instanceof \WP_Term) {
 			return '';
+		}
+
+		if (strpos($key, 'custom_field.') === 0) {
+			return self::meta_value('term', $term->term_id, substr($key, 13));
 		}
 
 		switch ($key) {
@@ -399,6 +463,15 @@ class Variables
 			case 'slug':
 				return $term->slug;
 
+			case 'parent':
+				if (empty($term->parent)) {
+					return '';
+				}
+
+				$parent = get_term($term->parent, $term->taxonomy);
+
+				return $parent instanceof \WP_Term ? $parent->name : '';
+
 			case 'count':
 				return (string) (int) $term->count;
 
@@ -417,6 +490,10 @@ class Variables
 
 		if (! $user instanceof \WP_User) {
 			return '';
+		}
+
+		if (strpos($key, 'custom_field.') === 0) {
+			return self::meta_value('user', $user->ID, substr($key, 13));
 		}
 
 		switch ($key) {
@@ -455,6 +532,9 @@ class Variables
 
 			case 'url':
 				return (string) get_author_posts_url($user->ID);
+
+			case 'website':
+				return (string) $user->user_url;
 		}
 
 		return '';
@@ -530,6 +610,70 @@ class Variables
 		}
 
 		return $terms[0]->name;
+	}
+
+	/**
+	 * Every term the post has in a taxonomy, comma separated.
+	 */
+	private function term_names(\WP_Post $post, string $taxonomy): string
+	{
+		if ($taxonomy === '') {
+			return '';
+		}
+
+		$terms = get_the_terms($post->ID, $taxonomy);
+
+		if (empty($terms) || is_wp_error($terms)) {
+			return '';
+		}
+
+		return implode(', ', wp_list_pluck($terms, 'name'));
+	}
+
+	/**
+	 * Description of the first term the post has in a taxonomy.
+	 */
+	private function taxonomy_description(\WP_Post $post, string $taxonomy): string
+	{
+		if ($taxonomy === '') {
+			return '';
+		}
+
+		$terms = get_the_terms($post->ID, $taxonomy);
+
+		if (empty($terms) || is_wp_error($terms)) {
+			return '';
+		}
+
+		return wp_strip_all_tags((string) $terms[0]->description);
+	}
+
+	/**
+	 * A single meta value, flattened to a string.
+	 */
+	private static function meta_value(string $object_type, int $id, string $key): string
+	{
+		if ($key === '') {
+			return '';
+		}
+
+		if ($object_type === 'term') {
+			$value = get_term_meta($id, $key, true);
+		} elseif ($object_type === 'user') {
+			$value = get_user_meta($id, $key, true);
+		} else {
+			$value = get_post_meta($id, $key, true);
+		}
+
+		if (is_array($value)) {
+			$value = implode(', ', array_filter($value, 'is_scalar'));
+		}
+
+		if (! is_scalar($value)) {
+			return '';
+		}
+
+		return wp_strip_all_tags((string) $value);
 	}
 
 	/**
@@ -609,6 +753,38 @@ class Variables
 	}
 
 	/**
+	 * A single part of the requested date archive: its year, month or day.
+	 */
+	private function date_archive_part(string $part): string
+	{
+		$year  = (int) get_query_var('year');
+		$month = (int) get_query_var('monthnum');
+		$day   = (int) get_query_var('day');
+
+		switch ($part) {
+			case 'year':
+				return $year > 0 ? (string) $year : '';
+
+			case 'day':
+				return $day > 0 ? (string) $day : '';
+
+			case 'month':
+				return $month > 0 ? (string) $month : '';
+
+			case 'month_name':
+				if ($month <= 0) {
+					return '';
+				}
+
+				$timestamp = mktime(12, 0, 0, $month, 1, $year > 0 ? $year : (int) wp_date('Y'));
+
+				return $timestamp === false ? '' : (string) wp_date('F', $timestamp);
+		}
+
+		return '';
+	}
+
+	/**
 	 * Tidy up a resolved string: unresolved tokens are dropped and separators
 	 * left dangling by empty values are collapsed.
 	 */
@@ -650,7 +826,9 @@ class Variables
 					'site.url'         => __('Site home URL', 'mihdan-index-now'),
 					'current.year'     => __('Current year', 'mihdan-index-now'),
 					'current.month'    => __('Current month', 'mihdan-index-now'),
+					'current.day'      => __('Current day', 'mihdan-index-now'),
 					'current.date'     => __('Current date', 'mihdan-index-now'),
+					'current.time'     => __('Current time', 'mihdan-index-now'),
 				],
 			],
 			'post'    => [
@@ -661,11 +839,17 @@ class Variables
 					'post.excerpt'          => __('Post excerpt only', 'mihdan-index-now'),
 					'post.author'           => __('Post author display name', 'mihdan-index-now'),
 					'post.category'         => __('First category assigned to the post', 'mihdan-index-now'),
+					'post.categories'       => __('Every category assigned to the post', 'mihdan-index-now'),
 					'post.tag'              => __('First tag assigned to the post', 'mihdan-index-now'),
+					'post.tags'             => __('Every tag assigned to the post', 'mihdan-index-now'),
 					'post.parent_title'     => __('Parent post or page title', 'mihdan-index-now'),
 					'post.date'             => __('Post publish date', 'mihdan-index-now'),
 					'post.modified'         => __('Post last modified date', 'mihdan-index-now'),
 					'post.url'              => __('Post permalink', 'mihdan-index-now'),
+					'post.thumbnail_url'    => __('Featured image URL', 'mihdan-index-now'),
+					'post.focus_keyword'    => __('Primary focus keyword of the post', 'mihdan-index-now'),
+					'post.custom_field.key' => __('Value of a custom field, e.g. post.custom_field.subtitle', 'mihdan-index-now'),
+					'post.taxonomy.slug'    => __('Terms of a taxonomy, e.g. post.taxonomy.product_cat', 'mihdan-index-now'),
 				],
 			],
 			'term'    => [
@@ -674,6 +858,7 @@ class Variables
 					'term.title'            => __('Term name', 'mihdan-index-now'),
 					'term.auto_description' => __('Term description, or a generated fallback', 'mihdan-index-now'),
 					'term.description'      => __('Term description only', 'mihdan-index-now'),
+					'term.parent'           => __('Parent term name', 'mihdan-index-now'),
 					'term.count'            => __('Number of items in the term', 'mihdan-index-now'),
 				],
 			],
@@ -684,6 +869,8 @@ class Variables
 					'author.auto_description' => __('Author biography, or a generated fallback', 'mihdan-index-now'),
 					'author.first_name'       => __('Author first name', 'mihdan-index-now'),
 					'author.last_name'        => __('Author last name', 'mihdan-index-now'),
+					'author.nickname'         => __('Author nickname', 'mihdan-index-now'),
+					'author.website'          => __('Author website URL', 'mihdan-index-now'),
 					'author.posts_count'      => __('Number of posts by the author', 'mihdan-index-now'),
 				],
 			],
@@ -694,6 +881,9 @@ class Variables
 					'post_type.name'        => __('Post type singular label', 'mihdan-index-now'),
 					'post_type.description' => __('Post type description', 'mihdan-index-now'),
 					'date.archive_title'    => __('Date archive title', 'mihdan-index-now'),
+					'date.year'             => __('Year of the date archive', 'mihdan-index-now'),
+					'date.month_name'       => __('Month name of the date archive', 'mihdan-index-now'),
+					'date.day'              => __('Day of the date archive', 'mihdan-index-now'),
 					'search.query'          => __('Search query', 'mihdan-index-now'),
 					'search.results_count'  => __('Number of search results', 'mihdan-index-now'),
 				],

@@ -80,12 +80,20 @@ class Yoast extends Source
 			}
 
 			$data = [
-				'title'       => $this->convert((string) ($meta['wpseo_title'] ?? '')),
-				'description' => $this->convert((string) ($meta['wpseo_desc'] ?? '')),
-				'canonical'   => (string) ($meta['wpseo_canonical'] ?? ''),
-				'og_image'    => (string) ($meta['wpseo_opengraph-image'] ?? ''),
-				'x_image'     => (string) ($meta['wpseo_twitter-image'] ?? ''),
-				'robots_index'=> (! empty($meta['wpseo_noindex']) && $meta['wpseo_noindex'] === 'noindex') ? 'noindex' : '',
+				'title'          => $this->convert((string) ($meta['wpseo_title'] ?? '')),
+				'description'    => $this->convert((string) ($meta['wpseo_desc'] ?? '')),
+				'focus_keyword'  => (string) ($meta['wpseo_focuskw'] ?? ''),
+				'canonical'      => (string) ($meta['wpseo_canonical'] ?? ''),
+				'og_title'       => $this->convert((string) ($meta['wpseo_opengraph-title'] ?? '')),
+				'og_description' => $this->convert((string) ($meta['wpseo_opengraph-description'] ?? '')),
+				'og_image'       => (string) ($meta['wpseo_opengraph-image-id'] ?? '')
+					?: (string) ($meta['wpseo_opengraph-image'] ?? ''),
+				'x_title'        => $this->convert((string) ($meta['wpseo_twitter-title'] ?? '')),
+				'x_description'  => $this->convert((string) ($meta['wpseo_twitter-description'] ?? '')),
+				'x_image'        => (string) ($meta['wpseo_twitter-image-id'] ?? '')
+					?: (string) ($meta['wpseo_twitter-image'] ?? ''),
+				'cornerstone'    => (string) ($meta['wpseo_is_cornerstone'] ?? ''),
+				'robots_index'   => (! empty($meta['wpseo_noindex']) && $meta['wpseo_noindex'] === 'noindex') ? 'noindex' : '',
 			];
 
 			$data = array_filter($data, static function ($v) {
@@ -428,6 +436,17 @@ class Yoast extends Source
 
 		if ($nofollow === 1) {
 			$data['robots_follow'] = 'nofollow';
+		}
+
+		/*
+		 * A stored `none` means "no advanced directives", so it is not imported.
+		 * Yoast has no term equivalent: `wpseo_taxonomy_meta` only carries
+		 * `wpseo_noindex`, which import_terms() already reads.
+		 */
+		$robots_advanced = (string) get_post_meta($post_id, '_yoast_wpseo_meta-robots-adv', true);
+
+		if ($robots_advanced !== '' && $robots_advanced !== 'none') {
+			$data['robots_advanced'] = $robots_advanced;
 		}
 
 		return array_filter($data, static function ($v) {
