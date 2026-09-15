@@ -74,6 +74,7 @@ deleteDir('.wordpress-org');
 deleteDir('php-scoper');
 deleteDir('codekit');
 deleteDir('tests');
+deleteDir('doc');
 
 deleteDir('vendor');
 

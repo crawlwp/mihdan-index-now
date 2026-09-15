@@ -270,7 +270,7 @@ class Writer
 			return self::$attachment_ids[$url];
 		}
 
-		$id = (int) attachment_url_to_postid($url);
+		$id = attachment_url_to_postid($url);
 
 		self::$attachment_ids[$url] = $id > 0 ? $id : 0;
 

@@ -204,6 +204,25 @@
       "oAP" : "\/composer.lock",
       "oF" : 0
     },
+    "\/doc\/importer.md" : {
+      "cB" : 0,
+      "cS" : 0,
+      "eF" : 1,
+      "eL" : 1,
+      "ema" : 1,
+      "eSQ" : 1,
+      "ft" : 4096,
+      "hM" : 0,
+      "oA" : 0,
+      "oAP" : "\/doc\/importer.html",
+      "oF" : 0,
+      "oFM" : 0,
+      "oS" : 0,
+      "pHT" : 0,
+      "pME" : 1,
+      "rFN" : 0,
+      "uCM" : 0
+    },
     "\/LICENSE" : {
       "cB" : 0,
       "ft" : 8192,
@@ -486,6 +505,18 @@
       "ma" : 0,
       "oA" : 0,
       "oAP" : "\/src\/SEOCore\/Breadcrumbs\/assets\/breadcrumbs.min.css",
+      "oF" : 0,
+      "pg" : 0
+    },
+    "\/src\/SEOCore\/Breadcrumbs\/assets\/breadcrumbs.min.css" : {
+      "aP" : 1,
+      "bl" : 0,
+      "ci" : 0,
+      "co" : 0,
+      "ft" : 16,
+      "ma" : 0,
+      "oA" : 0,
+      "oAP" : "\/src\/SEOCore\/Breadcrumbs\/assets\/breadcrumbs.min.min.css",
       "oF" : 0,
       "pg" : 0
     },
