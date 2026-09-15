@@ -586,16 +586,11 @@ $cwp_ai_button = static function (string $target, string $field): void {
       <p class="cwp-hint"><?php esc_html_e('Leave the URL empty to disable the redirect.', 'mihdan-index-now'); ?></p>
     </div>
 
+    <?php if ($categories !== []) : ?>
     <div class="cwp-section">
-      <h4 class="cwp-section-title"><?php esc_html_e('Content flags', 'mihdan-index-now'); ?></h4>
-      <label class="cwp-switch">
-        <input type="checkbox" name="<?php echo esc_attr(MetaFields::CORNERSTONE); ?>" value="1" <?php checked($data['cornerstone'], '1'); ?>>
-        <span class="cwp-switch-ui"></span>
-        <span class="cwp-switch-text"><?php esc_html_e('Cornerstone content', 'mihdan-index-now'); ?></span>
-      </label>
-      <?php if ($categories !== []) : ?>
-      <div class="cwp-field" style="margin-top:12px">
-        <label class="cwp-label" for="cwpPrimaryCat"><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></label>
+      <h4 class="cwp-section-title"><?php esc_html_e('Primary category', 'mihdan-index-now'); ?></h4>
+      <p class="cwp-section-desc"><?php esc_html_e('Used for breadcrumbs and category permalink tags.', 'mihdan-index-now'); ?></p>
+      <div class="cwp-field">
         <select class="cwp-select" id="cwpPrimaryCat" name="<?php echo esc_attr(MetaFields::PRIMARY_CATEGORY); ?>">
           <option value="0"><?php esc_html_e('Default (first category)', 'mihdan-index-now'); ?></option>
           <?php foreach ($categories as $cat) : ?>
@@ -603,8 +598,8 @@ $cwp_ai_button = static function (string $target, string $field): void {
           <?php endforeach; ?>
         </select>
       </div>
-      <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div class="cwp-section">
       <h4 class="cwp-section-title"><?php esc_html_e('Canonical URL', 'mihdan-index-now'); ?></h4>

@@ -95,7 +95,7 @@ class ElementorIntegrationTest extends TestCase
 		$this->assertArrayHasKey(MetaFields::ROBOTS_ADVANCED, $document->controls);
 		$this->assertArrayHasKey(MetaFields::MAX_SNIPPET, $document->controls);
 		$this->assertArrayHasKey(MetaFields::MAX_IMAGE, $document->controls);
-		$this->assertArrayHasKey(MetaFields::CORNERSTONE, $document->controls);
+		$this->assertArrayNotHasKey(MetaFields::CORNERSTONE, $document->controls);
 		$this->assertArrayHasKey(MetaFields::REDIRECT_URL, $document->controls);
 		$this->assertArrayHasKey(MetaFields::REDIRECT_TYPE, $document->controls);
 		$this->assertArrayNotHasKey('crawlwp_indexnow_action', $document->controls);
@@ -128,7 +128,6 @@ class ElementorIntegrationTest extends TestCase
 			MetaFields::ROBOTS_INDEX        => 'noindex',
 			MetaFields::ROBOTS_FOLLOW       => 'nofollow',
 			MetaFields::ROBOTS_ADVANCED     => ['noarchive', 'nosnippet'],
-			MetaFields::CORNERSTONE         => '1',
 			MetaFields::REDIRECT_URL        => ['url' => 'https://example.test/redirect-target'],
 			MetaFields::REDIRECT_TYPE       => '301',
 		];
@@ -156,9 +155,9 @@ class ElementorIntegrationTest extends TestCase
 		$this->assertSame('noindex', $meta[MetaFields::ROBOTS_INDEX] ?? null);
 		$this->assertSame('nofollow', $meta[MetaFields::ROBOTS_FOLLOW] ?? null);
 		$this->assertSame(['noarchive', 'nosnippet'], $meta[MetaFields::ROBOTS_ADVANCED] ?? null);
-		$this->assertSame('1', $meta[MetaFields::CORNERSTONE] ?? null);
 		$this->assertSame('https://example.test/redirect-target', $meta[MetaFields::REDIRECT_URL] ?? null);
 		$this->assertSame('301', $meta[MetaFields::REDIRECT_TYPE] ?? null);
+		$this->assertArrayNotHasKey(MetaFields::CORNERSTONE, $meta);
 		$this->assertArrayNotHasKey(MetaFields::SEO_SCORE, $meta);
 	}
 

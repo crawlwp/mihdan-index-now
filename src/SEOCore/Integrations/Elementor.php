@@ -455,15 +455,6 @@ class Elementor
 			'default' => (string) MetaFields::get($post_id, MetaFields::MAX_IMAGE, 'large'),
 		]);
 
-		$document->add_control(MetaFields::CORNERSTONE, [
-			'label'        => __('Cornerstone content', 'mihdan-index-now'),
-			'type'         => \Elementor\Controls_Manager::SWITCHER,
-			'label_on'     => __('Yes', 'mihdan-index-now'),
-			'label_off'    => __('No', 'mihdan-index-now'),
-			'return_value' => '1',
-			'default'      => (string) MetaFields::get($post_id, MetaFields::CORNERSTONE) === '1' ? '1' : '',
-		]);
-
 		$document->add_control(MetaFields::REDIRECT_URL, [
 			'label'       => __('301 / 302 Redirect URL', 'mihdan-index-now'),
 			'type'        => \Elementor\Controls_Manager::URL,
@@ -520,7 +511,7 @@ class Elementor
 				$normalized[$key] = is_array($value) ? (string) ($value['url'] ?? '') : (string) $value;
 			} elseif ($key === MetaFields::OG_IMAGE || $key === MetaFields::X_IMAGE) {
 				$normalized[$key] = is_array($value) ? (string) ($value['id'] ?? '') : (string) $value;
-			} elseif ($key === MetaFields::OG_SYNC || $key === MetaFields::X_SYNC || $key === MetaFields::CORNERSTONE) {
+			} elseif ($key === MetaFields::OG_SYNC || $key === MetaFields::X_SYNC) {
 				// Switcher in Elementor: 'yes' or '1' is on (present). Falsy/empty is off (absent in HTML checkbox terms).
 				if ($value === 'yes' || $value === '1') {
 					$normalized[$key] = '1';

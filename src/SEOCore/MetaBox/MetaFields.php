@@ -151,7 +151,6 @@ class MetaFields
 	private static array $checkbox_fields = [
 		self::OG_SYNC,
 		self::X_SYNC,
-		self::CORNERSTONE,
 	];
 
 	private static array $image_fields = [
@@ -438,7 +437,6 @@ class MetaFields
 			'schema_section'      => self::get($post_id, self::SCHEMA_SECTION),
 			'schema_custom'       => self::get($post_id, self::SCHEMA_CUSTOM),
 			'primary_category'    => (int) self::get($post_id, self::PRIMARY_CATEGORY, 0),
-			'cornerstone'         => self::get($post_id, self::CORNERSTONE, '0'),
 			'redirect_url'        => self::get($post_id, self::REDIRECT_URL),
 			'redirect_type'       => self::get($post_id, self::REDIRECT_TYPE, '301'),
 		];
