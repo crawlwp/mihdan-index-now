@@ -13,18 +13,6 @@ class RedirectsManager
 	/** Maximum accepted length (in characters) of a regex from_url pattern. */
 	const MAX_REGEX_LENGTH = 500;
 
-	/**
-	 * Schema version for the columns this class owns (priority, allow_external).
-	 *
-	 * The base table is created by \Mihdan\IndexNow\DBUpdates; this class only
-	 * adds its own columns on top, guarded by the option below so the upgrade
-	 * is idempotent and cannot fail twice on an existing install.
-	 */
-	const SCHEMA_VERSION = 2;
-
-	/** Option holding the schema version applied by this class. */
-	const SCHEMA_OPTION = 'crawlwp_redirects_schema_ver';
-
 	/** Non-autoloaded option buffering hit counts until they are flushed. */
 	const HITS_BUFFER_OPTION = 'crawlwp_redirect_hits_buffer';
 
@@ -83,22 +71,6 @@ class RedirectsManager
 				wp_schedule_event(time() + 300, 'hourly', self::HITS_FLUSH_HOOK);
 			}
 		}
-	}
-
-	/**
-	 * Whether a column exists on the redirects table.
-	 *
-	 * @param string $column Column name.
-	 * @return bool
-	 */
-	private function has_column(string $column): bool
-	{
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$found = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$this->table} LIKE %s", $wpdb->esc_like($column)));
-
-		return !empty($found);
 	}
 
 	// -------------------------------------------------------------------------
@@ -408,32 +380,6 @@ class RedirectsManager
 		set_transient(self::CACHE_KEY, $grouped, self::CACHE_EXPIRY);
 
 		return $grouped;
-	}
-
-	/**
-	 * Get all enabled redirects as a flat, priority-ordered list.
-	 *
-	 * @return object[]
-	 */
-	public function get_enabled(): array
-	{
-		$grouped = $this->get_enabled_grouped();
-		$rows    = $grouped['rules'];
-
-		foreach ($grouped['exact'] as $bucket) {
-			foreach ($bucket as $row) {
-				$rows[] = $row;
-			}
-		}
-
-		usort($rows, function ($a, $b) {
-			$pa = (int) ($a->priority ?? self::DEFAULT_PRIORITY);
-			$pb = (int) ($b->priority ?? self::DEFAULT_PRIORITY);
-
-			return $pa === $pb ? ((int) $a->id <=> (int) $b->id) : ($pa <=> $pb);
-		});
-
-		return $rows;
 	}
 
 	/**

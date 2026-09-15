@@ -104,16 +104,6 @@ class Utils
 	}
 
 	/**
-	 * Get user agent of browser/bot.
-	 *
-	 * @return mixed|string
-	 */
-	public static function get_user_agent(): string
-	{
-		return wp_unslash($_SERVER['HTTP_USER_AGENT'] ?? '');
-	}
-
-	/**
 	 * Get plugin DB version.
 	 *
 	 * @return string
