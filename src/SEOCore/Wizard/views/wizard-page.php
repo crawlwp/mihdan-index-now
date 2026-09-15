@@ -11,6 +11,14 @@
  * @var string $current_sep
  * @var array  $post_types
  * @var string $current_step
+ * @var bool   $index_now_enabled
+ * @var string $api_key
+ * @var string $current_engine
+ * @var array  $search_engines
+ * @var bool   $ping_on_post
+ * @var bool   $ping_on_post_updated
+ * @var array  $sub_post_types
+ * @var string $key_location
  *
  * @package mihdan-index-now
  */
@@ -67,8 +75,12 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 					<span class="cwp-wizard-step__number">4</span>
 					<span class="cwp-wizard-step__label"><?php esc_html_e('Search Defaults', 'mihdan-index-now'); ?></span>
 				</li>
-				<li class="cwp-wizard-step <?php echo $current_step === 'ready' ? 'is-active' : ''; ?>" data-step="ready">
+				<li class="cwp-wizard-step <?php echo $current_step === 'index_now' ? 'is-active' : ''; ?>" data-step="index_now">
 					<span class="cwp-wizard-step__number">5</span>
+					<span class="cwp-wizard-step__label"><?php esc_html_e('Instant Indexing', 'mihdan-index-now'); ?></span>
+				</li>
+				<li class="cwp-wizard-step <?php echo $current_step === 'ready' ? 'is-active' : ''; ?>" data-step="ready">
+					<span class="cwp-wizard-step__number">6</span>
 					<span class="cwp-wizard-step__label"><?php esc_html_e('Complete', 'mihdan-index-now'); ?></span>
 				</li>
 			</ol>
@@ -112,6 +124,13 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 							<p><?php esc_html_e('Configure title separators, homepage metadata, and decide exactly which content types search engines should index.', 'mihdan-index-now'); ?></p>
 						</div>
 					</div>
+					<div class="cwp-wizard-feat-item">
+						<span class="dashicons dashicons-update cwp-wizard-feat-icon" aria-hidden="true"></span>
+						<div>
+							<strong><?php esc_html_e('Instant Index Submission via IndexNow', 'mihdan-index-now'); ?></strong>
+							<p><?php esc_html_e('Automatically notify Bing, Yandex, and other search engines the second you publish or update content.', 'mihdan-index-now'); ?></p>
+						</div>
+					</div>
 				</div>
 
 				<div class="cwp-wizard-panel__footer">
@@ -127,7 +146,7 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 			<!-- STEP 2: IMPORT -->
 			<section class="cwp-wizard-panel <?php echo $current_step === 'import' ? 'is-active' : ''; ?>" id="cwp-step-import">
 				<div class="cwp-wizard-panel__head">
-					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 1 of 3', 'mihdan-index-now'); ?></span>
+					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 1 of 4', 'mihdan-index-now'); ?></span>
 					<h2><?php esc_html_e('Import from Existing SEO Plugin', 'mihdan-index-now'); ?></h2>
 					<p class="cwp-wizard-lead">
 						<?php esc_html_e(
@@ -312,7 +331,7 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 			<!-- STEP 3: SITE INFO -->
 			<section class="cwp-wizard-panel <?php echo $current_step === 'site_info' ? 'is-active' : ''; ?>" id="cwp-step-site_info">
 				<div class="cwp-wizard-panel__head">
-					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 2 of 3', 'mihdan-index-now'); ?></span>
+					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 2 of 4', 'mihdan-index-now'); ?></span>
 					<h2><?php esc_html_e('Site Representation & Schema', 'mihdan-index-now'); ?></h2>
 					<p class="cwp-wizard-lead">
 						<?php esc_html_e(
@@ -388,7 +407,7 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 			<!-- STEP 4: SEARCH APPEARANCE -->
 			<section class="cwp-wizard-panel <?php echo $current_step === 'search_appearance' ? 'is-active' : ''; ?>" id="cwp-step-search_appearance">
 				<div class="cwp-wizard-panel__head">
-					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 3 of 3', 'mihdan-index-now'); ?></span>
+					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 3 of 4', 'mihdan-index-now'); ?></span>
 					<h2><?php esc_html_e('Search Appearance & Indexing', 'mihdan-index-now'); ?></h2>
 					<p class="cwp-wizard-lead">
 						<?php esc_html_e(
@@ -469,13 +488,150 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 					<button type="button" class="button button-secondary cwp-btn-prev" data-goto="site_info">
 						<?php esc_html_e('← Back', 'mihdan-index-now'); ?>
 					</button>
-					<button type="button" class="button button-primary cwp-btn-save-step" data-step="search_appearance" data-goto="ready">
+					<button type="button" class="button button-primary cwp-btn-save-step" data-step="search_appearance" data-goto="index_now">
+						<?php esc_html_e('Save & Continue →', 'mihdan-index-now'); ?>
+					</button>
+				</div>
+			</section>
+
+			<!-- STEP 5: INDEXNOW SUBMISSION -->
+			<section class="cwp-wizard-panel <?php echo $current_step === 'index_now' ? 'is-active' : ''; ?>" id="cwp-step-index_now">
+				<div class="cwp-wizard-panel__head">
+					<span class="cwp-wizard-eyebrow"><?php esc_html_e('Step 4 of 4', 'mihdan-index-now'); ?></span>
+					<h2><?php esc_html_e('Instant Index Submission via IndexNow', 'mihdan-index-now'); ?></h2>
+					<p class="cwp-wizard-lead">
+						<?php esc_html_e(
+							'IndexNow is an open protocol that instantly alerts participating search engines (like Microsoft Bing, Yandex, Seznam, and Naver) whenever content on your site is published or updated — ensuring rapid indexing without waiting for crawlers.',
+							'mihdan-index-now'
+						); ?>
+					</p>
+				</div>
+
+				<form id="cwpIndexNowForm" class="cwp-wizard-form">
+					<!-- Enable IndexNow Switch -->
+					<div class="cwp-form-field">
+						<label class="cwp-toggle-label">
+							<span class="cwp-toggle-switch">
+								<input type="checkbox" name="index_now_enable" id="cwp_index_now_enable" value="1" <?php checked($index_now_enabled); ?> />
+								<span class="cwp-toggle-slider"></span>
+							</span>
+							<span class="cwp-toggle-text">
+								<strong><?php esc_html_e('Enable IndexNow Automated Submission', 'mihdan-index-now'); ?></strong>
+								<span class="cwp-field-desc"><?php esc_html_e('When active, search engines will be automatically notified whenever URLs are created or updated.', 'mihdan-index-now'); ?></span>
+							</span>
+						</label>
+					</div>
+
+					<div class="cwp-indexnow-details" id="cwpIndexNowDetails" style="<?php echo $index_now_enabled ? '' : 'opacity: 0.5; pointer-events: none;'; ?>">
+						<!-- API Key -->
+						<div class="cwp-form-field">
+							<label class="cwp-form-label" for="cwp_indexnow_api_key">
+								<?php esc_html_e('IndexNow API Key', 'mihdan-index-now'); ?>
+							</label>
+							<div class="cwp-key-group">
+								<input type="text" id="cwp_indexnow_api_key" name="api_key" class="regular-text cwp-code-input" value="<?php echo esc_attr($api_key); ?>" spellcheck="false" autocomplete="off" />
+								<button type="button" class="button button-secondary cwp-generate-key-btn" id="cwpGenerateKeyBtn">
+									<span class="dashicons dashicons-image-rotate"></span>
+									<span class="cwp-btn-label"><?php esc_html_e('Generate New Key', 'mihdan-index-now'); ?></span>
+								</button>
+								<button type="button" class="button button-secondary cwp-copy-key-btn" id="cwpCopyKeyBtn" title="<?php esc_attr_e('Copy API Key', 'mihdan-index-now'); ?>">
+									<span class="dashicons dashicons-admin-page"></span>
+									<span class="cwp-btn-label"><?php esc_html_e('Copy', 'mihdan-index-now'); ?></span>
+								</button>
+							</div>
+							<div class="cwp-key-verification-notice">
+								<span class="dashicons dashicons-yes-alt cwp-notice-icon"></span>
+								<div class="cwp-key-verification-text">
+									<strong><?php esc_html_e('Automatic Ownership Verification', 'mihdan-index-now'); ?></strong>
+									<p>
+										<?php esc_html_e('Search engines verify that you own this site by requesting your verification key file at:', 'mihdan-index-now'); ?>
+										<br/>
+										<a href="<?php echo esc_url($key_location); ?>" target="_blank" rel="noopener noreferrer" id="cwpKeyVerificationUrl" class="cwp-key-url">
+											<code><?php echo esc_html($key_location); ?></code>
+											<span class="dashicons dashicons-external"></span>
+										</a>
+									</p>
+									<span class="cwp-badge-subtle"><?php esc_html_e('CrawlWP automatically hosts and serves this file for you.', 'mihdan-index-now'); ?></span>
+								</div>
+							</div>
+						</div>
+
+						<!-- Search Engine Target -->
+						<div class="cwp-form-field">
+							<label class="cwp-form-label">
+								<?php esc_html_e('Primary Search Engine Endpoint', 'mihdan-index-now'); ?>
+							</label>
+							<div class="cwp-engine-cards">
+								<?php foreach ($search_engines as $eng_id => $eng_data): ?>
+									<label class="cwp-engine-card <?php echo $current_engine === $eng_id ? 'is-selected' : ''; ?>">
+										<input type="radio" name="search_engine" value="<?php echo esc_attr($eng_id); ?>" <?php checked($current_engine, $eng_id); ?> />
+										<div class="cwp-engine-card__content">
+											<div class="cwp-engine-card__header">
+												<strong><?php echo esc_html($eng_data['label']); ?></strong>
+												<?php if (!empty($eng_data['badge'])): ?>
+													<span class="cwp-badge-pill"><?php echo esc_html($eng_data['badge']); ?></span>
+												<?php endif; ?>
+											</div>
+											<p class="cwp-engine-card__desc"><?php echo esc_html($eng_data['desc']); ?></p>
+										</div>
+									</label>
+								<?php endforeach; ?>
+							</div>
+						</div>
+
+						<!-- Content Types to Submit -->
+						<div class="cwp-form-field">
+							<label class="cwp-form-label">
+								<?php esc_html_e('Content Types for Instant Submission', 'mihdan-index-now'); ?>
+							</label>
+							<p class="cwp-field-desc"><?php esc_html_e('Select which post types should be automatically submitted for indexing upon publishing or update:', 'mihdan-index-now'); ?></p>
+							<div class="cwp-checkbox-grid">
+								<?php foreach ($post_types as $pt_slug => $pt_obj): ?>
+									<?php $checked = !empty($sub_post_types[$pt_slug]); ?>
+									<label class="cwp-pt-checkbox">
+										<input type="checkbox" name="submission_post_types[]" value="<?php echo esc_attr($pt_slug); ?>" <?php checked($checked); ?> />
+										<span><?php echo esc_html($pt_obj->label); ?> <code>(<?php echo esc_html($pt_slug); ?>)</code></span>
+									</label>
+								<?php endforeach; ?>
+							</div>
+						</div>
+
+						<!-- Submission Triggers -->
+						<div class="cwp-form-field">
+							<label class="cwp-form-label">
+								<?php esc_html_e('Automated Notification Triggers', 'mihdan-index-now'); ?>
+							</label>
+							<div class="cwp-triggers-group">
+								<label class="cwp-trigger-checkbox">
+									<input type="checkbox" name="ping_on_post" value="1" <?php checked($ping_on_post); ?> />
+									<span>
+										<strong><?php esc_html_e('Post published', 'mihdan-index-now'); ?></strong>
+										<span class="cwp-field-desc"><?php esc_html_e('Notify search engines instantly when new content is published.', 'mihdan-index-now'); ?></span>
+									</span>
+								</label>
+								<label class="cwp-trigger-checkbox">
+									<input type="checkbox" name="ping_on_post_updated" value="1" <?php checked($ping_on_post_updated); ?> />
+									<span>
+										<strong><?php esc_html_e('Post updated', 'mihdan-index-now'); ?></strong>
+										<span class="cwp-field-desc"><?php esc_html_e('Notify search engines when existing published content is modified.', 'mihdan-index-now'); ?></span>
+									</span>
+								</label>
+							</div>
+						</div>
+					</div>
+				</form>
+
+				<div class="cwp-wizard-panel__footer">
+					<button type="button" class="button button-secondary cwp-btn-prev" data-goto="search_appearance">
+						<?php esc_html_e('← Back', 'mihdan-index-now'); ?>
+					</button>
+					<button type="button" class="button button-primary cwp-btn-save-step" data-step="index_now" data-goto="ready">
 						<?php esc_html_e('Save & Finish Setup →', 'mihdan-index-now'); ?>
 					</button>
 				</div>
 			</section>
 
-			<!-- STEP 5: READY / COMPLETION -->
+			<!-- STEP 6: READY / COMPLETION -->
 			<section class="cwp-wizard-panel <?php echo $current_step === 'ready' ? 'is-active' : ''; ?>" id="cwp-step-ready">
 				<div class="cwp-wizard-panel__head cwp-panel-head-center">
 					<div class="cwp-ready-icon" aria-hidden="true">
@@ -510,6 +666,13 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 						<div>
 							<strong><?php esc_html_e('Search defaults established', 'mihdan-index-now'); ?></strong>
 							<span><?php esc_html_e('Title separators and content type indexing rules are in effect.', 'mihdan-index-now'); ?></span>
+						</div>
+					</div>
+					<div class="cwp-ready-item">
+						<span class="dashicons dashicons-yes cwp-check-green" aria-hidden="true"></span>
+						<div>
+							<strong><?php esc_html_e('IndexNow submission configured', 'mihdan-index-now'); ?></strong>
+							<span><?php esc_html_e('Search engines like Bing and Yandex will be notified immediately when content is published or updated.', 'mihdan-index-now'); ?></span>
 						</div>
 					</div>
 				</div>
@@ -558,6 +721,11 @@ $primary_active = !empty($active_sources) ? reset($active_sources) : (!empty($av
 						<span class="dashicons dashicons-admin-generic cwp-next-card__icon" aria-hidden="true"></span>
 						<strong><?php esc_html_e('CrawlWP Dashboard', 'mihdan-index-now'); ?></strong>
 						<span><?php esc_html_e('Review indexing statistics, IndexNow logs, and API submission status.', 'mihdan-index-now'); ?></span>
+					</a>
+					<a href="<?php echo esc_url(admin_url('admin.php?page=crawlwp&wposa-menu=crawlwp_log')); ?>" class="cwp-next-card">
+						<span class="dashicons dashicons-list-view cwp-next-card__icon" aria-hidden="true"></span>
+						<strong><?php esc_html_e('IndexNow Logs', 'mihdan-index-now'); ?></strong>
+						<span><?php esc_html_e('Track outbound IndexNow submissions and search engine verification requests.', 'mihdan-index-now'); ?></span>
 					</a>
 					<a href="<?php echo esc_url(admin_url('admin.php?page=crawlwp&wposa-menu=crawlwp_title_meta')); ?>" class="cwp-next-card">
 						<span class="dashicons dashicons-edit cwp-next-card__icon" aria-hidden="true"></span>

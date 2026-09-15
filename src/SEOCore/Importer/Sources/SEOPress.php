@@ -33,7 +33,7 @@ class SEOPress extends Source
 		return [
 			'posts'     => $this->count_meta('_seopress_titles_title') + $this->count_meta('_seopress_titles_desc'),
 			'terms'     => $this->count_term_meta('_seopress_titles_title'),
-			'users'     => $this->count_user_meta('_seopress_titles_title') + $this->count_user_meta('seopress_titles_title'),
+			'users'     => 0,
 			'redirects' => $this->count_redirects(),
 		];
 	}
@@ -74,36 +74,6 @@ class SEOPress extends Source
 		}
 
 		return $this->batch_result($imported, $skipped, $offset, count($terms), $limit);
-	}
-
-	public function import_users(int $offset, int $limit, bool $overwrite): array
-	{
-		$ids      = $this->user_ids($offset, $limit);
-		$imported = 0;
-		$skipped  = 0;
-
-		foreach ($ids as $user_id) {
-			$data = array_filter([
-				'title'       => $this->convert($this->user_meta($user_id, ['_seopress_titles_title', 'seopress_titles_title'])),
-				'description' => $this->convert($this->user_meta($user_id, ['_seopress_titles_desc', 'seopress_titles_desc'])),
-			], static function ($v) {
-				return $v !== '' && $v !== null;
-			});
-
-			$noindex = $this->user_meta($user_id, ['_seopress_robots_index', 'seopress_robots_index']);
-
-			if ($noindex === 'yes' || $noindex === '1') {
-				$data['robots_index'] = 'noindex';
-			}
-
-			if ($data === []) {
-				continue;
-			}
-
-			Writer::write_user($user_id, $data, $overwrite) ? $imported++ : $skipped++;
-		}
-
-		return $this->batch_result($imported, $skipped, $offset, count($ids), $limit);
 	}
 
 	public function import_redirects(int $offset, int $limit): array
@@ -351,24 +321,6 @@ class SEOPress extends Source
 		$stored = trim($stored);
 
 		return array_key_exists($stored, Variables::separator_choices()) ? $stored : '';
-	}
-
-	/**
-	 * First non-empty value among several possible user meta keys.
-	 *
-	 * @param string[] $keys
-	 */
-	private function user_meta(int $user_id, array $keys): string
-	{
-		foreach ($keys as $key) {
-			$value = (string) get_user_meta($user_id, $key, true);
-
-			if ($value !== '') {
-				return $value;
-			}
-		}
-
-		return '';
 	}
 
 	private function count_redirects(): int

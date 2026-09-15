@@ -29,6 +29,7 @@ class Wizard
 
 		// AJAX endpoints
 		add_action('wp_ajax_crawlwp_wizard_save_step', [$this, 'ajax_save_step']);
+		add_action('wp_ajax_crawlwp_wizard_generate_key', [$this, 'ajax_generate_key']);
 		add_action('wp_ajax_crawlwp_wizard_deactivate_plugin', [$this, 'ajax_deactivate_plugin']);
 		add_action('wp_ajax_crawlwp_wizard_dismiss_notice', [$this, 'ajax_dismiss_notice']);
 		add_action('wp_ajax_crawlwp_wizard_finish', [$this, 'ajax_finish']);
@@ -109,11 +110,11 @@ class Wizard
 
 		$screen = function_exists('get_current_screen') ? get_current_screen() : null;
 
-		if (! $screen || strpos((string) $screen->id, 'crawlwp') === false) {
+		if (! $screen || strpos($screen->id, 'crawlwp') === false) {
 			return;
 		}
 
-		if (strpos((string) $screen->id, self::MENU_SLUG) !== false) {
+		if (strpos($screen->id, self::MENU_SLUG) !== false) {
 			return;
 		}
 
@@ -203,6 +204,8 @@ class Wizard
 				'saved'           => __('Saved!', 'mihdan-index-now'),
 				'chooseLogo'      => __('Choose Logo', 'mihdan-index-now'),
 				'useLogo'         => __('Use this image', 'mihdan-index-now'),
+				'generatingKey'   => __('Generating…', 'mihdan-index-now'),
+				'copied'          => __('Copied!', 'mihdan-index-now'),
 			],
 		]);
 	}
@@ -279,7 +282,69 @@ class Wizard
 			wp_send_json_success(['message' => __('Search appearance settings saved.', 'mihdan-index-now')]);
 		}
 
+		if ($step === 'index_now') {
+			$index_now_opts = get_option('crawlwp_index_now', []);
+			$index_now_opts = is_array($index_now_opts) ? $index_now_opts : [];
+
+			$enabled = isset($_POST['index_now_enable']) && (string) $_POST['index_now_enable'] === '1' ? 'on' : 'off';
+			$index_now_opts['enable'] = $enabled;
+
+			$api_key = sanitize_text_field(wp_unslash($_POST['api_key'] ?? ''));
+			if ($api_key === '') {
+				$api_key = Utils::generate_key();
+			}
+			$index_now_opts['api_key'] = $api_key;
+
+			$allowed_engines = ['bing-index-now', 'index-now', 'yandex-index-now', 'seznam-index-now', 'naver-index-now'];
+			$search_engine   = sanitize_text_field(wp_unslash($_POST['search_engine'] ?? 'bing-index-now'));
+			if (in_array($search_engine, $allowed_engines, true)) {
+				$index_now_opts['search_engine'] = $search_engine;
+			}
+
+			update_option('crawlwp_index_now', $index_now_opts);
+
+			// Submission triggers and post types in crawlwp_general
+			$general_opts = get_option('crawlwp_general', []);
+			$general_opts = is_array($general_opts) ? $general_opts : [];
+
+			$raw_pts = isset($_POST['submission_post_types']) && is_array($_POST['submission_post_types'])
+				? array_map('sanitize_text_field', wp_unslash($_POST['submission_post_types']))
+				: ['post', 'page'];
+
+			$post_types_map = [];
+			foreach ($raw_pts as $pt) {
+				if (! empty($pt)) {
+					$post_types_map[$pt] = $pt;
+				}
+			}
+			$general_opts['post_types'] = $post_types_map;
+
+			$general_opts['ping_on_post']         = isset($_POST['ping_on_post']) && (string) $_POST['ping_on_post'] === '1' ? 'on' : 'off';
+			$general_opts['ping_on_post_updated'] = isset($_POST['ping_on_post_updated']) && (string) $_POST['ping_on_post_updated'] === '1' ? 'on' : 'off';
+
+			update_option('crawlwp_general', $general_opts);
+
+			wp_send_json_success(['message' => __('IndexNow submission settings saved.', 'mihdan-index-now')]);
+		}
+
 		wp_send_json_error(['message' => __('Invalid step.', 'mihdan-index-now')]);
+	}
+
+	public function ajax_generate_key(): void
+	{
+		check_ajax_referer('crawlwp_wizard_nonce', 'nonce');
+
+		if (! current_user_can('manage_options')) {
+			wp_send_json_error(['message' => __('Unauthorized', 'mihdan-index-now')]);
+		}
+
+		$key     = Utils::generate_key();
+		$key_url = trailingslashit(Utils::normalized_home_url()) . $key . '.txt';
+
+		wp_send_json_success([
+			'api_key' => $key,
+			'key_url' => $key_url,
+		]);
 	}
 
 	public function ajax_deactivate_plugin(): void
@@ -360,8 +425,61 @@ class Wizard
 		$post_types = get_post_types(['public' => true], 'objects');
 		unset($post_types['attachment']);
 
+		// IndexNow settings & state
+		$index_now_opts = get_option('crawlwp_index_now', []);
+		$index_now_opts = is_array($index_now_opts) ? $index_now_opts : [];
+
+		$general_opts   = get_option('crawlwp_general', []);
+		$general_opts   = is_array($general_opts) ? $general_opts : [];
+
+		$index_now_enabled = ($index_now_opts['enable'] ?? 'on') === 'on';
+		$api_key           = ! empty($index_now_opts['api_key']) ? (string) $index_now_opts['api_key'] : Utils::generate_key();
+
+		if (empty($index_now_opts['api_key'])) {
+			$index_now_opts['api_key'] = $api_key;
+			update_option('crawlwp_index_now', $index_now_opts);
+		}
+
+		$current_engine       = $index_now_opts['search_engine'] ?? 'bing-index-now';
+		$ping_on_post         = ($general_opts['ping_on_post'] ?? 'on') === 'on';
+		$ping_on_post_updated = ($general_opts['ping_on_post_updated'] ?? 'on') === 'on';
+
+		$sub_post_types = isset($general_opts['post_types']) && is_array($general_opts['post_types'])
+			? array_filter($general_opts['post_types'])
+			: ['post' => 'post', 'page' => 'page'];
+
+		$key_location = trailingslashit(Utils::normalized_home_url()) . $api_key . '.txt';
+
+		$search_engines = [
+			'bing-index-now'   => [
+				'label' => __('Bing (Recommended)', 'mihdan-index-now'),
+				'desc'  => __('Recommended. Submissions to Bing automatically notify all IndexNow partner search engines (Bing, Yandex, Seznam, Naver).', 'mihdan-index-now'),
+				'badge' => __('Recommended', 'mihdan-index-now'),
+			],
+			'index-now'        => [
+				'label' => __('IndexNow.org', 'mihdan-index-now'),
+				'desc'  => __('Submits directly to the central IndexNow.org API endpoint.', 'mihdan-index-now'),
+				'badge' => '',
+			],
+			'yandex-index-now' => [
+				'label' => __('Yandex', 'mihdan-index-now'),
+				'desc'  => __('Submits directly to the Yandex IndexNow endpoint.', 'mihdan-index-now'),
+				'badge' => '',
+			],
+			'seznam-index-now' => [
+				'label' => __('Seznam', 'mihdan-index-now'),
+				'desc'  => __('Submits directly to Seznam.cz (Czech Republic).', 'mihdan-index-now'),
+				'badge' => '',
+			],
+			'naver-index-now'  => [
+				'label' => __('Naver', 'mihdan-index-now'),
+				'desc'  => __('Submits directly to Naver search engine (South Korea).', 'mihdan-index-now'),
+				'badge' => '',
+			],
+		];
+
 		$current_step = sanitize_text_field(wp_unslash($_GET['step'] ?? 'welcome'));
-		$allowed_steps = ['welcome', 'import', 'site_info', 'search_appearance', 'ready'];
+		$allowed_steps = ['welcome', 'import', 'site_info', 'search_appearance', 'index_now', 'ready'];
 
 		if (! in_array($current_step, $allowed_steps, true)) {
 			$current_step = 'welcome';

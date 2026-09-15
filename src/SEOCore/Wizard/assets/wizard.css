@@ -89,6 +89,7 @@
 	position: relative;
 	transition: all .2s ease;
 	text-align: center;
+	margin: 0;
 }
 
 .cwp-wizard-step:last-child {
@@ -736,10 +737,296 @@
 	color: #00a32a;
 }
 
+/* Step 5: IndexNow Submission */
+.cwp-toggle-label {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	cursor: pointer;
+	padding: 14px 16px;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	background: #fdfdfd;
+	transition: all .15s ease;
+}
+
+.cwp-toggle-label:hover {
+	border-color: #2271b1;
+	background: #f6f7f7;
+}
+
+.cwp-toggle-switch {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 24px;
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.cwp-toggle-switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.cwp-toggle-slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #c3c4c7;
+	transition: .2s;
+	border-radius: 24px;
+}
+
+.cwp-toggle-slider:before {
+	position: absolute;
+	content: "";
+	height: 18px;
+	width: 18px;
+	left: 3px;
+	bottom: 3px;
+	background-color: #fff;
+	transition: .2s;
+	border-radius: 50%;
+}
+
+.cwp-toggle-switch input:checked + .cwp-toggle-slider {
+	background-color: #2271b1;
+}
+
+.cwp-toggle-switch input:checked + .cwp-toggle-slider:before {
+	transform: translateX(20px);
+}
+
+.cwp-toggle-text strong {
+	display: block;
+	font-size: 14px;
+	color: #1d2327;
+	margin-bottom: 2px;
+}
+
+.cwp-indexnow-details {
+	margin-top: 20px;
+	transition: opacity .2s ease;
+}
+
+/* API Key & Verification */
+.cwp-key-group {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.cwp-code-input {
+	font-family: monospace;
+	font-size: 13px !important;
+	letter-spacing: .02em;
+	background: #fdfdfd;
+	flex-grow: 1;
+	max-width: 420px;
+}
+
+.cwp-generate-key-btn,
+.cwp-copy-key-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+}
+
+.cwp-generate-key-btn .dashicons,
+.cwp-copy-key-btn .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.cwp-key-verification-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	background: #f0f6fc;
+	border: 1px solid #c5d9ed;
+	border-radius: 6px;
+	margin-top: 8px;
+}
+
+.cwp-notice-icon {
+	color: #00a32a;
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.cwp-key-verification-text {
+	font-size: 12.5px;
+	line-height: 1.4;
+	color: #1d2327;
+}
+
+.cwp-key-verification-text strong {
+	display: block;
+	margin-bottom: 2px;
+}
+
+.cwp-key-verification-text p {
+	margin: 0 0 6px 0;
+}
+
+.cwp-key-url {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	word-break: break-all;
+	text-decoration: none;
+	font-weight: 500;
+	color: #2271b1;
+}
+
+.cwp-key-url:hover {
+	text-decoration: underline;
+}
+
+.cwp-key-url .dashicons {
+	font-size: 14px;
+	width: 14px;
+	height: 14px;
+}
+
+.cwp-badge-subtle {
+	display: inline-block;
+	font-size: 11px;
+	color: #50575e;
+	font-style: italic;
+}
+
+/* Engine Cards */
+.cwp-engine-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 6px;
+}
+
+.cwp-engine-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+	cursor: pointer;
+	transition: all .15s ease;
+}
+
+.cwp-engine-card:hover {
+	border-color: #2271b1;
+	background: #f9fbfd;
+}
+
+.cwp-engine-card.is-selected {
+	border-color: #2271b1;
+	background: #f0f6fc;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+.cwp-engine-card input[type="radio"] {
+	margin-top: 3px;
+	flex-shrink: 0;
+}
+
+.cwp-engine-card__content {
+	flex-grow: 1;
+}
+
+.cwp-engine-card__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 3px;
+}
+
+.cwp-engine-card__header strong {
+	font-size: 13.5px;
+	color: #1d2327;
+}
+
+.cwp-engine-card__desc {
+	margin: 0;
+	font-size: 12px;
+	color: #646970;
+	line-height: 1.4;
+}
+
+.cwp-badge-pill {
+	display: inline-block;
+	background: #00a32a;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .05em;
+	padding: 1px 6px;
+	border-radius: 10px;
+}
+
+/* Checkbox Grid for Content Types */
+.cwp-checkbox-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 10px;
+	margin-top: 6px;
+}
+
+/* Triggers Group */
+.cwp-triggers-group {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 6px;
+}
+
+.cwp-trigger-checkbox {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 10px 14px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fff;
+	cursor: pointer;
+	transition: background .15s ease;
+}
+
+.cwp-trigger-checkbox:hover {
+	background: #f6f7f7;
+}
+
+.cwp-trigger-checkbox input[type="checkbox"] {
+	margin-top: 2px;
+	flex-shrink: 0;
+}
+
+.cwp-trigger-checkbox strong {
+	display: block;
+	font-size: 13px;
+	color: #1d2327;
+	margin-bottom: 2px;
+}
+
 /* Next Steps Grid */
 .cwp-next-steps-grid {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(2, 1fr);
 	gap: 14px;
 	margin-top: 24px;
 }
